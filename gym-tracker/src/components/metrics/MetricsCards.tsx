@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Check, X } from "lucide-react";
+import { Pencil, Check, X, Cloud } from "lucide-react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Toast } from "@/components/ui/Toast";
 import { addBodyMetric } from "@/actions/metrics";
@@ -10,12 +10,14 @@ import { formatWeight, formatPct } from "@/lib/utils";
 interface MetricsCardsProps {
   currentWeight: number | null;
   currentBodyFat: number | null;
+  weightSource?: string | null;
+  bodyFatSource?: string | null;
 }
 
 type EditField = "weight" | "bodyFat" | null;
 type ToastState = { message: string; type: "success" | "error" } | null;
 
-export function MetricsCards({ currentWeight, currentBodyFat }: MetricsCardsProps) {
+export function MetricsCards({ currentWeight, currentBodyFat, weightSource, bodyFatSource }: MetricsCardsProps) {
   const [editing, setEditing] = useState<EditField>(null);
   const [weightValue, setWeightValue] = useState("");
   const [bodyFatValue, setBodyFatValue] = useState("");
@@ -102,16 +104,27 @@ export function MetricsCards({ currentWeight, currentBodyFat }: MetricsCardsProp
                 </button>
               </div>
             ) : (
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                {currentWeight != null ? (
-                  <>
-                    {Number(currentWeight).toFixed(1)}
-                    <span className="text-sm font-normal text-zinc-400 ml-1">kg</span>
-                  </>
-                ) : (
-                  <span className="text-zinc-400 text-lg">Not set</span>
+              <div className="flex items-end gap-2">
+                <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                  {currentWeight != null ? (
+                    <>
+                      {Number(currentWeight).toFixed(1)}
+                      <span className="text-sm font-normal text-zinc-400 ml-1">kg</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-400 text-lg">Not set</span>
+                  )}
+                </p>
+                {weightSource === "withings" && (
+                  <span
+                    title="Synced from Withings"
+                    className="mb-0.5 flex items-center gap-0.5 text-xs text-emerald-500"
+                  >
+                    <Cloud className="h-3 w-3" />
+                    Withings
+                  </span>
                 )}
-              </p>
+              </div>
             )}
           </CardBody>
         </Card>
@@ -168,16 +181,27 @@ export function MetricsCards({ currentWeight, currentBodyFat }: MetricsCardsProp
                 </button>
               </div>
             ) : (
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                {currentBodyFat != null ? (
-                  <>
-                    {Number(currentBodyFat).toFixed(1)}
-                    <span className="text-sm font-normal text-zinc-400 ml-1">%</span>
-                  </>
-                ) : (
-                  <span className="text-zinc-400 text-lg">Not set</span>
+              <div className="flex items-end gap-2">
+                <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                  {currentBodyFat != null ? (
+                    <>
+                      {Number(currentBodyFat).toFixed(1)}
+                      <span className="text-sm font-normal text-zinc-400 ml-1">%</span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-400 text-lg">Not set</span>
+                  )}
+                </p>
+                {bodyFatSource === "withings" && (
+                  <span
+                    title="Synced from Withings"
+                    className="mb-0.5 flex items-center gap-0.5 text-xs text-emerald-500"
+                  >
+                    <Cloud className="h-3 w-3" />
+                    Withings
+                  </span>
                 )}
-              </p>
+              </div>
             )}
           </CardBody>
         </Card>
