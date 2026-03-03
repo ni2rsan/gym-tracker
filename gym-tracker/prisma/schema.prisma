@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth.js v5 required tables ───────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Application tables ────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  workoutSessions     WorkoutSession[]
+  bodyMetrics         BodyMetricEntry[]
+  customExercises     Exercise[]           @relation("UserCustomExercises")
+  exerciseSettings    UserExerciseSetting[]
+}
+
+enum MuscleGroup {
+  UPPER_BODY
+  LOWER_BODY
+  BODYWEIGHT
+}
+
+model Exercise {
+  id              String      @id @default(cuid())
+  name            String
+  muscleGroup     MuscleGroup
+  isDefault       Boolean     @default(false)
+  isBodyweight    Boolean     @default(false)
+  sortOrder       Int         @default(0)
+  createdByUserId String?
+
+  createdBy    User?                 @relation("UserCustomExercises", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  sets         ExerciseSet[]
+  userSettings UserExerciseSetting[]
+
+  @@index([muscleGroup])
+  @@index([createdByUserId])
+}
+
+model UserExerciseSetting {
+  id         String  @id @default(cuid())
+  userId     String
+  exerciseId String
+  isPinned   Boolean @default(false)
+  sortOrder  Int     @default(0)
+  isHidden   Boolean @default(false)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exerciseId])
+  @@index([userId])
+}
+
+model WorkoutSession {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets ExerciseSet[]
+
+  @@index([userId, date])
+}
+
+// APPEND-ONLY: Never UPDATE or DELETE rows. Always INSERT new records.
+model ExerciseSet {
+  id         String   @id @default(cuid())
+  sessionId  String
+  exerciseId String
+  setNumber  Int
+  reps       Int
+  weightKg   Decimal? @db.Decimal(6, 2)
+  recordedAt DateTime @default(now())
+
+  session  WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id])
+
+  @@index([sessionId])
+  @@index([exerciseId])
+  @@index([recordedAt])
+}
+
+// APPEND-ONLY: Never UPDATE or DELETE rows. Pencil icon creates a NEW row.
+model BodyMetricEntry {
+  id         String   @id @default(cuid())
+  userId     String
+  weightKg   Decimal? @db.Decimal(5, 2)
+  bodyFatPct Decimal? @db.Decimal(4, 2)
+  recordedAt DateTime @default(now())
+  notes      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+}
