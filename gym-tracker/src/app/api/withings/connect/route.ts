@@ -12,7 +12,6 @@ export async function GET() {
   const state = crypto.randomUUID();
 
   const authUrl = buildAuthUrl(state);
-
   const response = NextResponse.redirect(authUrl);
 
   // Store state in a short-lived HttpOnly cookie to verify in the callback

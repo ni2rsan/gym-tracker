@@ -8,7 +8,7 @@
  *   6  = Body fat percentage (%)
  */
 
-const WITHINGS_AUTH_URL = "https://account.withings.com/oauth2/authorize";
+const WITHINGS_AUTH_URL = "https://account.withings.com/oauth2_user/authorize2";
 const WITHINGS_TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2";
 const WITHINGS_MEASURE_URL = "https://wbsapi.withings.net/measure";
 
