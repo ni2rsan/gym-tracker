@@ -64,6 +64,7 @@ model User {
   bodyMetrics         BodyMetricEntry[]
   customExercises     Exercise[]           @relation("UserCustomExercises")
   exerciseSettings    UserExerciseSetting[]
+  withingsConnection  WithingsConnection?
 }
 
 enum MuscleGroup {
@@ -137,14 +138,31 @@ model ExerciseSet {
 
 // APPEND-ONLY: Never UPDATE or DELETE rows. Pencil icon creates a NEW row.
 model BodyMetricEntry {
-  id         String   @id @default(cuid())
-  userId     String
-  weightKg   Decimal? @db.Decimal(5, 2)
-  bodyFatPct Decimal? @db.Decimal(4, 2)
-  recordedAt DateTime @default(now())
-  notes      String?
+  id                   String   @id @default(cuid())
+  userId               String
+  weightKg             Decimal? @db.Decimal(5, 2)
+  bodyFatPct           Decimal? @db.Decimal(4, 2)
+  recordedAt           DateTime @default(now())
+  notes                String?
+  source               String?  // "manual" | "withings" — null = legacy manual entry
+  withingsMeasureGrpId BigInt?  // Withings grpid for deduplication on re-sync
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, recordedAt])
+}
+
+// ─── Withings integration ──────────────────────────────────────────────────
+
+model WithingsConnection {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  accessToken  String    @db.Text
+  refreshToken String    @db.Text
+  expiresAt    DateTime
+  isActive     Boolean   @default(true)
+  connectedAt  DateTime  @default(now())
+  lastSyncAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
