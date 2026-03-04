@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { MuscleGroup } from "@/generated/prisma/client";
 import { getRangeStart } from "@/lib/utils";
 import type { TimeRange, MetricPoint, ExerciseProgressPoint, PRRecord } from "@/types";
 
@@ -123,6 +124,7 @@ export async function getMultiExerciseProgressData(
 export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
   const exercises = await prisma.exercise.findMany({
     where: {
+      muscleGroup: { not: MuscleGroup.CARDIO },
       sets: {
         some: { session: { userId } },
       },

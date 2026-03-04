@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useCallback, useEffect } from "react";
+import { useState, useTransition, useCallback, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
@@ -40,6 +41,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [toast, setToast] = useState<ToastState>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const didScrollRef = useRef(false);
+  const [savingGroups, setSavingGroups] = useState<Set<MuscleGroup>>(new Set());
+  const [lastSavedByGroup, setLastSavedByGroup] = useState<Partial<Record<MuscleGroup, Date>>>({});
+  const [lastSavedAll, setLastSavedAll] = useState<Date | null>(null);
 
   const initializeSets = useCallback(
     (exList: ExerciseWithSettings[], existing: Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>>) => {
@@ -81,6 +87,18 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     })();
   }, [workoutDate, exercises, initializeSets]);
 
+  // Scroll to section when navigated from planner "Track workout →"
+  useEffect(() => {
+    if (isLoading || didScrollRef.current) return;
+    const section = searchParams.get("section");
+    if (!section) return;
+    const el = document.getElementById(`section-${section}`);
+    if (el) {
+      didScrollRef.current = true;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isLoading, searchParams]);
+
   const handleSetsChange = (exerciseId: string, sets: SetData[]) => {
     setWorkoutData((prev) => ({ ...prev, [exerciseId]: sets }));
   };
@@ -117,10 +135,34 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
 
       const result = await saveWorkout({ date: workoutDate, exercises: exerciseInputs });
       if (result.success) {
+        setLastSavedAll(new Date());
         setToast({ message: "Workout saved ✓", type: "success" });
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
+    });
+  };
+
+  const handleSaveGroup = (mg: MuscleGroup) => {
+    setSavingGroups((prev) => new Set(prev).add(mg));
+    startTransition(async () => {
+      const groupExercises = exercises.filter((ex) => ex.muscleGroup === mg);
+      const exerciseInputs = groupExercises.map((ex) => ({
+        exerciseId: ex.id,
+        sets: workoutData[ex.id] ?? [],
+      }));
+      const result = await saveWorkout({ date: workoutDate, exercises: exerciseInputs });
+      if (result.success) {
+        setLastSavedByGroup((prev) => ({ ...prev, [mg]: new Date() }));
+        setToast({ message: `${MUSCLE_GROUP_ORDER.includes(mg) ? mg.replace("_", " ") : mg} saved ✓`, type: "success" });
+      } else {
+        setToast({ message: result.error ?? "Failed to save", type: "error" });
+      }
+      setSavingGroups((prev) => {
+        const next = new Set(prev);
+        next.delete(mg);
+        return next;
+      });
     });
   };
 
@@ -139,6 +181,24 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     },
     {} as Record<MuscleGroup, ExerciseWithSettings[]>
   );
+
+  const filledCount = exercises.filter((ex) =>
+    (workoutData[ex.id] ?? []).some((s) => Number(s.reps) > 0)
+  ).length;
+
+  const lastSavedTime = lastSavedAll ?? (
+    Object.values(lastSavedByGroup).reduce<Date | null>(
+      (latest, d) => (!latest || (d && d > latest) ? d ?? null : latest),
+      null
+    )
+  );
+
+  function formatLastSaved(d: Date | null): string {
+    if (!d) return "Not saved yet";
+    const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (diffMin < 1) return "Saved just now";
+    return `Saved ${diffMin}m ago`;
+  }
 
   return (
     <div className="space-y-4">
@@ -161,7 +221,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           </Button>
           <Button size="sm" onClick={handleSave} loading={isPending} disabled={isLoading}>
             <Save className="h-3.5 w-3.5" />
-            Save Workout
+            Save All
           </Button>
         </div>
       </div>
@@ -176,17 +236,38 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       ) : (
         <div className="space-y-4">
           {MUSCLE_GROUP_ORDER.map((mg) => (
-            <ExerciseGroup
-              key={mg}
-              muscleGroup={mg}
-              exercises={exercisesByGroup[mg]}
-              workoutData={workoutData}
-              onSetsChange={handleSetsChange}
-              onTogglePin={handleTogglePin}
-              onRemove={handleRemoveClick}
-              defaultOpen={true}
-            />
+            <div key={mg} id={`section-${mg}`}>
+              <ExerciseGroup
+                muscleGroup={mg}
+                exercises={exercisesByGroup[mg]}
+                workoutData={workoutData}
+                onSetsChange={handleSetsChange}
+                onTogglePin={handleTogglePin}
+                onRemove={handleRemoveClick}
+                defaultOpen={true}
+                onSave={exercisesByGroup[mg].length > 0 ? () => handleSaveGroup(mg) : undefined}
+                isSaving={savingGroups.has(mg)}
+                lastSaved={lastSavedByGroup[mg] ?? null}
+              />
+            </div>
           ))}
+
+          {/* Bottom bar */}
+          <div className="flex items-center gap-3 pt-1 border-t border-zinc-200 dark:border-zinc-800">
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+            >
+              ↑ Top
+            </button>
+            <div className="flex-1 text-center text-xs text-zinc-400 dark:text-zinc-500 truncate">
+              {filledCount}/{exercises.length} exercises · {formatLastSaved(lastSavedTime)}
+            </div>
+            <Button size="sm" onClick={handleSave} loading={isPending} disabled={isLoading}>
+              <Save className="h-3.5 w-3.5" />
+              Save All
+            </Button>
+          </div>
         </div>
       )}
 

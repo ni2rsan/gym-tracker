@@ -111,3 +111,78 @@ export async function updateSeries(
     return { success: false, error: "Failed to update series." };
   }
 }
+
+// ─── Streak / SORRY actions ────────────────────────────────────────────────
+
+export async function getStreakDataAction(): Promise<ActionResult<plannerService.StreakData>> {
+  try {
+    const userId = await getCurrentUserId();
+    const data = await plannerService.getStreakData(userId);
+    return { success: true, data };
+  } catch (e) {
+    console.error("getStreakDataAction error:", e);
+    return { success: false, error: "Failed to load streak data." };
+  }
+}
+
+/** Delete a series block using a SORRY token (soft-excuses instead of deleting) */
+export async function applySorryDeleteBlock(blockId: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await plannerService.applySorryAndSoftDeleteBlock(userId, blockId);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("applySorryDeleteBlock error:", e);
+    return { success: false, error: "Failed to apply SORRY token." };
+  }
+}
+
+/** Delete a series block and reset the streak */
+export async function deleteBlockResetStreak(blockId: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await plannerService.deleteBlockWithReset(userId, blockId);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("deleteBlockResetStreak error:", e);
+    return { success: false, error: "Failed to delete block." };
+  }
+}
+
+/** Update series config using a SORRY token (preserves streak) */
+export async function updateSeriesUseSorry(
+  seriesId: string,
+  formData: unknown
+): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    const parsed = CreateSeriesSchema.safeParse(formData);
+    if (!parsed.success) return { success: false, error: "Invalid data." };
+    await plannerService.updateSeriesWithSorry(userId, seriesId, parsed.data);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("updateSeriesUseSorry error:", e);
+    return { success: false, error: "Failed to update series." };
+  }
+}
+
+/** Update series config and reset the streak */
+export async function updateSeriesResetStreak(
+  seriesId: string,
+  formData: unknown
+): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    const parsed = CreateSeriesSchema.safeParse(formData);
+    if (!parsed.success) return { success: false, error: "Invalid data." };
+    await plannerService.updateSeriesWithReset(userId, seriesId, parsed.data);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("updateSeriesResetStreak error:", e);
+    return { success: false, error: "Failed to update series." };
+  }
+}
