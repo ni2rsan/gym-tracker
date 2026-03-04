@@ -58,6 +58,26 @@ export async function getLatestBodyMetric(userId: string) {
   };
 }
 
+/** Returns the latest Withings-sourced weight and body fat for use in the "Revert to Withings" button */
+export async function getLatestWithingsMetric(userId: string) {
+  const [weight, bodyFat] = await Promise.all([
+    prisma.bodyMetricEntry.findFirst({
+      where: { userId, weightKg: { not: null }, source: "withings" },
+      orderBy: { recordedAt: "desc" },
+      select: { weightKg: true },
+    }),
+    prisma.bodyMetricEntry.findFirst({
+      where: { userId, bodyFatPct: { not: null }, source: "withings" },
+      orderBy: { recordedAt: "desc" },
+      select: { bodyFatPct: true },
+    }),
+  ]);
+  return {
+    weightKg: weight?.weightKg ?? null,
+    bodyFatPct: bodyFat?.bodyFatPct ?? null,
+  };
+}
+
 /** Returns the last N body metric entries for a user, newest first */
 export async function getLastNBodyMetrics(userId: string, n: number) {
   return prisma.bodyMetricEntry.findMany({

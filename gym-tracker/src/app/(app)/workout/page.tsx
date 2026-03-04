@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
-import { getLatestBodyMetric, getLastNBodyMetrics } from "@/lib/services/metricsService";
+import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric } from "@/lib/services/metricsService";
 import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
 import { MetricsCards } from "@/components/metrics/MetricsCards";
 import { WithingsPanel } from "@/components/metrics/WithingsPanel";
@@ -16,11 +16,12 @@ export default async function WorkoutPage() {
   // Sync Withings data before loading the page (no-op if not connected)
   await syncWithingsIfNeeded(userId);
 
-  const [exercises, latestMetric, recentEntries, withingsConnection] = await Promise.all([
+  const [exercises, latestMetric, recentEntries, withingsConnection, latestWithings] = await Promise.all([
     getExercisesForUser(userId),
     getLatestBodyMetric(userId),
     getLastNBodyMetrics(userId, 7),
     getWithingsConnection(userId),
+    getLatestWithingsMetric(userId),
   ]);
 
   const isWithingsConnected = !!(withingsConnection?.isActive);
@@ -51,6 +52,8 @@ export default async function WorkoutPage() {
             currentBodyFat={latestMetric?.bodyFatPct ? Number(latestMetric.bodyFatPct) : null}
             weightSource={latestMetric?.weightSource}
             bodyFatSource={latestMetric?.bodyFatSource}
+            withingsWeight={latestWithings.weightKg ? Number(latestWithings.weightKg) : null}
+            withingsBodyFat={latestWithings.bodyFatPct ? Number(latestWithings.bodyFatPct) : null}
           />
         </Suspense>
 
