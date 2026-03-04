@@ -58,13 +58,15 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts            Account[]
-  sessions            Session[]
-  workoutSessions     WorkoutSession[]
-  bodyMetrics         BodyMetricEntry[]
-  customExercises     Exercise[]           @relation("UserCustomExercises")
-  exerciseSettings    UserExerciseSetting[]
-  withingsConnection  WithingsConnection?
+  accounts              Account[]
+  sessions              Session[]
+  workoutSessions       WorkoutSession[]
+  bodyMetrics           BodyMetricEntry[]
+  customExercises       Exercise[]           @relation("UserCustomExercises")
+  exerciseSettings      UserExerciseSetting[]
+  withingsConnection    WithingsConnection?
+  plannedWorkouts       PlannedWorkout[]
+  plannedWorkoutSeries  PlannedWorkoutSeries[]
 }
 
 enum MuscleGroup {
@@ -150,6 +152,50 @@ model BodyMetricEntry {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, recordedAt])
+}
+
+// ─── Workout Planner ───────────────────────────────────────────────────────
+
+enum BlockType {
+  UPPER_BODY
+  LOWER_BODY
+  FULL_BODY
+  CARDIO
+}
+
+enum SeriesRuleType {
+  WEEKDAYS
+  INTERVAL
+}
+
+model PlannedWorkoutSeries {
+  id           String         @id @default(cuid())
+  userId       String
+  blockType    BlockType
+  ruleType     SeriesRuleType
+  weekdays     Int[]
+  intervalDays Int?
+  startDate    DateTime       @db.Date
+  createdAt    DateTime       @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workouts PlannedWorkout[]
+
+  @@index([userId])
+}
+
+model PlannedWorkout {
+  id        String    @id @default(cuid())
+  userId    String
+  date      DateTime  @db.Date
+  blockType BlockType
+  seriesId  String?
+  createdAt DateTime  @default(now())
+
+  user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  series PlannedWorkoutSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
 }
 
 // ─── Withings integration ──────────────────────────────────────────────────
