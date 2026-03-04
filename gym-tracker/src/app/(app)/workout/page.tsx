@@ -7,10 +7,18 @@ import { MetricsCards } from "@/components/metrics/MetricsCards";
 import { WithingsPanel } from "@/components/metrics/WithingsPanel";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
 
-export const metadata = { title: "Workout — Gym Tracker" };
+export const metadata = { title: "Workout Tracker — Gym Tracker" };
 export const dynamic = "force-dynamic";
 
-export default async function WorkoutPage() {
+export default async function WorkoutPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const params = await searchParams;
+  const initialDate =
+    params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : undefined;
+
   const userId = await getCurrentUserId();
 
   // Sync Withings data before loading the page (no-op if not connected)
@@ -38,7 +46,7 @@ export default async function WorkoutPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Today&apos;s Workout</h1>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Workout Tracker</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
           Log your sets and track your progress.
         </p>
@@ -65,7 +73,7 @@ export default async function WorkoutPage() {
       </div>
 
       {/* Workout form */}
-      <WorkoutForm initialExercises={exercises} />
+      <WorkoutForm initialExercises={exercises} initialDate={initialDate} />
     </div>
   );
 }

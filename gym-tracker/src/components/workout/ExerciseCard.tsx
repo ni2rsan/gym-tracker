@@ -38,7 +38,7 @@ export function ExerciseCard({
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
           <ExerciseIcon name={exercise.name} muscleGroup={exercise.muscleGroup} />
         </div>
-        <h3 className="flex-1 min-w-0 font-semibold text-sm text-zinc-900 dark:text-white truncate">
+        <h3 className="flex-1 min-w-0 font-semibold text-sm text-zinc-900 dark:text-white break-words">
           {exercise.name}
           {exercise.isPinned && (
             <span className="ml-1.5 text-emerald-500 text-xs" aria-label="Pinned">★</span>
