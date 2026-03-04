@@ -41,17 +41,55 @@ export async function getLatestBodyMetric(userId: string) {
     prisma.bodyMetricEntry.findFirst({
       where: { userId, weightKg: { not: null } },
       orderBy: { recordedAt: "desc" },
-      select: { weightKg: true, recordedAt: true },
+      select: { weightKg: true, recordedAt: true, source: true },
     }),
     prisma.bodyMetricEntry.findFirst({
       where: { userId, bodyFatPct: { not: null } },
       orderBy: { recordedAt: "desc" },
-      select: { bodyFatPct: true, recordedAt: true },
+      select: { bodyFatPct: true, recordedAt: true, source: true },
     }),
   ]);
   return {
     weightKg: latestWeight?.weightKg ?? null,
     bodyFatPct: latestBodyFat?.bodyFatPct ?? null,
     recordedAt: latestWeight?.recordedAt ?? latestBodyFat?.recordedAt ?? null,
+    weightSource: latestWeight?.source ?? null,
+    bodyFatSource: latestBodyFat?.source ?? null,
   };
+}
+
+/** Returns the latest Withings-sourced weight and body fat for use in the "Revert to Withings" button */
+export async function getLatestWithingsMetric(userId: string) {
+  const [weight, bodyFat] = await Promise.all([
+    prisma.bodyMetricEntry.findFirst({
+      where: { userId, weightKg: { not: null }, source: "withings" },
+      orderBy: { recordedAt: "desc" },
+      select: { weightKg: true },
+    }),
+    prisma.bodyMetricEntry.findFirst({
+      where: { userId, bodyFatPct: { not: null }, source: "withings" },
+      orderBy: { recordedAt: "desc" },
+      select: { bodyFatPct: true },
+    }),
+  ]);
+  return {
+    weightKg: weight?.weightKg ?? null,
+    bodyFatPct: bodyFat?.bodyFatPct ?? null,
+  };
+}
+
+/** Returns the last N body metric entries for a user, newest first */
+export async function getLastNBodyMetrics(userId: string, n: number) {
+  return prisma.bodyMetricEntry.findMany({
+    where: { userId },
+    orderBy: { recordedAt: "desc" },
+    take: n,
+    select: {
+      id: true,
+      weightKg: true,
+      bodyFatPct: true,
+      recordedAt: true,
+      source: true,
+    },
+  });
 }

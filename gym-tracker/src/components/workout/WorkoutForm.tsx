@@ -138,7 +138,7 @@ export function WorkoutForm({ initialExercises }: WorkoutFormProps) {
       {/* Action bar */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p suppressHydrationWarning className="text-sm text-zinc-500 dark:text-zinc-400">
             Today — {new Date(workoutDate + "T12:00:00").toLocaleDateString("en-US", {
               weekday: "long",
               month: "long",

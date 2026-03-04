@@ -49,6 +49,7 @@ export function WeightTrendChart({ data }: WeightTrendChartProps) {
         {hasWeight && (
           <YAxis
             yAxisId="left"
+            domain={[65, 95]}
             tick={{ fontSize: 11, fill: "currentColor" }}
             className="text-zinc-400 dark:text-zinc-500"
             tickLine={false}
@@ -61,6 +62,7 @@ export function WeightTrendChart({ data }: WeightTrendChartProps) {
           <YAxis
             yAxisId="right"
             orientation="right"
+            domain={[10, 35]}
             tick={{ fontSize: 11, fill: "currentColor" }}
             className="text-zinc-400 dark:text-zinc-500"
             tickLine={false}
