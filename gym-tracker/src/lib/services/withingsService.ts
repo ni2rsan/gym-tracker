@@ -72,14 +72,15 @@ export async function syncWithingsIfNeeded(userId: string): Promise<void> {
   }
 
   // Find grpids already imported for this user to avoid duplicates
+  // Use string comparison: DB returns BigInt, API returns number — both stringify correctly
   const existingGrpIds = await prisma.bodyMetricEntry
     .findMany({
       where: { userId, withingsMeasureGrpId: { not: null } },
       select: { withingsMeasureGrpId: true },
     })
-    .then((rows) => new Set(rows.map((r) => r.withingsMeasureGrpId)));
+    .then((rows) => new Set(rows.map((r) => r.withingsMeasureGrpId?.toString())));
 
-  const newGroups = groups.filter((g) => !existingGrpIds.has(g.grpid));
+  const newGroups = groups.filter((g) => !existingGrpIds.has(g.grpid.toString()));
 
   if (newGroups.length > 0) {
     await prisma.bodyMetricEntry.createMany({
@@ -89,7 +90,7 @@ export async function syncWithingsIfNeeded(userId: string): Promise<void> {
         bodyFatPct: g.bodyFatPct,
         recordedAt: new Date(g.date * 1000),
         source: "withings",
-        withingsMeasureGrpId: g.grpid,
+        withingsMeasureGrpId: BigInt(g.grpid),
       })),
     });
   }
