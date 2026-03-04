@@ -234,6 +234,81 @@ gym-tracker/
 
 ---
 
+## Version Control Guidelines (for Claude Code)
+
+These rules apply every time code changes are made in this repo. Follow them even without prior context.
+
+### Branching
+
+- `main` is the stable branch — never commit directly to it for features
+- Create a feature branch for every new feature or significant change:
+  ```bash
+  git checkout main && git pull
+  git checkout -b feature/<short-description>
+  ```
+- Hotfixes (typos, broken builds) can go directly on `main` with a single commit
+
+### When to commit
+
+Commit at these natural checkpoints — not too often, not too rarely:
+
+| Trigger | Example |
+|---------|---------|
+| A feature is fully working end-to-end | Withings OAuth connect + callback + sync |
+| A bug is fixed and verified | BigInt overflow in grpid fixed |
+| A schema migration is created | After `prisma migrate dev` |
+| A meaningful UI change is complete | Chart range, hydration fix |
+| Before switching to a different task | Always commit WIP before context switch |
+
+**Never commit:** broken builds, half-implemented features, `.env` with real secrets, `node_modules/`, `.next/`.
+
+### Commit message format
+
+```
+<type>: <short summary (max 72 chars)>
+
+- Bullet describing what changed and why
+- Another bullet if multiple areas were touched
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+Types: `feat` / `fix` / `chore` / `refactor` / `docs` / `test`
+
+### Merging
+
+After a feature branch is complete and tested:
+
+```bash
+git checkout main
+git merge feature/<name> --no-ff -m "Merge branch 'feature/<name>'\n\n<summary>"
+git branch -d feature/<name>   # delete local branch after merge
+```
+
+Use `--no-ff` to preserve branch history in the log.
+
+### Recovering context after memory loss
+
+If starting fresh with no memory of previous work:
+
+```bash
+git log --oneline -10          # see what was done
+git show HEAD                  # inspect latest commit
+git branch -a                  # check open branches
+git diff main..HEAD            # if on a feature branch, see what's pending
+```
+
+Then read `README.md` (this file) and `MEMORY.md` in `~/.claude/projects/` to restore context.
+
+### What NOT to do
+
+- Do not `git push --force` to `main`
+- Do not `git reset --hard` without confirming with the user
+- Do not amend commits that have already been merged
+- Do not commit `.env` — it is gitignored for a reason
+
+---
+
 ## Security
 
 - All server actions call `getCurrentUserId()` first — unauthenticated requests are rejected
