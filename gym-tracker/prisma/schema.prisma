@@ -67,6 +67,7 @@ model User {
   withingsConnection    WithingsConnection?
   plannedWorkouts       PlannedWorkout[]
   plannedWorkoutSeries  PlannedWorkoutSeries[]
+  sorryTokens           UserSorryToken[]
 }
 
 enum MuscleGroup {
@@ -169,14 +170,15 @@ enum SeriesRuleType {
 }
 
 model PlannedWorkoutSeries {
-  id           String         @id @default(cuid())
-  userId       String
-  blockType    BlockType
-  ruleType     SeriesRuleType
-  weekdays     Int[]
-  intervalDays Int?
-  startDate    DateTime       @db.Date
-  createdAt    DateTime       @default(now())
+  id              String         @id @default(cuid())
+  userId          String
+  blockType       BlockType
+  ruleType        SeriesRuleType
+  weekdays        Int[]
+  intervalDays    Int?
+  startDate       DateTime       @db.Date
+  streakResetDate DateTime?      @db.Date
+  createdAt       DateTime       @default(now())
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   workouts PlannedWorkout[]
@@ -185,17 +187,29 @@ model PlannedWorkoutSeries {
 }
 
 model PlannedWorkout {
-  id        String    @id @default(cuid())
-  userId    String
-  date      DateTime  @db.Date
-  blockType BlockType
-  seriesId  String?
-  createdAt DateTime  @default(now())
+  id           String    @id @default(cuid())
+  userId       String
+  date         DateTime  @db.Date
+  blockType    BlockType
+  seriesId     String?
+  sorryExcused Boolean   @default(false)
+  createdAt    DateTime  @default(now())
 
   user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   series PlannedWorkoutSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
+}
+
+model UserSorryToken {
+  id        String @id @default(cuid())
+  userId    String
+  month     String // "YYYY-MM"
+  usedCount Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
 }
 
 // ─── Withings integration ──────────────────────────────────────────────────

@@ -4,9 +4,14 @@ import { useEffect, useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Pencil, Trash2, Activity, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BLOCK_LABELS, BLOCK_TEXT_COLORS, BLOCK_BG_LIGHT } from "@/constants/exercises";
+import { BLOCK_LABELS } from "@/constants/exercises";
 import type { BlockType } from "@/constants/exercises";
-import { deleteBlock, deleteSeries, updateBlock } from "@/actions/planner";
+import {
+  deleteBlock,
+  deleteSeries,
+  applySorryDeleteBlock,
+  deleteBlockResetStreak,
+} from "@/actions/planner";
 import type { PlannedBlock } from "./WorkoutCalendar";
 import { BlockBadge } from "./BlockDot";
 import { AddBlockModal } from "./AddBlockModal";
@@ -23,6 +28,10 @@ interface DayContextMenuProps {
   onBlockUpdated: (blockId: string, blockType: string) => void;
   onSeriesUpdated: (seriesId: string, blocks: PlannedBlock[]) => void;
   onAddBlock: () => void;
+  /** Streak count per seriesId (from streakData) */
+  streakBySeriesId?: Record<string, number>;
+  /** SORRY tokens remaining this month */
+  sorryRemaining?: number;
 }
 
 export function DayContextMenu({
@@ -37,6 +46,8 @@ export function DayContextMenu({
   onBlockUpdated,
   onSeriesUpdated,
   onAddBlock,
+  streakBySeriesId = {},
+  sorryRemaining = 3,
 }: DayContextMenuProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -70,12 +81,40 @@ export function DayContextMenu({
     setPos({ top, left });
   }, [x, y]);
 
+  // Streak for the currently active block's series
+  const seriesStreak = activeBlock.seriesId ? (streakBySeriesId[activeBlock.seriesId] ?? 0) : 0;
+
   const d = new Date(date + "T12:00:00");
   const dateLabel = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
+  // Non-series block: simple delete
   const handleDeleteBlock = (blockId: string) => {
     startTransition(async () => {
       const result = await deleteBlock(blockId);
+      if (result.success) {
+        onBlockDeleted(blockId);
+        if (blocks.length === 1) onClose();
+        else setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+      }
+    });
+  };
+
+  // Series block: delete with streak reset
+  const handleDeleteBlockWithReset = (blockId: string) => {
+    startTransition(async () => {
+      const result = await deleteBlockResetStreak(blockId);
+      if (result.success) {
+        onBlockDeleted(blockId);
+        if (blocks.length === 1) onClose();
+        else setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+      }
+    });
+  };
+
+  // Series block: soft-delete via SORRY token
+  const handleDeleteBlockWithSorry = (blockId: string) => {
+    startTransition(async () => {
+      const result = await applySorryDeleteBlock(blockId);
       if (result.success) {
         onBlockDeleted(blockId);
         if (blocks.length === 1) onClose();
@@ -99,6 +138,8 @@ export function DayContextMenu({
     router.push(`/workout?date=${date}`);
   };
 
+  const hasStreak = activeBlock.seriesId && seriesStreak > 0;
+
   if (editMode === "block" || editMode === "series") {
     return (
       <AddBlockModal
@@ -109,6 +150,8 @@ export function DayContextMenu({
         editBlockId={editMode === "block" ? activeBlock.id : undefined}
         editSeriesId={editMode === "series" ? (activeBlock.seriesId ?? undefined) : undefined}
         initialBlockType={activeBlock.blockType}
+        seriesStreak={editMode === "series" ? seriesStreak : 0}
+        sorryRemaining={editMode === "series" ? sorryRemaining : 3}
       />
     );
   }
@@ -184,17 +227,56 @@ export function DayContextMenu({
 
         {/* Delete block */}
         {confirmDelete === "block" ? (
-          <div className="px-4 py-2 flex items-center gap-2">
-            <span className="text-xs text-zinc-500 flex-1">Delete this block?</span>
-            <button
-              onClick={() => handleDeleteBlock(activeBlock.id)}
-              disabled={isPending}
-              className="text-xs text-red-500 font-semibold hover:text-red-600"
-            >
-              Yes
-            </button>
-            <button onClick={() => setConfirmDelete(null)} className="text-xs text-zinc-400">No</button>
-          </div>
+          activeBlock.seriesId && hasStreak ? (
+            /* Series block with streak: SORRY dialog */
+            <div className="px-4 py-3 space-y-2 border-t border-zinc-100 dark:border-zinc-800">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                This will reset your <span className="font-bold text-amber-500">{seriesStreak}-day streak</span>.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {sorryRemaining > 0 ? (
+                  <button
+                    onClick={() => handleDeleteBlockWithSorry(activeBlock.id)}
+                    disabled={isPending}
+                    className="w-full rounded-lg px-3 py-1.5 text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                  >
+                    🛡️ Use SORRY Token ({sorryRemaining} left) — Keep Streak
+                  </button>
+                ) : (
+                  <p className="text-xs text-zinc-400 italic text-center">No SORRY tokens left this month</p>
+                )}
+                <button
+                  onClick={() => handleDeleteBlockWithReset(activeBlock.id)}
+                  disabled={isPending}
+                  className="w-full rounded-lg px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border border-red-200 dark:border-red-900/40"
+                >
+                  Delete &amp; Reset Streak
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="text-xs text-zinc-400 hover:text-zinc-600 text-center"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Non-series block or no streak: simple confirm */
+            <div className="px-4 py-2 flex items-center gap-2">
+              <span className="text-xs text-zinc-500 flex-1">Delete this block?</span>
+              <button
+                onClick={() => activeBlock.seriesId
+                  ? handleDeleteBlockWithReset(activeBlock.id)
+                  : handleDeleteBlock(activeBlock.id)
+                }
+                disabled={isPending}
+                className="text-xs text-red-500 font-semibold hover:text-red-600"
+              >
+                Yes
+              </button>
+              <button onClick={() => setConfirmDelete(null)} className="text-xs text-zinc-400">No</button>
+            </div>
+          )
         ) : (
           <button
             onClick={() => setConfirmDelete("block")}

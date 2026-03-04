@@ -74,7 +74,7 @@ export function WeekView({ year, month, weekOffset, blocksByDate, workedOutDates
             >
               {blocks.map((b) => (
                 <div key={b.id} className="flex items-center gap-1">
-                  <BlockDot blockType={b.blockType} />
+                  <BlockDot blockType={b.blockType} size="lg" />
                 </div>
               ))}
               {isTracked && blocks.length > 0 && (
