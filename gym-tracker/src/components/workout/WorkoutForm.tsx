@@ -7,7 +7,7 @@ import { Toast } from "@/components/ui/Toast";
 import { ExerciseGroup } from "./ExerciseGroup";
 import { AddCustomExercise } from "./AddCustomExercise";
 import { DeleteExerciseModal } from "./DeleteExerciseModal";
-import { saveWorkout, getWorkoutForDate } from "@/actions/workout";
+import { saveWorkout, getWorkoutForDate, getLastKnownSets } from "@/actions/workout";
 import { togglePin } from "@/actions/exercise";
 import { MUSCLE_GROUP_ORDER } from "@/constants/exercises";
 import { todayISODate } from "@/lib/utils";
@@ -68,9 +68,15 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   useEffect(() => {
     (async () => {
       setIsLoading(true);
-      const result = await getWorkoutForDate(workoutDate);
-      const existing = result.success && result.data ? result.data : {};
-      setWorkoutData(initializeSets(exercises, existing));
+      const [dateResult, lastResult] = await Promise.all([
+        getWorkoutForDate(workoutDate),
+        getLastKnownSets(),
+      ]);
+      const existing = dateResult.success && dateResult.data ? dateResult.data : {};
+      const lastKnown = lastResult.success && lastResult.data ? lastResult.data : {};
+      // For each exercise with no data for this date, fall back to last known sets
+      const merged: typeof existing = { ...lastKnown, ...existing };
+      setWorkoutData(initializeSets(exercises, merged));
       setIsLoading(false);
     })();
   }, [workoutDate, exercises, initializeSets]);
