@@ -26,13 +26,14 @@ function makeEmptySets(count: number): SetData[] {
 
 interface WorkoutFormProps {
   initialExercises: ExerciseWithSettings[];
+  initialDate?: string;
 }
 
 type ToastState = { message: string; type: "success" | "error" } | null;
 
-export function WorkoutForm({ initialExercises }: WorkoutFormProps) {
+export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps) {
   const [exercises, setExercises] = useState(initialExercises);
-  const [workoutDate] = useState(todayISODate());
+  const [workoutDate, setWorkoutDate] = useState(initialDate ?? todayISODate());
   const [workoutData, setWorkoutData] = useState<Record<string, SetData[]>>({});
   const [showAddExercise, setShowAddExercise] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
@@ -136,16 +137,13 @@ export function WorkoutForm({ initialExercises }: WorkoutFormProps) {
   return (
     <div className="space-y-4">
       {/* Action bar */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p suppressHydrationWarning className="text-sm text-zinc-500 dark:text-zinc-400">
-            Today — {new Date(workoutDate + "T12:00:00").toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <input
+          type="date"
+          value={workoutDate}
+          onChange={(e) => e.target.value && setWorkoutDate(e.target.value)}
+          className="h-8 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"

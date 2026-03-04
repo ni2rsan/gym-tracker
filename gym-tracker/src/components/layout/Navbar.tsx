@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText } from "lucide-react";
+import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/workout", label: "Workout", icon: Dumbbell },
+  { href: "/workout", label: "Tracker", icon: Dumbbell },
+  { href: "/planner", label: "Planner", icon: CalendarDays },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/logs", label: "Logs", icon: ScrollText },
 ];
