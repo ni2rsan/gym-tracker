@@ -27,7 +27,7 @@ export function AddCustomExercise({ open, onClose, onCreated }: AddCustomExercis
     }
     setError("");
     startTransition(async () => {
-      const result = await createExercise({ name, muscleGroup, isBodyweight: muscleGroup === MuscleGroup.BODYWEIGHT });
+      const result = await createExercise({ name, muscleGroup, isBodyweight: muscleGroup === MuscleGroup.BODYWEIGHT || muscleGroup === MuscleGroup.CARDIO });
       if (result.success) {
         setName("");
         setMuscleGroup(MuscleGroup.UPPER_BODY);

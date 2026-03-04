@@ -63,6 +63,22 @@ export async function revertToWithings(): Promise<ActionResult> {
   }
 }
 
+export async function deleteBodyMetricEntry(entryId: string): Promise<ActionResult> {
+  try {
+    const parsed = z.string().cuid().safeParse(entryId);
+    if (!parsed.success) return { success: false, error: "Invalid entry ID." };
+    const userId = await getCurrentUserId();
+    await metricsService.deleteBodyMetricEntry(userId, parsed.data);
+    revalidatePath("/workout");
+    revalidatePath("/reports");
+    revalidatePath("/logs");
+    return { success: true };
+  } catch (error) {
+    console.error("deleteBodyMetricEntry error:", error);
+    return { success: false, error: "Failed to delete entry." };
+  }
+}
+
 export async function getBodyMetricsHistory(): Promise<ActionResult<Array<{
   id: string;
   weightKg: string | null;

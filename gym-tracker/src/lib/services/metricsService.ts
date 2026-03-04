@@ -78,6 +78,12 @@ export async function getLatestWithingsMetric(userId: string) {
   };
 }
 
+export async function deleteBodyMetricEntry(userId: string, entryId: string): Promise<void> {
+  await prisma.bodyMetricEntry.deleteMany({
+    where: { id: entryId, userId },
+  });
+}
+
 /** Returns the last N body metric entries for a user, newest first */
 export async function getLastNBodyMetrics(userId: string, n: number) {
   return prisma.bodyMetricEntry.findMany({

@@ -8,6 +8,7 @@ const MONTH_NAMES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug
 interface YearViewProps {
   year: number;
   blocksByDate: Record<string, PlannedBlock[]>;
+  trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
   onMonthClick: (month: number) => void;
 }
@@ -19,10 +20,20 @@ function toISO(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-function MiniMonth({ year, month, blocksByDate, onDayClick, onMonthClick }: {
+function isAnyBlockTracked(groups: Set<string> | undefined, blocks: PlannedBlock[]): boolean {
+  if (!groups || groups.size === 0) return false;
+  return blocks.some((b) => {
+    if (b.blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+    if (b.blockType === "CARDIO") return groups.has("CARDIO");
+    return groups.has(b.blockType);
+  });
+}
+
+function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick, onMonthClick }: {
   year: number;
   month: number;
   blocksByDate: Record<string, PlannedBlock[]>;
+  trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
   onMonthClick: (month: number) => void;
 }) {
@@ -48,33 +59,40 @@ function MiniMonth({ year, month, blocksByDate, onDayClick, onMonthClick }: {
       </button>
       <div className="grid grid-cols-7 p-1 gap-px">
         {cells.map((dayNum, i) => {
-          if (!dayNum) return <div key={`e-${i}`} />;
+          if (!dayNum) return <div key={`e-${i}`} className="aspect-square" />;
           const iso = toISO(new Date(year, month, dayNum));
           const blocks = blocksByDate[iso] ?? [];
           const isToday = iso === today;
-          // Use first block's color or show empty
-          const dotColor = blocks[0] ? BLOCK_COLORS[blocks[0].blockType as BlockType] : null;
+          const tracked = isAnyBlockTracked(trackedGroupsByDate[iso], blocks);
+          const missed = blocks.length > 0 && !tracked && iso < today;
 
           return (
             <button
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "relative flex items-center justify-center rounded text-[10px] aspect-square hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors",
+                "flex flex-col items-center justify-center aspect-square rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors",
                 isToday && "ring-1 ring-emerald-500"
               )}
               title={iso}
             >
               <span className={cn(
-                dotColor ? "text-white font-bold text-[9px]" : "text-zinc-600 dark:text-zinc-400",
+                "text-[9px] leading-none",
+                isToday ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
               )}>
                 {dayNum}
               </span>
-              {dotColor && (
-                <span className={cn("absolute inset-0 rounded opacity-80", dotColor)} style={{ zIndex: -1 }} />
-              )}
-              {blocks.length > 1 && (
-                <span className="absolute bottom-0 right-0 w-1 h-1 rounded-full bg-white/70" />
+              {blocks.length > 0 && (
+                <div className="flex gap-px mt-0.5 items-center">
+                  {blocks.slice(0, 2).map((b) => (
+                    <span
+                      key={b.id}
+                      className={cn("w-1 h-1 rounded-full", BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")}
+                    />
+                  ))}
+                  {tracked && <span className="text-emerald-500 text-[8px] leading-none">✓</span>}
+                  {missed && <span className="text-red-500 text-[8px] leading-none">✗</span>}
+                </div>
               )}
             </button>
           );
@@ -84,7 +102,7 @@ function MiniMonth({ year, month, blocksByDate, onDayClick, onMonthClick }: {
   );
 }
 
-export function YearView({ year, blocksByDate, onDayClick, onMonthClick }: YearViewProps) {
+export function YearView({ year, blocksByDate, trackedGroupsByDate, onDayClick, onMonthClick }: YearViewProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {Array.from({ length: 12 }, (_, i) => (
@@ -93,6 +111,7 @@ export function YearView({ year, blocksByDate, onDayClick, onMonthClick }: YearV
           year={year}
           month={i}
           blocksByDate={blocksByDate}
+          trackedGroupsByDate={trackedGroupsByDate}
           onDayClick={onDayClick}
           onMonthClick={onMonthClick}
         />

@@ -9,7 +9,7 @@ interface WeekViewProps {
   month: number;
   weekOffset: number;
   blocksByDate: Record<string, PlannedBlock[]>;
-  workedOutDates: Set<string>;
+  trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
 }
 
@@ -18,6 +18,13 @@ function toISO(date: Date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
+  if (!groups || groups.size === 0) return false;
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
 }
 
 function getWeekDays(year: number, month: number, offset: number): Date[] {
@@ -32,7 +39,7 @@ function getWeekDays(year: number, month: number, offset: number): Date[] {
   });
 }
 
-export function WeekView({ year, month, weekOffset, blocksByDate, workedOutDates, onDayClick }: WeekViewProps) {
+export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsByDate, onDayClick }: WeekViewProps) {
   const today = toISO(new Date());
   const days = getWeekDays(year, month, weekOffset);
 
@@ -60,7 +67,7 @@ export function WeekView({ year, month, weekOffset, blocksByDate, workedOutDates
         {days.map((d) => {
           const iso = toISO(d);
           const blocks = blocksByDate[iso] ?? [];
-          const isTracked = workedOutDates.has(iso);
+          const groups = trackedGroupsByDate[iso];
           const isToday = iso === today;
 
           return (
@@ -72,14 +79,17 @@ export function WeekView({ year, month, weekOffset, blocksByDate, workedOutDates
                 isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
               )}
             >
-              {blocks.map((b) => (
-                <div key={b.id} className="flex items-center gap-1">
-                  <BlockDot blockType={b.blockType} size="lg" />
-                </div>
-              ))}
-              {isTracked && blocks.length > 0 && (
-                <span className="text-emerald-500 text-xs">✓ Tracked</span>
-              )}
+              {blocks.map((b) => {
+                const tracked = isBlockTracked(groups, b.blockType);
+                const missed = !tracked && !isToday && iso < today;
+                return (
+                  <div key={b.id} className="flex items-center gap-1">
+                    <BlockDot blockType={b.blockType} size="lg" />
+                    {tracked && <span className="text-emerald-500 text-[8px] leading-none">✓</span>}
+                    {missed && <span className="text-red-500 text-[8px] leading-none">✗</span>}
+                  </div>
+                );
+              })}
               {blocks.length === 0 && (
                 <span className="text-zinc-300 dark:text-zinc-600 text-xs">+</span>
               )}

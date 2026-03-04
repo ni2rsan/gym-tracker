@@ -9,6 +9,9 @@ import {
   Circle,
   RotateCcw,
   PersonStanding,
+  Timer,
+  Bike,
+  Footprints,
 } from "lucide-react";
 import type { MuscleGroup } from "@/types";
 
@@ -29,12 +32,18 @@ const EXERCISE_ICONS: Record<string, React.ElementType> = {
   "BACK EXTENSION": RotateCcw,
   "PUSHUPS": Target,
   "PULLUPS": ArrowUpFromLine,
+  "BIKING": Bike,
+  "JOGGING": Footprints,
+  "PADEL": Zap,
+  "PICKLEBALL": Zap,
+  "BADMINTON": Zap,
 };
 
 const MUSCLE_GROUP_COLORS: Record<MuscleGroup, string> = {
   UPPER_BODY: "text-blue-500 dark:text-blue-400",
   LOWER_BODY: "text-amber-500 dark:text-amber-400",
   BODYWEIGHT: "text-purple-500 dark:text-purple-400",
+  CARDIO: "text-rose-500 dark:text-rose-400",
 };
 
 interface ExerciseIconProps {

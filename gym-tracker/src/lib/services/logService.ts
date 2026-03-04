@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { MuscleGroup } from "@/generated/prisma/client";
 
 export type WorkoutLogEntry = {
   type: "workout";
@@ -9,6 +10,7 @@ export type WorkoutLogEntry = {
     exerciseId: string;
     name: string;
     isBodyweight: boolean;
+    isCardio: boolean;
     sets: { setNumber: number; reps: number; weightKg: number | null }[];
   }[];
 };
@@ -34,7 +36,7 @@ export async function getActivityLog(userId: string): Promise<LogEntry[]> {
         sets: {
           orderBy: { recordedAt: "desc" },
           include: {
-            exercise: { select: { id: true, name: true, isBodyweight: true } },
+            exercise: { select: { id: true, name: true, isBodyweight: true, muscleGroup: true } },
           },
         },
       },
@@ -69,6 +71,7 @@ export async function getActivityLog(userId: string): Promise<LogEntry[]> {
             exerciseId: set.exerciseId,
             name: set.exercise.name,
             isBodyweight: set.exercise.isBodyweight,
+            isCardio: set.exercise.muscleGroup === MuscleGroup.CARDIO,
             sets: [],
           };
         }
