@@ -30,6 +30,12 @@ const DEFAULT_EXERCISES = [
   // Bodyweight
   { name: "PUSHUPS", muscleGroup: MuscleGroup.BODYWEIGHT, isBodyweight: true, sortOrder: 1 },
   { name: "PULLUPS", muscleGroup: MuscleGroup.BODYWEIGHT, isBodyweight: true, sortOrder: 2 },
+  // Cardio
+  { name: "BIKING", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 1 },
+  { name: "JOGGING", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 2 },
+  { name: "PADEL", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 3 },
+  { name: "PICKLEBALL", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 4 },
+  { name: "BADMINTON", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 5 },
 ];
 
 async function main() {
@@ -39,7 +45,11 @@ async function main() {
     const id = `default-${exercise.name.toLowerCase().replace(/\s+/g, "-")}`;
     await prisma.exercise.upsert({
       where: { id },
-      update: {},
+      update: {
+        muscleGroup: exercise.muscleGroup,
+        isBodyweight: exercise.isBodyweight,
+        sortOrder: exercise.sortOrder,
+      },
       create: {
         id,
         ...exercise,

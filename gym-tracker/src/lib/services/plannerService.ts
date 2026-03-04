@@ -63,6 +63,33 @@ export async function getWorkedOutDates(
   }));
 }
 
+/** Returns a map of date → muscle groups that have exercises saved for that date. */
+export async function getTrackedGroupsByDate(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, string[]>> {
+  const sessions = await prisma.workoutSession.findMany({
+    where: {
+      userId,
+      date: { gte: new Date(startDate + "T12:00:00"), lte: new Date(endDate + "T12:00:00") },
+    },
+    select: {
+      date: true,
+      sets: { select: { exercise: { select: { muscleGroup: true } } } },
+    },
+  });
+  const result: Record<string, Set<string>> = {};
+  for (const session of sessions) {
+    const iso = dbDateToISO(session.date);
+    if (!result[iso]) result[iso] = new Set();
+    for (const set of session.sets) {
+      result[iso].add(set.exercise.muscleGroup as string);
+    }
+  }
+  return Object.fromEntries(Object.entries(result).map(([k, v]) => [k, [...v]]));
+}
+
 export async function getWorkoutSummaryForDate(userId: string, date: string) {
   const session = await prisma.workoutSession.findFirst({
     where: { userId, date: new Date(date + "T12:00:00") },
@@ -217,18 +244,31 @@ export async function updateSeries(
     },
   });
 
-  // Regenerate from today
-  const regenerateConfig = { ...config, startDate: localTodayISO() };
-  const dates = generateDatesForSeries(regenerateConfig);
-  if (dates.length > 0) {
+  // Regenerate all dates from config.startDate (may be in the past)
+  const allDates = generateDatesForSeries(config);
+  const futureDates = allDates.filter((d) => d >= today);
+  const pastDates = allDates.filter((d) => d < today);
+
+  // Future dates: already deleted above, safe to insert directly
+  if (futureDates.length > 0) {
     await prisma.plannedWorkout.createMany({
-      data: dates.map((date) => ({
-        userId,
-        date,
-        blockType: config.blockType,
-        seriesId,
-      })),
+      data: futureDates.map((date) => ({ userId, date, blockType: config.blockType, seriesId })),
     });
+  }
+
+  // Past dates: only insert ones not already present (no unique constraint, must check manually)
+  if (pastDates.length > 0) {
+    const existing = await prisma.plannedWorkout.findMany({
+      where: { seriesId, userId, date: { lt: today } },
+      select: { date: true },
+    });
+    const existingISOs = new Set(existing.map((e) => dbDateToISO(e.date)));
+    const missing = pastDates.filter((d) => !existingISOs.has(dbDateToISO(d)));
+    if (missing.length > 0) {
+      await prisma.plannedWorkout.createMany({
+        data: missing.map((date) => ({ userId, date, blockType: config.blockType, seriesId })),
+      });
+    }
   }
 }
 

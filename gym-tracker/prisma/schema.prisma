@@ -74,6 +74,7 @@ enum MuscleGroup {
   UPPER_BODY
   LOWER_BODY
   BODYWEIGHT
+  CARDIO
 }
 
 model Exercise {

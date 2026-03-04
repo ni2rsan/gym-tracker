@@ -122,6 +122,69 @@ export async function getLatestSetsPerExercise(userId: string) {
   return result;
 }
 
+export async function deleteWorkoutSessionByDate(userId: string, date: string): Promise<void> {
+  await prisma.workoutSession.deleteMany({
+    where: { userId, date: new Date(date + "T12:00:00") },
+  });
+}
+
+export async function changeWorkoutSessionDate(userId: string, sessionId: string, newDate: string): Promise<void> {
+  await prisma.workoutSession.updateMany({
+    where: { id: sessionId, userId },
+    data: { date: new Date(newDate + "T12:00:00") },
+  });
+}
+
+export type WorkoutExerciseSummary = {
+  name: string;
+  muscleGroup: string;
+  isCardio: boolean;
+  isBodyweight: boolean;
+  maxKg: number | null;
+  minutes: number | null;
+};
+
+export async function getWorkoutSummaryForDate(userId: string, date: string): Promise<WorkoutExerciseSummary[]> {
+  const session = await prisma.workoutSession.findFirst({
+    where: { userId, date: new Date(date + "T12:00:00") },
+    include: {
+      sets: {
+        orderBy: { recordedAt: "desc" },
+        include: { exercise: { select: { id: true, name: true, isBodyweight: true, muscleGroup: true } } },
+      },
+    },
+  });
+  if (!session) return [];
+
+  const latestByKey: Record<string, (typeof session.sets)[0]> = {};
+  for (const set of session.sets) {
+    const key = `${set.exerciseId}:${set.setNumber}`;
+    if (!latestByKey[key]) latestByKey[key] = set;
+  }
+
+  const exerciseMap: Record<string, WorkoutExerciseSummary> = {};
+  for (const set of Object.values(latestByKey)) {
+    const isCardio = (set.exercise.muscleGroup as string) === "CARDIO";
+    if (!exerciseMap[set.exerciseId]) {
+      exerciseMap[set.exerciseId] = {
+        name: set.exercise.name,
+        muscleGroup: set.exercise.muscleGroup as string,
+        isCardio,
+        isBodyweight: set.exercise.isBodyweight,
+        maxKg: null,
+        minutes: isCardio ? set.reps : null,
+      };
+    }
+    if (!isCardio && !set.exercise.isBodyweight && set.weightKg !== null) {
+      const kg = Number(set.weightKg);
+      const cur = exerciseMap[set.exerciseId].maxKg;
+      if (cur === null || kg > cur) exerciseMap[set.exerciseId].maxKg = kg;
+    }
+  }
+
+  return Object.values(exerciseMap);
+}
+
 export async function getRecentWorkoutDates(userId: string, limit = 30): Promise<string[]> {
   const sessions = await prisma.workoutSession.findMany({
     where: { userId },

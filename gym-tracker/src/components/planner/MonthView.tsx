@@ -8,7 +8,7 @@ interface MonthViewProps {
   year: number;
   month: number;
   blocksByDate: Record<string, PlannedBlock[]>;
-  workedOutDates: Set<string>;
+  trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
 }
 
@@ -19,7 +19,14 @@ function toISO(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClick }: MonthViewProps) {
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
+  if (!groups || groups.size === 0) return false;
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
+}
+
+export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDayClick }: MonthViewProps) {
   const today = toISO(new Date());
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -64,7 +71,9 @@ export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClic
           const iso = toISO(date);
           const blocks = blocksByDate[iso] ?? [];
           const isToday = iso === today;
-          const isTracked = workedOutDates.has(iso);
+          const groups = trackedGroupsByDate[iso];
+          const isAnyTracked = blocks.some((b) => isBlockTracked(groups, b.blockType));
+          const isMissed = blocks.length > 0 && !isAnyTracked && iso < today;
 
           return (
             <button
@@ -89,9 +98,8 @@ export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClic
                 {blocks.map((b) => (
                   <BlockDot key={b.id} blockType={b.blockType} size="lg" />
                 ))}
-                {isTracked && blocks.length > 0 && (
-                  <span className="text-emerald-500 text-[8px] leading-none">✓</span>
-                )}
+                {isAnyTracked && <span className="text-emerald-500 text-[8px] leading-none">✓</span>}
+                {isMissed && <span className="text-red-500 text-[8px] leading-none">✗</span>}
               </div>
             </button>
           );

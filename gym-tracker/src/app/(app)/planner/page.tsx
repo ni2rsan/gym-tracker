@@ -1,5 +1,5 @@
 import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getPlannedWorkoutsInRange, getWorkedOutDates, getStreakData } from "@/lib/services/plannerService";
+import { getPlannedWorkoutsInRange, getTrackedGroupsByDate, getStreakData } from "@/lib/services/plannerService";
 import { WorkoutCalendar } from "@/components/planner/WorkoutCalendar";
 
 export const metadata = { title: "Planner — Gym Tracker" };
@@ -21,9 +21,9 @@ export default async function PlannerPage({
   const startDate = new Date(year, month - 3, 1).toISOString().split("T")[0];
   const endDate = new Date(year + 1, month + 1, 0).toISOString().split("T")[0];
 
-  const [plannedWorkouts, workedOutDates, streakData] = await Promise.all([
+  const [plannedWorkouts, trackedGroupsByDate, streakData] = await Promise.all([
     getPlannedWorkoutsInRange(userId, startDate, endDate),
-    getWorkedOutDates(userId, startDate, endDate),
+    getTrackedGroupsByDate(userId, startDate, endDate),
     getStreakData(userId),
   ]);
 
@@ -44,7 +44,7 @@ export default async function PlannerPage({
       </div>
       <WorkoutCalendar
         plannedWorkouts={serialized}
-        workedOutDates={[...workedOutDates]}
+        trackedGroupsByDate={trackedGroupsByDate}
         initialYear={year}
         initialMonth={month}
         initialStreakData={streakData}

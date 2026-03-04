@@ -10,9 +10,16 @@ const MONTH_NAMES = [
 
 interface AllViewProps {
   workouts: PlannedBlock[];
-  workedOutDates: Set<string>;
+  trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
   onAddClick: (date: string) => void;
+}
+
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
+  if (!groups || groups.size === 0) return false;
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
 }
 
 function groupByMonth(workouts: PlannedBlock[]): Map<string, PlannedBlock[]> {
@@ -25,7 +32,7 @@ function groupByMonth(workouts: PlannedBlock[]): Map<string, PlannedBlock[]> {
   return map;
 }
 
-export function AllView({ workouts, workedOutDates, onDayClick, onAddClick }: AllViewProps) {
+export function AllView({ workouts, trackedGroupsByDate, onDayClick, onAddClick }: AllViewProps) {
   const today = new Date().toISOString().split("T")[0];
   const sorted = [...workouts].sort((a, b) => a.date.localeCompare(b.date));
   const grouped = groupByMonth(sorted);
@@ -50,7 +57,7 @@ export function AllView({ workouts, workedOutDates, onDayClick, onAddClick }: Al
             </h3>
             <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
               {blocks.map((b) => {
-                const isTracked = workedOutDates.has(b.date);
+                const isTracked = isBlockTracked(trackedGroupsByDate[b.date], b.blockType);
                 const isToday = b.date === today;
                 const d = new Date(b.date + "T12:00:00");
                 return (
