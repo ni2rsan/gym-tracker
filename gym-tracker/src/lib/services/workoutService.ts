@@ -9,12 +9,12 @@ export async function saveWorkoutSession(
 ) {
   // Find or create the session for this user + date
   let session = await prisma.workoutSession.findFirst({
-    where: { userId, date: new Date(date) },
+    where: { userId, date: new Date(date + "T12:00:00") },
   });
 
   if (!session) {
     session = await prisma.workoutSession.create({
-      data: { userId, date: new Date(date) },
+      data: { userId, date: new Date(date + "T12:00:00") },
     });
   }
 
@@ -49,7 +49,7 @@ export async function saveWorkoutSession(
 
 export async function getLatestSetsForDate(userId: string, date: string) {
   const session = await prisma.workoutSession.findFirst({
-    where: { userId, date: new Date(date) },
+    where: { userId, date: new Date(date + "T12:00:00") },
   });
 
   if (!session) return {};
@@ -83,6 +83,42 @@ export async function getLatestSetsForDate(userId: string, date: string) {
       }));
   }
 
+  return result;
+}
+
+/** Returns the most recent logged sets per exercise across the last 10 sessions.
+ *  Used to pre-fill the workout form when no data exists for the selected date. */
+export async function getLatestSetsPerExercise(userId: string) {
+  const sessions = await prisma.workoutSession.findMany({
+    where: { userId },
+    orderBy: { date: "desc" },
+    take: 10,
+    include: { sets: { orderBy: { recordedAt: "desc" } } },
+  });
+
+  const result: Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>> = {};
+
+  for (const session of sessions) {
+    const setsByExercise: Record<string, typeof session.sets> = {};
+    for (const set of session.sets) {
+      if (!setsByExercise[set.exerciseId]) setsByExercise[set.exerciseId] = [];
+      setsByExercise[set.exerciseId].push(set);
+    }
+    for (const [exerciseId, sets] of Object.entries(setsByExercise)) {
+      if (result[exerciseId]) continue; // already found a more recent session
+      const deduped: Record<number, typeof sets[0]> = {};
+      for (const set of sets) {
+        if (!deduped[set.setNumber]) deduped[set.setNumber] = set;
+      }
+      result[exerciseId] = Object.values(deduped)
+        .sort((a, b) => a.setNumber - b.setNumber)
+        .map((s) => ({
+          setNumber: s.setNumber,
+          reps: s.reps,
+          weightKg: s.weightKg ? Number(s.weightKg) : null,
+        }));
+    }
+  }
   return result;
 }
 

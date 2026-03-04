@@ -13,7 +13,7 @@ export async function getPlannedWorkoutsInRange(
   return prisma.plannedWorkout.findMany({
     where: {
       userId,
-      date: { gte: new Date(startDate), lte: new Date(endDate) },
+      date: { gte: new Date(startDate + "T12:00:00"), lte: new Date(endDate + "T12:00:00") },
     },
     orderBy: { date: "asc" },
     select: {
@@ -33,16 +33,22 @@ export async function getWorkedOutDates(
   const sessions = await prisma.workoutSession.findMany({
     where: {
       userId,
-      date: { gte: new Date(startDate), lte: new Date(endDate) },
+      date: { gte: new Date(startDate + "T12:00:00"), lte: new Date(endDate + "T12:00:00") },
     },
     select: { date: true },
   });
-  return new Set(sessions.map((s) => s.date.toISOString().split("T")[0]));
+  return new Set(sessions.map((s) => {
+    const d = s.date;
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }));
 }
 
 export async function getWorkoutSummaryForDate(userId: string, date: string) {
   const session = await prisma.workoutSession.findFirst({
-    where: { userId, date: new Date(date) },
+    where: { userId, date: new Date(date + "T12:00:00") },
     select: {
       id: true,
       sets: {
@@ -63,7 +69,7 @@ export async function createOneOffBlock(
   blockType: BlockTypeEnum
 ) {
   return prisma.plannedWorkout.create({
-    data: { userId, date: new Date(date), blockType },
+    data: { userId, date: new Date(date + "T12:00:00"), blockType },
   });
 }
 

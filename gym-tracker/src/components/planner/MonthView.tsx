@@ -13,7 +13,10 @@ interface MonthViewProps {
 }
 
 function toISO(date: Date) {
-  return date.toISOString().split("T")[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClick }: MonthViewProps) {
@@ -53,7 +56,7 @@ export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClic
             return (
               <div
                 key={`empty-${i}`}
-                className="min-h-[64px] border-r border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30"
+                className="aspect-square border-r border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30"
               />
             );
           }
@@ -68,12 +71,12 @@ export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClic
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "min-h-[64px] p-1.5 border-r border-b border-zinc-100 dark:border-zinc-800/50 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col gap-1",
+                "aspect-square p-1 border-r border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col items-center justify-start gap-0.5",
                 isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
               )}
             >
               <span className={cn(
-                "text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full",
+                "text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full shrink-0",
                 isToday
                   ? "bg-emerald-500 text-white"
                   : "text-zinc-700 dark:text-zinc-300"
@@ -82,12 +85,12 @@ export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClic
               </span>
 
               {/* Block dots */}
-              <div className="flex flex-wrap gap-0.5">
+              <div className="flex flex-wrap gap-0.5 justify-center">
                 {blocks.map((b) => (
                   <BlockDot key={b.id} blockType={b.blockType} />
                 ))}
                 {isTracked && blocks.length > 0 && (
-                  <span className="text-emerald-500 text-[9px] leading-none">✓</span>
+                  <span className="text-emerald-500 text-[8px] leading-none">✓</span>
                 )}
               </div>
             </button>

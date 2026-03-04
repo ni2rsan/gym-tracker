@@ -51,6 +51,17 @@ export async function getWorkoutForDate(date: string): Promise<ActionResult<Reco
   }
 }
 
+export async function getLastKnownSets(): Promise<ActionResult<Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>>>> {
+  try {
+    const userId = await getCurrentUserId();
+    const data = await workoutService.getLatestSetsPerExercise(userId);
+    return { success: true, data };
+  } catch (error) {
+    console.error("getLastKnownSets error:", error);
+    return { success: false, error: "Failed to load last workout." };
+  }
+}
+
 export async function getRecentDates(): Promise<ActionResult<string[]>> {
   try {
     const userId = await getCurrentUserId();
