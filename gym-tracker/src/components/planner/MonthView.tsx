@@ -87,7 +87,7 @@ export function MonthView({ year, month, blocksByDate, workedOutDates, onDayClic
               {/* Block dots */}
               <div className="flex flex-wrap gap-0.5 justify-center">
                 {blocks.map((b) => (
-                  <BlockDot key={b.id} blockType={b.blockType} />
+                  <BlockDot key={b.id} blockType={b.blockType} size="lg" />
                 ))}
                 {isTracked && blocks.length > 0 && (
                   <span className="text-emerald-500 text-[8px] leading-none">✓</span>

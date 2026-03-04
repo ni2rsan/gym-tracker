@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MonthView } from "./MonthView";
@@ -9,6 +9,9 @@ import { YearView } from "./YearView";
 import { AllView } from "./AllView";
 import { AddBlockModal } from "./AddBlockModal";
 import { DayContextMenu } from "./DayContextMenu";
+import { StreakCounter } from "./StreakCounter";
+import { getStreakDataAction } from "@/actions/planner";
+import type { StreakData } from "@/lib/services/plannerService";
 
 export interface PlannedBlock {
   id: string;
@@ -29,6 +32,7 @@ interface WorkoutCalendarProps {
   workedOutDates: string[];
   initialYear: number;
   initialMonth: number; // 0-indexed
+  initialStreakData: StreakData;
 }
 
 export function WorkoutCalendar({
@@ -36,12 +40,15 @@ export function WorkoutCalendar({
   workedOutDates: initialWorkedOut,
   initialYear,
   initialMonth,
+  initialStreakData,
 }: WorkoutCalendarProps) {
   const [view, setView] = useState<View>("month");
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [workouts, setWorkouts] = useState<PlannedBlock[]>(initialWorkouts);
   const [workedOutDates, setWorkedOutDates] = useState<Set<string>>(new Set(initialWorkedOut));
+  const [streakData, setStreakData] = useState<StreakData>(initialStreakData);
+  const [, startStreakTransition] = useTransition();
 
   // Modal state
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
@@ -60,6 +67,21 @@ export function WorkoutCalendar({
     acc[b.date].push(b);
     return acc;
   }, {});
+
+  // Streak lookup: seriesId → count
+  const streakBySeriesId = streakData.streaks.reduce<Record<string, number>>((acc, s) => {
+    acc[s.seriesId] = s.count;
+    return acc;
+  }, {});
+
+  const refreshStreak = () => {
+    startStreakTransition(async () => {
+      const result = await getStreakDataAction();
+      if (result.success && result.data) {
+        setStreakData(result.data);
+      }
+    });
+  };
 
   const navigatePrev = () => {
     if (view === "month") {
@@ -100,28 +122,29 @@ export function WorkoutCalendar({
     }
   };
 
-  const handleDayLongPress = (date: string, e: React.MouseEvent) => {
-    setAddModalDate(date);
-  };
-
   const handleBlockAdded = (block: PlannedBlock) => {
     setWorkouts(prev => [...prev, block]);
+    refreshStreak();
   };
 
   const handleBlocksAdded = (blocks: PlannedBlock[]) => {
     setWorkouts(prev => [...prev, ...blocks]);
+    refreshStreak();
   };
 
   const handleBlockDeleted = (blockId: string) => {
     setWorkouts(prev => prev.filter(b => b.id !== blockId));
+    refreshStreak();
   };
 
   const handleSeriesDeleted = (seriesId: string) => {
     setWorkouts(prev => prev.filter(b => b.seriesId !== seriesId));
+    refreshStreak();
   };
 
   const handleBlockUpdated = (blockId: string, newBlockType: string) => {
     setWorkouts(prev => prev.map(b => b.id === blockId ? { ...b, blockType: newBlockType } : b));
+    refreshStreak();
   };
 
   const handleSeriesUpdated = (seriesId: string, newBlocks: PlannedBlock[]) => {
@@ -129,6 +152,7 @@ export function WorkoutCalendar({
       ...prev.filter(b => b.seriesId !== seriesId || new Date(b.date) < new Date()),
       ...newBlocks,
     ]);
+    refreshStreak();
   };
 
   const headerLabel = view === "month"
@@ -237,6 +261,9 @@ export function WorkoutCalendar({
         ))}
       </div>
 
+      {/* Streak counter */}
+      <StreakCounter streakData={streakData} />
+
       {/* Add block modal */}
       {addModalDate && (
         <AddBlockModal
@@ -261,6 +288,8 @@ export function WorkoutCalendar({
           onBlockUpdated={handleBlockUpdated}
           onSeriesUpdated={handleSeriesUpdated}
           onAddBlock={() => { setContextMenu(null); setAddModalDate(contextMenu.date); }}
+          streakBySeriesId={streakBySeriesId}
+          sorryRemaining={streakData.sorryRemaining}
         />
       )}
     </div>

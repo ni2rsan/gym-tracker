@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface BlockDotProps {
   blockType: string;
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
 }
 
 export function BlockDot({ blockType, size = "sm" }: BlockDotProps) {
@@ -13,7 +13,7 @@ export function BlockDot({ blockType, size = "sm" }: BlockDotProps) {
     <span
       className={cn(
         "inline-block rounded-full shrink-0",
-        size === "sm" ? "w-2 h-2" : "w-2.5 h-2.5",
+        size === "lg" ? "w-3 h-3" : size === "md" ? "w-2.5 h-2.5" : "w-2 h-2",
         color
       )}
       title={BLOCK_LABELS[blockType as BlockType] ?? blockType}
