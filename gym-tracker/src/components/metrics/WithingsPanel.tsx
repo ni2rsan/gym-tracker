@@ -68,7 +68,7 @@ export function WithingsPanel({
         </div>
         <div className="flex items-center gap-3">
           {lastSyncAt && (
-            <span className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
+            <span suppressHydrationWarning className="text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
               <RefreshCw className="h-3 w-3" />
               {new Date(lastSyncAt).toLocaleString("en-US", {
                 month: "short",
@@ -112,7 +112,7 @@ export function WithingsPanel({
                   key={entry.id}
                   className="flex items-center px-4 py-2.5 gap-4 text-sm"
                 >
-                  <span className="w-28 shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                  <span suppressHydrationWarning className="w-28 shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
                     {new Date(entry.recordedAt).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",

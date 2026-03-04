@@ -16,7 +16,6 @@ interface AddCustomExerciseProps {
 export function AddCustomExercise({ open, onClose, onCreated }: AddCustomExerciseProps) {
   const [name, setName] = useState("");
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(MuscleGroup.UPPER_BODY);
-  const [isBodyweight, setIsBodyweight] = useState(false);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -28,11 +27,10 @@ export function AddCustomExercise({ open, onClose, onCreated }: AddCustomExercis
     }
     setError("");
     startTransition(async () => {
-      const result = await createExercise({ name, muscleGroup, isBodyweight });
+      const result = await createExercise({ name, muscleGroup, isBodyweight: muscleGroup === MuscleGroup.BODYWEIGHT });
       if (result.success) {
         setName("");
         setMuscleGroup(MuscleGroup.UPPER_BODY);
-        setIsBodyweight(false);
         onCreated();
         onClose();
       } else {
@@ -69,18 +67,6 @@ export function AddCustomExercise({ open, onClose, onCreated }: AddCustomExercis
             ))}
           </select>
         </div>
-
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isBodyweight}
-            onChange={(e) => setIsBodyweight(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500"
-          />
-          <span className="text-sm text-zinc-700 dark:text-zinc-300">
-            Bodyweight only (reps, no kg input)
-          </span>
-        </label>
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose} className="flex-1">

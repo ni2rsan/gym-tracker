@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import * as metricsService from "@/lib/services/metricsService";
+import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types";
 
 const AddMetricSchema = z.object({
@@ -36,6 +37,29 @@ export async function addBodyMetric(formData: unknown): Promise<ActionResult> {
   } catch (error) {
     console.error("addBodyMetric error:", error);
     return { success: false, error: "Failed to save metrics. Please try again." };
+  }
+}
+
+export async function revertToWithings(): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    const withings = await metricsService.getLatestWithingsMetric(userId);
+    if (withings.weightKg == null && withings.bodyFatPct == null) {
+      return { success: false, error: "No Withings data to revert to." };
+    }
+    await prisma.bodyMetricEntry.create({
+      data: {
+        userId,
+        weightKg: withings.weightKg,
+        bodyFatPct: withings.bodyFatPct,
+        source: "withings",
+      },
+    });
+    revalidatePath("/workout");
+    return { success: true };
+  } catch (error) {
+    console.error("revertToWithings error:", error);
+    return { success: false, error: "Failed to revert." };
   }
 }
 
