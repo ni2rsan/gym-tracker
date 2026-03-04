@@ -72,3 +72,51 @@ export async function getRecentDates(): Promise<ActionResult<string[]>> {
     return { success: false, error: "Failed to load workout history." };
   }
 }
+
+export async function deleteWorkoutSessionByDate(date: string): Promise<ActionResult> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const userId = await getCurrentUserId();
+    await workoutService.deleteWorkoutSessionByDate(userId, parsed.data);
+    revalidatePath("/workout");
+    revalidatePath("/reports");
+    revalidatePath("/planner");
+    revalidatePath("/logs");
+    return { success: true };
+  } catch (error) {
+    console.error("deleteWorkoutSessionByDate error:", error);
+    return { success: false, error: "Failed to delete workout." };
+  }
+}
+
+export async function getWorkoutSummaryForDate(date: string): Promise<ActionResult<workoutService.WorkoutExerciseSummary[]>> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const userId = await getCurrentUserId();
+    const data = await workoutService.getWorkoutSummaryForDate(userId, parsed.data);
+    return { success: true, data };
+  } catch (error) {
+    console.error("getWorkoutSummaryForDate error:", error);
+    return { success: false, error: "Failed to load workout summary." };
+  }
+}
+
+export async function changeWorkoutSessionDate(sessionId: string, newDate: string): Promise<ActionResult> {
+  try {
+    const sessionParsed = z.string().cuid().safeParse(sessionId);
+    const dateParsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(newDate);
+    if (!sessionParsed.success || !dateParsed.success) return { success: false, error: "Invalid input." };
+    const userId = await getCurrentUserId();
+    await workoutService.changeWorkoutSessionDate(userId, sessionParsed.data, dateParsed.data);
+    revalidatePath("/workout");
+    revalidatePath("/reports");
+    revalidatePath("/planner");
+    revalidatePath("/logs");
+    return { success: true };
+  } catch (error) {
+    console.error("changeWorkoutSessionDate error:", error);
+    return { success: false, error: "Failed to update date." };
+  }
+}

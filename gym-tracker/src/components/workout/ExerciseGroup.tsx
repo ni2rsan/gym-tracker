@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
@@ -15,6 +15,9 @@ interface ExerciseGroupProps {
   onTogglePin: (exerciseId: string) => void;
   onRemove: (exerciseId: string) => void;
   defaultOpen?: boolean;
+  onSave?: () => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
 }
 
 export function ExerciseGroup({
@@ -25,6 +28,9 @@ export function ExerciseGroup({
   onTogglePin,
   onRemove,
   defaultOpen = true,
+  onSave,
+  isSaving,
+  lastSaved,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -34,12 +40,14 @@ export function ExerciseGroup({
     UPPER_BODY: "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
     LOWER_BODY: "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
     BODYWEIGHT: "text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/50",
+    CARDIO: "text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/50",
   };
 
   const GROUP_BG: Record<MuscleGroup, string> = {
     UPPER_BODY: "bg-blue-50 dark:bg-blue-950/20",
     LOWER_BODY: "bg-amber-50 dark:bg-amber-950/20",
     BODYWEIGHT: "bg-purple-50 dark:bg-purple-950/20",
+    CARDIO: "bg-rose-50 dark:bg-rose-950/20",
   };
 
   return (
@@ -65,22 +73,43 @@ export function ExerciseGroup({
 
       {/* Exercise cards */}
       {open && (
-        <div className={cn(
-          "p-3 grid gap-3",
-          muscleGroup === "BODYWEIGHT"
-            ? "grid-cols-2"
-            : "grid-cols-1 lg:grid-cols-3"
-        )}>
-          {exercises.map((exercise) => (
-            <ExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              sets={workoutData[exercise.id] ?? []}
-              onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
-              onTogglePin={onTogglePin}
-              onRemove={onRemove}
-            />
-          ))}
+        <div>
+          <div className={cn(
+            "p-3 grid gap-3",
+            muscleGroup === "BODYWEIGHT" || muscleGroup === "CARDIO"
+              ? "grid-cols-2 sm:grid-cols-3"
+              : "grid-cols-1 lg:grid-cols-3"
+          )}>
+            {exercises.map((exercise) => (
+              <ExerciseCard
+                key={exercise.id}
+                exercise={exercise}
+                sets={workoutData[exercise.id] ?? []}
+                onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
+                onTogglePin={onTogglePin}
+                onRemove={onRemove}
+              />
+            ))}
+          </div>
+          {onSave && (
+            <div className="px-3 pb-3 flex items-center justify-between gap-3">
+              {lastSaved && (
+                <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                  Saved {Math.max(0, Math.floor((Date.now() - lastSaved.getTime()) / 60000)) === 0
+                    ? "just now"
+                    : `${Math.floor((Date.now() - lastSaved.getTime()) / 60000)}m ago`}
+                </span>
+              )}
+              <button
+                onClick={onSave}
+                disabled={isSaving}
+                className="ml-auto flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+              >
+                <Save className="h-3 w-3" />
+                Save {MUSCLE_GROUP_LABELS[muscleGroup]}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

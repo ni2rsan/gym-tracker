@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MonthView } from "./MonthView";
@@ -9,6 +9,9 @@ import { YearView } from "./YearView";
 import { AllView } from "./AllView";
 import { AddBlockModal } from "./AddBlockModal";
 import { DayContextMenu } from "./DayContextMenu";
+import { StreakCounter } from "./StreakCounter";
+import { getStreakDataAction } from "@/actions/planner";
+import type { StreakData } from "@/lib/services/plannerService";
 
 export interface PlannedBlock {
   id: string;
@@ -26,22 +29,35 @@ const MONTH_NAMES = [
 
 interface WorkoutCalendarProps {
   plannedWorkouts: PlannedBlock[];
-  workedOutDates: string[];
+  trackedGroupsByDate: Record<string, string[]>;
   initialYear: number;
   initialMonth: number; // 0-indexed
+  initialStreakData: StreakData;
+}
+
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
+  if (!groups || groups.size === 0) return false;
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
 }
 
 export function WorkoutCalendar({
   plannedWorkouts: initialWorkouts,
-  workedOutDates: initialWorkedOut,
+  trackedGroupsByDate: initialTrackedGroups,
   initialYear,
   initialMonth,
+  initialStreakData,
 }: WorkoutCalendarProps) {
   const [view, setView] = useState<View>("month");
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [workouts, setWorkouts] = useState<PlannedBlock[]>(initialWorkouts);
-  const [workedOutDates, setWorkedOutDates] = useState<Set<string>>(new Set(initialWorkedOut));
+  const [trackedGroups, setTrackedGroups] = useState<Record<string, Set<string>>>(
+    Object.fromEntries(Object.entries(initialTrackedGroups).map(([k, v]) => [k, new Set(v)]))
+  );
+  const [streakData, setStreakData] = useState<StreakData>(initialStreakData);
+  const [, startStreakTransition] = useTransition();
 
   // Modal state
   const [addModalDate, setAddModalDate] = useState<string | null>(null);
@@ -60,6 +76,21 @@ export function WorkoutCalendar({
     acc[b.date].push(b);
     return acc;
   }, {});
+
+  // Streak lookup: seriesId → count
+  const streakBySeriesId = streakData.streaks.reduce<Record<string, number>>((acc, s) => {
+    acc[s.seriesId] = s.count;
+    return acc;
+  }, {});
+
+  const refreshStreak = () => {
+    startStreakTransition(async () => {
+      const result = await getStreakDataAction();
+      if (result.success && result.data) {
+        setStreakData(result.data);
+      }
+    });
+  };
 
   const navigatePrev = () => {
     if (view === "month") {
@@ -100,28 +131,29 @@ export function WorkoutCalendar({
     }
   };
 
-  const handleDayLongPress = (date: string, e: React.MouseEvent) => {
-    setAddModalDate(date);
-  };
-
   const handleBlockAdded = (block: PlannedBlock) => {
     setWorkouts(prev => [...prev, block]);
+    refreshStreak();
   };
 
   const handleBlocksAdded = (blocks: PlannedBlock[]) => {
     setWorkouts(prev => [...prev, ...blocks]);
+    refreshStreak();
   };
 
   const handleBlockDeleted = (blockId: string) => {
     setWorkouts(prev => prev.filter(b => b.id !== blockId));
+    refreshStreak();
   };
 
   const handleSeriesDeleted = (seriesId: string) => {
     setWorkouts(prev => prev.filter(b => b.seriesId !== seriesId));
+    refreshStreak();
   };
 
   const handleBlockUpdated = (blockId: string, newBlockType: string) => {
     setWorkouts(prev => prev.map(b => b.id === blockId ? { ...b, blockType: newBlockType } : b));
+    refreshStreak();
   };
 
   const handleSeriesUpdated = (seriesId: string, newBlocks: PlannedBlock[]) => {
@@ -129,6 +161,15 @@ export function WorkoutCalendar({
       ...prev.filter(b => b.seriesId !== seriesId || new Date(b.date) < new Date()),
       ...newBlocks,
     ]);
+    refreshStreak();
+  };
+
+  const handleWorkedOutDeleted = (date: string) => {
+    setTrackedGroups(prev => {
+      const next = { ...prev };
+      delete next[date];
+      return next;
+    });
   };
 
   const headerLabel = view === "month"
@@ -141,6 +182,23 @@ export function WorkoutCalendar({
 
   const showNav = view !== "all";
 
+  const handleSetView = (v: View) => {
+    if (v === "week") {
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = now.getMonth();
+      setYear(yr);
+      setMonth(mo);
+      const week0 = getWeekStart(yr, mo, 0);
+      const dayOfWeek = now.getDay();
+      const daysToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      const todayMon = new Date(yr, mo, now.getDate() + daysToMon);
+      const weekOff = Math.round((todayMon.getTime() - week0.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      setWeekOffset(weekOff);
+    }
+    setView(v);
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -150,7 +208,7 @@ export function WorkoutCalendar({
           {(["month", "week", "year", "all"] as View[]).map((v) => (
             <button
               key={v}
-              onClick={() => setView(v)}
+              onClick={() => handleSetView(v)}
               className={cn(
                 "px-3 py-1.5 text-sm font-medium transition-colors",
                 view === v
@@ -191,7 +249,7 @@ export function WorkoutCalendar({
           year={year}
           month={month}
           blocksByDate={blocksByDate}
-          workedOutDates={workedOutDates}
+          trackedGroupsByDate={trackedGroups}
           onDayClick={handleDayClick}
         />
       )}
@@ -201,7 +259,7 @@ export function WorkoutCalendar({
           month={month}
           weekOffset={weekOffset}
           blocksByDate={blocksByDate}
-          workedOutDates={workedOutDates}
+          trackedGroupsByDate={trackedGroups}
           onDayClick={handleDayClick}
         />
       )}
@@ -209,6 +267,7 @@ export function WorkoutCalendar({
         <YearView
           year={year}
           blocksByDate={blocksByDate}
+          trackedGroupsByDate={trackedGroups}
           onDayClick={handleDayClick}
           onMonthClick={(m) => { setMonth(m); setView("month"); }}
         />
@@ -216,7 +275,7 @@ export function WorkoutCalendar({
       {view === "all" && (
         <AllView
           workouts={workouts}
-          workedOutDates={workedOutDates}
+          trackedGroupsByDate={trackedGroups}
           onDayClick={(date, e) => handleDayClick(date, e)}
           onAddClick={(date) => setAddModalDate(date)}
         />
@@ -237,6 +296,9 @@ export function WorkoutCalendar({
         ))}
       </div>
 
+      {/* Streak counter */}
+      <StreakCounter streakData={streakData} />
+
       {/* Add block modal */}
       {addModalDate && (
         <AddBlockModal
@@ -254,13 +316,17 @@ export function WorkoutCalendar({
           blocks={contextMenu.blocks}
           x={contextMenu.x}
           y={contextMenu.y}
-          workedOut={workedOutDates.has(contextMenu.date)}
+          workedOut={!!(trackedGroups[contextMenu.date]?.size)}
+          trackedGroupsForDate={[...(trackedGroups[contextMenu.date] ?? new Set())].map(String)}
           onClose={() => setContextMenu(null)}
           onBlockDeleted={handleBlockDeleted}
           onSeriesDeleted={handleSeriesDeleted}
           onBlockUpdated={handleBlockUpdated}
           onSeriesUpdated={handleSeriesUpdated}
           onAddBlock={() => { setContextMenu(null); setAddModalDate(contextMenu.date); }}
+          onWorkedOutDeleted={handleWorkedOutDeleted}
+          streakBySeriesId={streakBySeriesId}
+          sorryRemaining={streakData.sorryRemaining}
         />
       )}
     </div>
