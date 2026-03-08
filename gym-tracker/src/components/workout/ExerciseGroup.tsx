@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
@@ -19,6 +19,7 @@ interface ExerciseGroupProps {
   isSaving?: boolean;
   lastSaved?: Date | null;
   onTrack?: () => void;
+  onAdd?: () => void;
 }
 
 export function ExerciseGroup({
@@ -33,10 +34,11 @@ export function ExerciseGroup({
   isSaving,
   lastSaved,
   onTrack,
+  onAdd,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
 
-  if (exercises.length === 0) return null;
+  if (exercises.length === 0 && !onAdd) return null;
 
   const GROUP_COLORS: Record<MuscleGroup, string> = {
     UPPER_BODY: "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
@@ -70,7 +72,17 @@ export function ExerciseGroup({
             {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
           </span>
         </span>
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-1.5">
+          {onAdd && (
+            <span
+              role="button"
+              onClick={(e) => { e.stopPropagation(); onAdd(); }}
+              className="rounded-lg border border-current px-2 py-1 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 opacity-70 hover:opacity-100"
+            >
+              <Plus className="h-3 w-3" />
+              Add
+            </span>
+          )}
           {onTrack && (
             <span
               role="button"
@@ -87,23 +99,29 @@ export function ExerciseGroup({
       {/* Exercise cards */}
       {open && (
         <div>
-          <div className={cn(
-            "p-3 grid gap-3",
-            muscleGroup === "BODYWEIGHT" || muscleGroup === "CARDIO"
-              ? "grid-cols-2 sm:grid-cols-3"
-              : "grid-cols-1 lg:grid-cols-3"
-          )}>
-            {exercises.map((exercise) => (
-              <ExerciseCard
-                key={exercise.id}
-                exercise={exercise}
-                sets={workoutData[exercise.id] ?? []}
-                onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
-                onTogglePin={onTogglePin}
-                onRemove={onRemove}
-              />
-            ))}
-          </div>
+          {exercises.length === 0 ? (
+            <div className="px-5 py-4 text-xs text-zinc-400 dark:text-zinc-600 italic">
+              No exercises yet — tap Add to get started.
+            </div>
+          ) : (
+            <div className={cn(
+              "p-3 grid gap-3",
+              muscleGroup === "BODYWEIGHT" || muscleGroup === "CARDIO"
+                ? "grid-cols-2 sm:grid-cols-3"
+                : "grid-cols-1 lg:grid-cols-3"
+            )}>
+              {exercises.map((exercise) => (
+                <ExerciseCard
+                  key={exercise.id}
+                  exercise={exercise}
+                  sets={workoutData[exercise.id] ?? []}
+                  onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
+                  onTogglePin={onTogglePin}
+                  onRemove={onRemove}
+                />
+              ))}
+            </div>
+          )}
           {onSave && (
             <div className="px-3 pb-3 flex items-center justify-between gap-3">
               {lastSaved && (

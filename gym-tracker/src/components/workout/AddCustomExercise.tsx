@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -11,13 +11,23 @@ interface AddCustomExerciseProps {
   open: boolean;
   onClose: () => void;
   onCreated: () => void;
+  defaultMuscleGroup?: MuscleGroup;
 }
 
-export function AddCustomExercise({ open, onClose, onCreated }: AddCustomExerciseProps) {
+export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup }: AddCustomExerciseProps) {
   const [name, setName] = useState("");
-  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(MuscleGroup.UPPER_BODY);
+  const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(defaultMuscleGroup ?? MuscleGroup.UPPER_BODY);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Sync muscle group and reset form whenever the modal opens
+  useEffect(() => {
+    if (open) {
+      setMuscleGroup(defaultMuscleGroup ?? MuscleGroup.UPPER_BODY);
+      setName("");
+      setError("");
+    }
+  }, [open, defaultMuscleGroup]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
