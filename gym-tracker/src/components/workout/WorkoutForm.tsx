@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, Save, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Save, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { ExerciseGroup } from "./ExerciseGroup";
@@ -62,7 +62,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [lastSavedByGroup, setLastSavedByGroup] = useState<Partial<Record<MuscleGroup, Date>>>({});
   const [lastSavedAll, setLastSavedAll] = useState<Date | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
-  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [addTargetGroup, setAddTargetGroup] = useState<MuscleGroup | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -372,10 +372,6 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           ))}
         </div>
 
-        <Button variant="secondary" size="sm" onClick={() => setShowAddExercise(true)}>
-          <Plus className="h-3.5 w-3.5" />
-          Add
-        </Button>
         <Button
           variant="secondary"
           size="sm"
@@ -475,6 +471,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 isSaving={savingGroups.has(mg)}
                 lastSaved={lastSavedByGroup[mg] ?? null}
                 onTrack={exercisesByGroup[mg].length > 0 ? () => setTrackingScope(mg) : undefined}
+                onAdd={() => setAddTargetGroup(mg)}
               />
             </div>
           ))}
@@ -501,9 +498,10 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
 
       {/* Add custom exercise modal */}
       <AddCustomExercise
-        open={showAddExercise}
-        onClose={() => setShowAddExercise(false)}
+        open={addTargetGroup !== null}
+        onClose={() => setAddTargetGroup(null)}
         onCreated={() => window.location.reload()}
+        defaultMuscleGroup={addTargetGroup ?? undefined}
       />
 
       {/* Delete/hide exercise modal */}
