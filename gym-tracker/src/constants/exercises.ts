@@ -43,10 +43,18 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
 
 // Tailwind bg color classes for dots and backgrounds
 export const BLOCK_COLORS: Record<BlockType, string> = {
-  UPPER_BODY: "bg-blue-500",
-  LOWER_BODY: "bg-amber-500",
-  FULL_BODY: "bg-purple-500",
-  CARDIO: "bg-rose-500",
+  UPPER_BODY: "bg-blue-600",
+  LOWER_BODY: "bg-green-600",
+  FULL_BODY: "bg-orange-500",
+  CARDIO: "bg-purple-600",
+};
+
+// Border color classes for outlined dots (used when showing status)
+export const BLOCK_BORDER_COLORS: Record<BlockType, string> = {
+  UPPER_BODY: "border-blue-600",
+  LOWER_BODY: "border-green-600",
+  FULL_BODY: "border-orange-500",
+  CARDIO: "border-purple-600",
 };
 
 // Text color classes

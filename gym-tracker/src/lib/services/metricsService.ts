@@ -37,7 +37,7 @@ export async function getBodyMetrics(userId: string, range: TimeRange | "all" = 
 }
 
 export async function getLatestBodyMetric(userId: string) {
-  const [latestWeight, latestBodyFat] = await Promise.all([
+  const [latestWeight, latestBodyFat, latestFatMass, latestMuscleMass] = await Promise.all([
     prisma.bodyMetricEntry.findFirst({
       where: { userId, weightKg: { not: null } },
       orderBy: { recordedAt: "desc" },
@@ -48,13 +48,61 @@ export async function getLatestBodyMetric(userId: string) {
       orderBy: { recordedAt: "desc" },
       select: { bodyFatPct: true, recordedAt: true, source: true },
     }),
+    prisma.bodyMetricEntry.findFirst({
+      where: { userId, fatMassKg: { not: null } },
+      orderBy: { recordedAt: "desc" },
+      select: { fatMassKg: true },
+    }),
+    prisma.bodyMetricEntry.findFirst({
+      where: { userId, muscleMassKg: { not: null } },
+      orderBy: { recordedAt: "desc" },
+      select: { muscleMassKg: true },
+    }),
   ]);
   return {
     weightKg: latestWeight?.weightKg ?? null,
     bodyFatPct: latestBodyFat?.bodyFatPct ?? null,
+    fatMassKg: latestFatMass?.fatMassKg ?? null,
+    muscleMassKg: latestMuscleMass?.muscleMassKg ?? null,
     recordedAt: latestWeight?.recordedAt ?? latestBodyFat?.recordedAt ?? null,
     weightSource: latestWeight?.source ?? null,
     bodyFatSource: latestBodyFat?.source ?? null,
+  };
+}
+
+/** Returns averaged metrics from the day closest to 7 days ago (at or before 7 days ago) */
+export async function getWeekAgoMetrics(userId: string) {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const rows = await prisma.bodyMetricEntry.findMany({
+    where: { userId, recordedAt: { lte: sevenDaysAgo } },
+    orderBy: { recordedAt: "desc" },
+    take: 50,
+    select: { weightKg: true, bodyFatPct: true, fatMassKg: true, muscleMassKg: true, recordedAt: true },
+  });
+
+  if (rows.length === 0) return { weightKg: null, bodyFatPct: null, fatMassKg: null, muscleMassKg: null };
+
+  // Group by calendar date, take the most recent day (closest to 7 days ago)
+  const byDate = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const key = row.recordedAt.toISOString().slice(0, 10);
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key)!.push(row);
+  }
+
+  function avgNonNull(vals: ({ toString(): string } | null)[]): number | null {
+    const nums = vals.filter((v) => v !== null).map((v) => Number(v!));
+    if (nums.length === 0) return null;
+    return nums.reduce((a, b) => a + b, 0) / nums.length;
+  }
+
+  const [, entries] = [...byDate.entries()].sort((a, b) => b[0].localeCompare(a[0]))[0];
+  return {
+    weightKg: avgNonNull(entries.map((e) => e.weightKg)),
+    bodyFatPct: avgNonNull(entries.map((e) => e.bodyFatPct)),
+    fatMassKg: avgNonNull(entries.map((e) => e.fatMassKg)),
+    muscleMassKg: avgNonNull(entries.map((e) => e.muscleMassKg)),
   };
 }
 
@@ -84,18 +132,46 @@ export async function deleteBodyMetricEntry(userId: string, entryId: string): Pr
   });
 }
 
-/** Returns the last N body metric entries for a user, newest first */
+/** Returns the last N daily-averaged body metric entries for a user, newest first */
 export async function getLastNBodyMetrics(userId: string, n: number) {
-  return prisma.bodyMetricEntry.findMany({
+  const rows = await prisma.bodyMetricEntry.findMany({
     where: { userId },
     orderBy: { recordedAt: "desc" },
-    take: n,
+    take: n * 20, // fetch extra to ensure N distinct days after grouping
     select: {
-      id: true,
       weightKg: true,
       bodyFatPct: true,
+      fatMassKg: true,
+      muscleMassKg: true,
       recordedAt: true,
       source: true,
     },
   });
+
+  // Group by calendar date, then average each metric across same-day entries
+  const byDate = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const key = row.recordedAt.toISOString().slice(0, 10);
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key)!.push(row);
+  }
+
+  function avgNonNull(vals: ({ toString(): string } | null)[]): number | null {
+    const nums = vals.filter((v) => v !== null).map((v) => Number(v!));
+    if (nums.length === 0) return null;
+    return nums.reduce((a, b) => a + b, 0) / nums.length;
+  }
+
+  return [...byDate.entries()]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .slice(0, n)
+    .map(([date, entries]) => ({
+      date,
+      recordedAt: new Date(date + "T12:00:00Z"),
+      weightKg: avgNonNull(entries.map((e) => e.weightKg)),
+      bodyFatPct: avgNonNull(entries.map((e) => e.bodyFatPct)),
+      fatMassKg: avgNonNull(entries.map((e) => e.fatMassKg)),
+      muscleMassKg: avgNonNull(entries.map((e) => e.muscleMassKg)),
+      source: entries.some((e) => e.source === "withings") ? "withings" : (entries[0]?.source ?? null),
+    }));
 }

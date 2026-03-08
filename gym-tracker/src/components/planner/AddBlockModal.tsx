@@ -334,7 +334,8 @@ export function AddBlockModal({
                 disabled={isPending}
                 className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white shadow-md transition-all disabled:opacity-50"
               >
-                🛡️ Use SORRY Token ({sorryRemaining} left) — Keep Streak
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-white/60 bg-white/20 font-bold text-[8px] leading-none shrink-0 mr-1.5">S</span>
+                Use SORRY Token ({sorryRemaining} left) — Keep Streak
               </button>
             ) : (
               <p className="text-xs text-zinc-400 italic text-center py-2">

@@ -11,6 +11,8 @@ import {
   deleteSeries,
   applySorryDeleteBlock,
   deleteBlockResetStreak,
+  excuseMissedDay,
+  revokeSorryExcuse,
 } from "@/actions/planner";
 import { deleteWorkoutSessionByDate, getWorkoutSummaryForDate } from "@/actions/workout";
 import type { WorkoutExerciseSummary } from "@/lib/services/workoutService";
@@ -32,6 +34,8 @@ interface DayContextMenuProps {
   onSeriesUpdated: (seriesId: string, blocks: PlannedBlock[]) => void;
   onAddBlock: () => void;
   onWorkedOutDeleted?: (date: string) => void;
+  onBlockExcused?: (date: string) => void;
+  onBlockSorryRevoked?: (date: string) => void;
   /** Streak count per seriesId (from streakData) */
   streakBySeriesId?: Record<string, number>;
   /** SORRY tokens remaining this month */
@@ -59,6 +63,8 @@ export function DayContextMenu({
   onSeriesUpdated,
   onAddBlock,
   onWorkedOutDeleted,
+  onBlockExcused,
+  onBlockSorryRevoked,
   streakBySeriesId = {},
   sorryRemaining = 3,
 }: DayContextMenuProps) {
@@ -68,6 +74,7 @@ export function DayContextMenu({
   const [activeBlock, setActiveBlock] = useState<PlannedBlock>(blocks[0]);
   const [editMode, setEditMode] = useState<"block" | "series" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<"block" | "series" | "workout" | null>(null);
+  const [confirmSorryToken, setConfirmSorryToken] = useState(false);
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutExerciseSummary[]>([]);
 
   useEffect(() => {
@@ -176,6 +183,38 @@ export function DayContextMenu({
   };
 
   const hasStreak = activeBlock.seriesId && seriesStreak > 0;
+
+  // Today for sorry token logic
+  const todayISO = (() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  })();
+  const isPast = date < todayISO;
+  const isPresent = date >= todayISO; // today or future
+  const alreadyExcused = blocks.length > 0 && blocks.every(b => b.sorryExcused) && !workedOut;
+  const hasUnexcused = blocks.some(b => !b.sorryExcused);
+  const isMissedDay = !workedOut && isPast && hasUnexcused;
+  const isFutureExcusable = !workedOut && isPresent && blocks.length > 0 && !alreadyExcused;
+
+  const handleExcuseMissedDay = () => {
+    startTransition(async () => {
+      const result = await excuseMissedDay(date);
+      if (result.success) {
+        onBlockExcused?.(date);
+        onClose();
+      }
+    });
+  };
+
+  const handleRevokeSorryToken = () => {
+    startTransition(async () => {
+      const result = await revokeSorryExcuse(date);
+      if (result.success) {
+        onBlockSorryRevoked?.(date);
+        onClose();
+      }
+    });
+  };
 
   if (editMode === "block" || editMode === "series") {
     return (
@@ -312,7 +351,8 @@ export function DayContextMenu({
                     disabled={isPending}
                     className="w-full rounded-lg px-3 py-1.5 text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
                   >
-                    🛡️ Use SORRY Token ({sorryRemaining} left) — Keep Streak
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-[8px] leading-none shrink-0 mr-1.5">S</span>
+                    Use SORRY Token ({sorryRemaining} left) — Keep Streak
                   </button>
                 ) : (
                   <p className="text-xs text-zinc-400 italic text-center">No SORRY tokens left this month</p>
@@ -382,6 +422,89 @@ export function DayContextMenu({
               Delete series
             </button>
           )
+        )}
+
+        {/* Sorry token section */}
+        {(isMissedDay || alreadyExcused || isFutureExcusable) && (
+          <div className="border-t border-zinc-100 dark:border-zinc-800">
+            {/* Past missed — step 1: button to trigger confirm */}
+            {isMissedDay && !confirmSorryToken && sorryRemaining > 0 && (
+              <button
+                onClick={() => setConfirmSorryToken(true)}
+                disabled={isPending}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-left disabled:opacity-50"
+              >
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 font-bold text-[8px] leading-none shrink-0">S</span>
+                Use Sorry Token — Excuse This Miss
+              </button>
+            )}
+            {/* Past missed — no tokens left */}
+            {isMissedDay && !confirmSorryToken && sorryRemaining === 0 && (
+              <div className="px-4 py-2.5 text-sm text-zinc-400 dark:text-zinc-500 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-zinc-400 bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 font-bold text-[8px] leading-none shrink-0">S</span>
+                No sorry tokens left this month
+              </div>
+            )}
+            {/* Past missed — step 2: confirmation dialog (irreversible) */}
+            {isMissedDay && confirmSorryToken && (
+              <div className="px-4 py-3 space-y-2">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
+                  This cannot be undone. The sorry token will be permanently spent.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleExcuseMissedDay}
+                    disabled={isPending}
+                    className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setConfirmSorryToken(false)}
+                    className="flex-1 rounded-lg px-3 py-1.5 text-xs text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors border border-zinc-200 dark:border-zinc-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Past already excused — read-only */}
+            {alreadyExcused && isPast && (
+              <div className="px-4 py-2.5 text-sm text-zinc-400 dark:text-zinc-500 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 font-bold text-[8px] leading-none shrink-0">S</span>
+                Sorry token used — excused
+              </div>
+            )}
+            {/* Today/future unexcused — direct (no confirm), tokens available */}
+            {isFutureExcusable && sorryRemaining > 0 && (
+              <button
+                onClick={handleExcuseMissedDay}
+                disabled={isPending}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-left disabled:opacity-50"
+              >
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 font-bold text-[8px] leading-none shrink-0">S</span>
+                Use Sorry Token
+              </button>
+            )}
+            {/* Today/future unexcused — no tokens */}
+            {isFutureExcusable && sorryRemaining === 0 && (
+              <div className="px-4 py-2.5 text-sm text-zinc-400 dark:text-zinc-500 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-zinc-400 bg-zinc-200 dark:border-zinc-600 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 font-bold text-[8px] leading-none shrink-0">S</span>
+                No sorry tokens left this month
+              </div>
+            )}
+            {/* Today/future already excused — can take back */}
+            {alreadyExcused && isPresent && (
+              <button
+                onClick={handleRevokeSorryToken}
+                disabled={isPending}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left disabled:opacity-50"
+              >
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 font-bold text-[8px] leading-none shrink-0">S</span>
+                Take back sorry token
+              </button>
+            )}
+          </div>
         )}
 
         {/* Add another block */}

@@ -18,6 +18,7 @@ export interface PlannedBlock {
   date: string; // YYYY-MM-DD
   blockType: string;
   seriesId: string | null;
+  sorryExcused: boolean;
 }
 
 type View = "month" | "week" | "year" | "all";
@@ -172,6 +173,16 @@ export function WorkoutCalendar({
     });
   };
 
+  const handleBlockExcused = (date: string) => {
+    setWorkouts(prev => prev.map(b => b.date === date ? { ...b, sorryExcused: true } : b));
+    refreshStreak();
+  };
+
+  const handleBlockSorryRevoked = (date: string) => {
+    setWorkouts(prev => prev.map(b => b.date === date ? { ...b, sorryExcused: false } : b));
+    refreshStreak();
+  };
+
   const headerLabel = view === "month"
     ? `${MONTH_NAMES[month]} ${year}`
     : view === "week"
@@ -284,10 +295,10 @@ export function WorkoutCalendar({
       {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
         {[
-          { color: "bg-blue-500", label: "Upper Body" },
-          { color: "bg-amber-500", label: "Lower Body" },
-          { color: "bg-purple-500", label: "Full Body" },
-          { color: "bg-rose-500", label: "Cardio" },
+          { color: "bg-blue-600", label: "Upper Body" },
+          { color: "bg-green-600", label: "Lower Body" },
+          { color: "bg-orange-500", label: "Full Body" },
+          { color: "bg-purple-600", label: "Cardio" },
         ].map(({ color, label }) => (
           <span key={label} className="flex items-center gap-1.5">
             <span className={cn("w-2 h-2 rounded-full", color)} />
@@ -298,6 +309,12 @@ export function WorkoutCalendar({
 
       {/* Streak counter */}
       <StreakCounter streakData={streakData} />
+
+      {/* Sorry token counter */}
+      <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center font-bold text-amber-600 dark:text-amber-400 text-[8px] shrink-0">S</span>
+        {streakData.sorryRemaining} sorry token{streakData.sorryRemaining !== 1 ? "s" : ""} left this month
+      </div>
 
       {/* Add block modal */}
       {addModalDate && (
@@ -325,6 +342,8 @@ export function WorkoutCalendar({
           onSeriesUpdated={handleSeriesUpdated}
           onAddBlock={() => { setContextMenu(null); setAddModalDate(contextMenu.date); }}
           onWorkedOutDeleted={handleWorkedOutDeleted}
+          onBlockExcused={handleBlockExcused}
+          onBlockSorryRevoked={handleBlockSorryRevoked}
           streakBySeriesId={streakBySeriesId}
           sorryRemaining={streakData.sorryRemaining}
         />

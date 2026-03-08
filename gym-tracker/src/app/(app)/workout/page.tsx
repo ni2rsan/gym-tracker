@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
-import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric } from "@/lib/services/metricsService";
+import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getWeekAgoMetrics } from "@/lib/services/metricsService";
 import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
 import { MetricsCards } from "@/components/metrics/MetricsCards";
 import { WithingsPanel } from "@/components/metrics/WithingsPanel";
@@ -24,21 +24,24 @@ export default async function WorkoutPage({
   // Sync Withings data before loading the page (no-op if not connected)
   await syncWithingsIfNeeded(userId);
 
-  const [exercises, latestMetric, recentEntries, withingsConnection, latestWithings] = await Promise.all([
+  const [exercises, latestMetric, recentEntries, withingsConnection, latestWithings, weekAgoMetric] = await Promise.all([
     getExercisesForUser(userId),
     getLatestBodyMetric(userId),
     getLastNBodyMetrics(userId, 7),
     getWithingsConnection(userId),
     getLatestWithingsMetric(userId),
+    getWeekAgoMetrics(userId),
   ]);
 
   const isWithingsConnected = !!(withingsConnection?.isActive);
 
-  // Serialize Decimal fields for client components
+  // Serialize fields for client components (values are daily averages as JS numbers)
   const serializedEntries = recentEntries.map((e) => ({
-    id: e.id,
-    weightKg: e.weightKg ? String(e.weightKg) : null,
-    bodyFatPct: e.bodyFatPct ? String(e.bodyFatPct) : null,
+    date: e.date,
+    weightKg: e.weightKg !== null ? e.weightKg.toFixed(1) : null,
+    bodyFatPct: e.bodyFatPct !== null ? e.bodyFatPct.toFixed(1) : null,
+    fatMassKg: e.fatMassKg !== null ? e.fatMassKg.toFixed(1) : null,
+    muscleMassKg: e.muscleMassKg !== null ? e.muscleMassKg.toFixed(1) : null,
     recordedAt: e.recordedAt.toISOString(),
     source: e.source,
   }));
@@ -58,10 +61,17 @@ export default async function WorkoutPage({
           <MetricsCards
             currentWeight={latestMetric?.weightKg ? Number(latestMetric.weightKg) : null}
             currentBodyFat={latestMetric?.bodyFatPct ? Number(latestMetric.bodyFatPct) : null}
+            currentFatMassKg={latestMetric?.fatMassKg ? Number(latestMetric.fatMassKg) : null}
+            currentMuscleMassKg={latestMetric?.muscleMassKg ? Number(latestMetric.muscleMassKg) : null}
             weightSource={latestMetric?.weightSource}
             bodyFatSource={latestMetric?.bodyFatSource}
             withingsWeight={latestWithings.weightKg ? Number(latestWithings.weightKg) : null}
             withingsBodyFat={latestWithings.bodyFatPct ? Number(latestWithings.bodyFatPct) : null}
+            weekAgoWeight={weekAgoMetric.weightKg}
+            weekAgoBodyFat={weekAgoMetric.bodyFatPct}
+            weekAgoFatMassKg={weekAgoMetric.fatMassKg}
+            weekAgoMuscleMassKg={weekAgoMetric.muscleMassKg}
+            isWithingsConnected={isWithingsConnected}
           />
         </Suspense>
 

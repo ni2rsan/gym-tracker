@@ -5,7 +5,9 @@
  * Withings API docs: https://developer.withings.com/api-reference
  * Measure types used:
  *   1  = Weight (kg)
+ *   5  = Fat mass weight (kg)
  *   6  = Body fat percentage (%)
+ *   76 = Muscle mass (kg)
  */
 
 const WITHINGS_AUTH_URL = "https://account.withings.com/oauth2_user/authorize2";
@@ -120,6 +122,8 @@ export interface WithingsMeasureGroup {
   date: number; // unix timestamp
   weightKg: number | null;
   bodyFatPct: number | null;
+  fatMassKg: number | null;
+  muscleMassKg: number | null;
 }
 
 interface RawMeasure {
@@ -156,7 +160,7 @@ export async function fetchMeasures(
 ): Promise<WithingsMeasureGroup[]> {
   const params = new URLSearchParams({
     action: "getmeas",
-    meastypes: "1,6",
+    meastypes: "1,5,6,76",
     category: "1",
   });
   if (lastUpdateUnix > 0) {
@@ -178,12 +182,17 @@ export async function fetchMeasures(
   return (data.body?.measuregrps ?? []).map((grp) => {
     let weightKg: number | null = null;
     let bodyFatPct: number | null = null;
+    let fatMassKg: number | null = null;
+    let muscleMassKg: number | null = null;
 
     for (const m of grp.measures) {
-      if (m.type === 1) weightKg = parseFloat(decodeMeasure(m.value, m.unit).toFixed(2));
-      if (m.type === 6) bodyFatPct = parseFloat(decodeMeasure(m.value, m.unit).toFixed(2));
+      const val = parseFloat(decodeMeasure(m.value, m.unit).toFixed(2));
+      if (m.type === 1) weightKg = val;
+      if (m.type === 5) fatMassKg = val;
+      if (m.type === 6) bodyFatPct = val;
+      if (m.type === 76) muscleMassKg = val;
     }
 
-    return { grpid: grp.grpid, date: grp.date, weightKg, bodyFatPct };
+    return { grpid: grp.grpid, date: grp.date, weightKg, bodyFatPct, fatMassKg, muscleMassKg };
   });
 }
