@@ -103,6 +103,24 @@ export async function getWorkoutSummaryForDate(date: string): Promise<ActionResu
   }
 }
 
+export async function getWorkoutsForRange(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<workoutService.WorkoutDayData[]>> {
+  try {
+    const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+    if (!dateSchema.safeParse(startDate).success || !dateSchema.safeParse(endDate).success) {
+      return { success: false, error: "Invalid date range." };
+    }
+    const userId = await getCurrentUserId();
+    const data = await workoutService.getWorkoutsForDateRange(userId, startDate, endDate);
+    return { success: true, data };
+  } catch (error) {
+    console.error("getWorkoutsForRange error:", error);
+    return { success: false, error: "Failed to load workouts." };
+  }
+}
+
 export async function changeWorkoutSessionDate(sessionId: string, newDate: string): Promise<ActionResult> {
   try {
     const sessionParsed = z.string().cuid().safeParse(sessionId);

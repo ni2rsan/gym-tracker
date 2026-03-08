@@ -18,6 +18,7 @@ interface ExerciseGroupProps {
   onSave?: () => void;
   isSaving?: boolean;
   lastSaved?: Date | null;
+  onTrack?: () => void;
 }
 
 export function ExerciseGroup({
@@ -31,6 +32,7 @@ export function ExerciseGroup({
   onSave,
   isSaving,
   lastSaved,
+  onTrack,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -68,7 +70,18 @@ export function ExerciseGroup({
             {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
           </span>
         </span>
-        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        <span className="flex items-center gap-2">
+          {onTrack && (
+            <span
+              role="button"
+              onClick={(e) => { e.stopPropagation(); onTrack(); }}
+              className="rounded-lg bg-emerald-500 hover:bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors cursor-pointer"
+            >
+              Track
+            </span>
+          )}
+          {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </span>
       </button>
 
       {/* Exercise cards */}
