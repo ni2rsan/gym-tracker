@@ -1,28 +1,63 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Check, X, Cloud, RotateCcw } from "lucide-react";
+import { Pencil, Check, X, Cloud, RotateCcw, TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Toast } from "@/components/ui/Toast";
 import { addBodyMetric, revertToWithings } from "@/actions/metrics";
-import { formatWeight, formatPct } from "@/lib/utils";
 
 interface MetricsCardsProps {
   currentWeight: number | null;
   currentBodyFat: number | null;
+  currentFatMassKg: number | null;
+  currentMuscleMassKg: number | null;
   weightSource?: string | null;
   bodyFatSource?: string | null;
   withingsWeight?: number | null;
   withingsBodyFat?: number | null;
+  weekAgoWeight: number | null;
+  weekAgoBodyFat: number | null;
+  weekAgoFatMassKg: number | null;
+  weekAgoMuscleMassKg: number | null;
+  isWithingsConnected: boolean;
 }
 
 type EditField = "weight" | "bodyFat" | null;
 type ToastState = { message: string; type: "success" | "error" } | null;
 
-export function MetricsCards({ currentWeight, currentBodyFat, weightSource, bodyFatSource, withingsWeight, withingsBodyFat }: MetricsCardsProps) {
+function Trend({ current, previous, unit }: { current: number | null; previous: number | null; unit: string }) {
+  if (current == null || previous == null) return null;
+  const delta = current - previous;
+  if (Math.abs(delta) < 0.05) return null;
+  const isUp = delta > 0;
+  const sign = isUp ? "+" : "";
+  return (
+    <span className={`flex items-center gap-0.5 text-xs font-medium ${isUp ? "text-blue-500" : "text-orange-500"}`}>
+      {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {sign}{delta.toFixed(1)} {unit}
+    </span>
+  );
+}
+
+export function MetricsCards({
+  currentWeight,
+  currentBodyFat,
+  currentFatMassKg,
+  currentMuscleMassKg,
+  weightSource,
+  bodyFatSource,
+  withingsWeight,
+  withingsBodyFat,
+  weekAgoWeight,
+  weekAgoBodyFat,
+  weekAgoFatMassKg,
+  weekAgoMuscleMassKg,
+  isWithingsConnected,
+}: MetricsCardsProps) {
   const [editing, setEditing] = useState<EditField>(null);
   const [weightValue, setWeightValue] = useState("");
   const [bodyFatValue, setBodyFatValue] = useState("");
+  const [showBodyFat, setShowBodyFat] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -39,7 +74,6 @@ export function MetricsCards({ currentWeight, currentBodyFat, weightSource, body
         setEditing(null);
         setWeightValue("");
         setBodyFatValue("");
-        // Reload to show updated values
         window.location.reload();
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
@@ -67,13 +101,13 @@ export function MetricsCards({ currentWeight, currentBodyFat, weightSource, body
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
-        {/* Weight card */}
+      <div className="grid grid-cols-2 gap-4 items-start">
+        {/* Left: Body Weight */}
         <Card className="relative">
           <CardBody className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                Weight
+                Body Weight
               </span>
               {editing !== "weight" && (
                 <button
@@ -101,51 +135,32 @@ export function MetricsCards({ currentWeight, currentBodyFat, weightSource, body
                   autoFocus
                   step="0.1"
                 />
-                <button
-                  onClick={() => handleSave("weight")}
-                  disabled={isPending}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50"
-                  aria-label="Save weight"
-                >
+                <button onClick={() => handleSave("weight")} disabled={isPending} className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50" aria-label="Save weight">
                   <Check className="h-3.5 w-3.5" />
                 </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300"
-                  aria-label="Cancel"
-                >
+                <button onClick={handleCancel} className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300" aria-label="Cancel">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
               <div className="flex flex-col gap-1">
-                <div className="flex items-end gap-2">
+                <div className="flex items-end gap-2 flex-wrap">
                   <p className="text-2xl font-bold text-zinc-900 dark:text-white">
                     {currentWeight != null ? (
-                      <>
-                        {Number(currentWeight).toFixed(1)}
-                        <span className="text-sm font-normal text-zinc-400 ml-1">kg</span>
-                      </>
+                      <>{Number(currentWeight).toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-1">kg</span></>
                     ) : (
                       <span className="text-zinc-400 text-lg">Not set</span>
                     )}
                   </p>
                   {weightSource === "withings" && (
-                    <span
-                      title="Synced from Withings"
-                      className="mb-0.5 flex items-center gap-0.5 text-xs text-emerald-500"
-                    >
-                      <Cloud className="h-3 w-3" />
-                      Withings
+                    <span title="Synced from Withings" className="mb-0.5 flex items-center gap-0.5 text-xs text-emerald-500">
+                      <Cloud className="h-3 w-3" />Withings
                     </span>
                   )}
                 </div>
+                <Trend current={currentWeight} previous={weekAgoWeight} unit="kg" />
                 {weightSource !== "withings" && withingsWeight != null && (
-                  <button
-                    onClick={handleRevertToWithings}
-                    disabled={isPending}
-                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-emerald-500 transition-colors disabled:opacity-50 w-fit"
-                  >
+                  <button onClick={handleRevertToWithings} disabled={isPending} className="flex items-center gap-1 text-xs text-zinc-400 hover:text-emerald-500 transition-colors disabled:opacity-50 w-fit mt-1">
                     <RotateCcw className="h-3 w-3" />
                     Revert to Withings ({withingsWeight.toFixed(1)} kg)
                   </button>
@@ -155,94 +170,133 @@ export function MetricsCards({ currentWeight, currentBodyFat, weightSource, body
           </CardBody>
         </Card>
 
-        {/* Body Fat card */}
-        <Card className="relative">
-          <CardBody className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-                Body Fat
-              </span>
-              {editing !== "bodyFat" && (
-                <button
-                  onClick={() => {
-                    setEditing("bodyFat");
-                    setBodyFatValue(currentBodyFat ? String(currentBodyFat) : "");
-                  }}
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                  aria-label="Edit body fat"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-
-            {editing === "bodyFat" ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  value={bodyFatValue}
-                  onChange={(e) => setBodyFatValue(e.target.value)}
-                  placeholder="%"
-                  className="flex-1 h-8 rounded-lg border border-emerald-300 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-emerald-600 dark:bg-zinc-800 dark:text-white"
-                  autoFocus
-                  step="0.1"
-                  min="1"
-                  max="70"
-                />
-                <button
-                  onClick={() => handleSave("bodyFat")}
-                  disabled={isPending}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50"
-                  aria-label="Save body fat"
-                >
-                  <Check className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300"
-                  aria-label="Cancel"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-end gap-2">
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {currentBodyFat != null ? (
-                      <>
-                        {Number(currentBodyFat).toFixed(1)}
-                        <span className="text-sm font-normal text-zinc-400 ml-1">%</span>
-                      </>
-                    ) : (
-                      <span className="text-zinc-400 text-lg">Not set</span>
-                    )}
-                  </p>
-                  {bodyFatSource === "withings" && (
-                    <span
-                      title="Synced from Withings"
-                      className="mb-0.5 flex items-center gap-0.5 text-xs text-emerald-500"
-                    >
-                      <Cloud className="h-3 w-3" />
-                      Withings
-                    </span>
-                  )}
-                </div>
-                {bodyFatSource !== "withings" && withingsBodyFat != null && (
-                  <button
-                    onClick={handleRevertToWithings}
-                    disabled={isPending}
-                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-emerald-500 transition-colors disabled:opacity-50 w-fit"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    Revert to Withings ({withingsBodyFat.toFixed(1)}%)
-                  </button>
+        {/* Right: Body fat panel */}
+        {isWithingsConnected ? (
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
+            {/* Top: Body Fat (%) */}
+            <div className="px-5 py-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Body Fat (%)
+                </span>
+                {bodyFatSource === "withings" && (
+                  <span title="Synced from Withings" className="flex items-center gap-0.5 text-xs text-emerald-500">
+                    <Cloud className="h-3 w-3" />Withings
+                  </span>
                 )}
               </div>
+              <div className="flex flex-col gap-1">
+                <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                  {currentBodyFat != null ? (
+                    <>{Number(currentBodyFat).toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-0.5">%</span></>
+                  ) : (
+                    <span className="text-zinc-400 text-lg">—</span>
+                  )}
+                </p>
+                <Trend current={currentBodyFat} previous={weekAgoBodyFat} unit="%" />
+              </div>
+            </div>
+
+            {/* Bottom: Fat kg | Muscle kg */}
+            <div className="grid grid-cols-2 divide-x divide-zinc-100 dark:divide-zinc-800 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="px-4 py-3 flex flex-col gap-1">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Body Fat (kg)
+                </span>
+                <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                  {currentFatMassKg != null ? (
+                    <>{Number(currentFatMassKg).toFixed(1)}<span className="text-xs font-normal text-zinc-400 ml-0.5">kg</span></>
+                  ) : (
+                    <span className="text-zinc-400 text-base">—</span>
+                  )}
+                </p>
+                <Trend current={currentFatMassKg} previous={weekAgoFatMassKg} unit="kg" />
+              </div>
+              <div className="px-4 py-3 flex flex-col gap-1">
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Muscle (kg)
+                </span>
+                <p className="text-lg font-bold text-zinc-900 dark:text-white">
+                  {currentMuscleMassKg != null ? (
+                    <>{Number(currentMuscleMassKg).toFixed(1)}<span className="text-xs font-normal text-zinc-400 ml-0.5">kg</span></>
+                  ) : (
+                    <span className="text-zinc-400 text-base">—</span>
+                  )}
+                </p>
+                <Trend current={currentMuscleMassKg} previous={weekAgoMuscleMassKg} unit="kg" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Not connected: toggle for body fat tracking */
+          <div className="flex flex-col gap-3">
+            <div className="rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 px-4 py-3">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showBodyFat}
+                  onChange={(e) => { setShowBodyFat(e.target.checked); setEditing(null); }}
+                  className="h-4 w-4 rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">Track body fat %</span>
+              </label>
+            </div>
+
+            {showBodyFat && (
+              <Card className="relative">
+                <CardBody className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                      Body Fat (%)
+                    </span>
+                    {editing !== "bodyFat" && (
+                      <button
+                        onClick={() => { setEditing("bodyFat"); setBodyFatValue(currentBodyFat ? String(currentBodyFat) : ""); }}
+                        className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                        aria-label="Edit body fat"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {editing === "bodyFat" ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={bodyFatValue}
+                        onChange={(e) => setBodyFatValue(e.target.value)}
+                        placeholder="%"
+                        className="flex-1 h-8 rounded-lg border border-emerald-300 bg-white px-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-emerald-600 dark:bg-zinc-800 dark:text-white"
+                        autoFocus
+                        step="0.1"
+                        min="1"
+                        max="70"
+                      />
+                      <button onClick={() => handleSave("bodyFat")} disabled={isPending} className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50" aria-label="Save body fat">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={handleCancel} className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-200 text-zinc-600 hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300" aria-label="Cancel">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        {currentBodyFat != null ? (
+                          <>{Number(currentBodyFat).toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-0.5">%</span></>
+                        ) : (
+                          <span className="text-zinc-400 text-lg">Not set</span>
+                        )}
+                      </p>
+                      <Trend current={currentBodyFat} previous={weekAgoBodyFat} unit="%" />
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        )}
       </div>
 
       {toast && (

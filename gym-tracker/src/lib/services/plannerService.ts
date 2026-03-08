@@ -38,6 +38,7 @@ export async function getPlannedWorkoutsInRange(
       date: true,
       blockType: true,
       seriesId: true,
+      sorryExcused: true,
     },
   });
 }
@@ -429,6 +430,52 @@ export async function updateSeriesWithSorry(
   const d = new Date();
   const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   await incrementSorryToken(userId, month);
+}
+
+/** Excuse all missed blocks on a date using one sorry token */
+export async function excuseMissedDay(userId: string, date: string): Promise<void> {
+  const d = new Date();
+  const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+  await prisma.plannedWorkout.updateMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(date + "T00:00:00Z"),
+        lte: new Date(date + "T23:59:59Z"),
+      },
+    },
+    data: { sorryExcused: true },
+  });
+
+  await incrementSorryToken(userId, month);
+}
+
+/** Revoke a sorry excuse on a date (today/future only — reversible) */
+export async function revokeSorryExcuse(userId: string, date: string): Promise<void> {
+  const d = new Date();
+  const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+  await prisma.plannedWorkout.updateMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(date + "T00:00:00Z"),
+        lte: new Date(date + "T23:59:59Z"),
+      },
+    },
+    data: { sorryExcused: false },
+  });
+
+  const token = await prisma.userSorryToken.findUnique({
+    where: { userId_month: { userId, month } },
+  });
+  if (token && token.usedCount > 0) {
+    await prisma.userSorryToken.update({
+      where: { userId_month: { userId, month } },
+      data: { usedCount: token.usedCount - 1 },
+    });
+  }
 }
 
 /** Update series config + reset its streak */

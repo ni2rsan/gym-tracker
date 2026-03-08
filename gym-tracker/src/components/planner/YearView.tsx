@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { PlannedBlock } from "./WorkoutCalendar";
-import { BLOCK_COLORS } from "@/constants/exercises";
+import { BLOCK_COLORS, BLOCK_BORDER_COLORS } from "@/constants/exercises";
 import type { BlockType } from "@/constants/exercises";
 
 const MONTH_NAMES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -64,18 +64,23 @@ function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick,
           const blocks = blocksByDate[iso] ?? [];
           const isToday = iso === today;
           const tracked = isAnyBlockTracked(trackedGroupsByDate[iso], blocks);
-          const missed = blocks.length > 0 && !tracked && iso < today;
+          const isAnySorryExcused = blocks.some((b) => b.sorryExcused);
+          const missed = blocks.length > 0 && !tracked && !isAnySorryExcused && iso < today;
+          const showSorryBadge = isAnySorryExcused && !tracked;
 
           return (
             <button
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "flex flex-col items-center justify-center aspect-square rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors",
+                "relative flex flex-col items-center justify-center aspect-square rounded hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors",
                 isToday && "ring-1 ring-emerald-500"
               )}
               title={iso}
             >
+              {showSorryBadge && (
+                <span className="absolute top-0 right-0 rounded-full border border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center pointer-events-none font-bold text-amber-600 dark:text-amber-400" style={{ fontSize: "4px", width: "7px", height: "7px" }}>S</span>
+              )}
               <span className={cn(
                 "text-[9px] leading-none",
                 isToday ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-zinc-600 dark:text-zinc-400"
@@ -84,14 +89,24 @@ function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick,
               </span>
               {blocks.length > 0 && (
                 <div className="flex gap-px mt-0.5 items-center">
-                  {blocks.slice(0, 2).map((b) => (
-                    <span
-                      key={b.id}
-                      className={cn("w-1 h-1 rounded-full", BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")}
-                    />
-                  ))}
-                  {tracked && <span className="text-emerald-500 text-[8px] leading-none">✓</span>}
-                  {missed && <span className="text-red-500 text-[8px] leading-none">✗</span>}
+                  {blocks.slice(0, 2).map((b) => {
+                    const hasStatus = tracked || missed || isAnySorryExcused;
+                    const showCheck = tracked || (b.sorryExcused && !tracked);
+                    return (
+                      <span
+                        key={b.id}
+                        className={cn(
+                          "w-2 h-2 rounded-full inline-flex items-center justify-center",
+                          hasStatus
+                            ? cn("border bg-white dark:bg-zinc-900", BLOCK_BORDER_COLORS[b.blockType as BlockType] ?? "border-zinc-400")
+                            : (BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")
+                        )}
+                      >
+                        {showCheck && <span className="font-bold leading-none" style={{ fontSize: "5px", color: "#00cc00" }}>✓</span>}
+                        {missed && !showCheck && <span className="font-bold leading-none" style={{ fontSize: "5px", color: "#cc0000" }}>✗</span>}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </button>

@@ -88,6 +88,8 @@ export async function syncWithingsIfNeeded(userId: string): Promise<void> {
         userId,
         weightKg: g.weightKg,
         bodyFatPct: g.bodyFatPct,
+        fatMassKg: g.fatMassKg,
+        muscleMassKg: g.muscleMassKg,
         recordedAt: new Date(g.date * 1000),
         source: "withings",
         withingsMeasureGrpId: BigInt(g.grpid),

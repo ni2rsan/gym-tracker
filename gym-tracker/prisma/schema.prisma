@@ -146,6 +146,8 @@ model BodyMetricEntry {
   userId               String
   weightKg             Decimal? @db.Decimal(5, 2)
   bodyFatPct           Decimal? @db.Decimal(4, 2)
+  fatMassKg            Decimal? @db.Decimal(5, 2)  // Withings type 5
+  muscleMassKg         Decimal? @db.Decimal(5, 2)  // Withings type 76
   recordedAt           DateTime @default(now())
   notes                String?
   source               String?  // "manual" | "withings" — null = legacy manual entry

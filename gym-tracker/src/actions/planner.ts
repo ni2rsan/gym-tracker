@@ -169,6 +169,36 @@ export async function updateSeriesUseSorry(
   }
 }
 
+/** Excuse all missed blocks on a day using one sorry token */
+export async function excuseMissedDay(date: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    const parsed = DateSchema.safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    await plannerService.excuseMissedDay(userId, parsed.data);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("excuseMissedDay error:", e);
+    return { success: false, error: "Failed to apply sorry token." };
+  }
+}
+
+/** Revoke a sorry excuse on a today/future date (reversible) */
+export async function revokeSorryExcuse(date: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    const parsed = DateSchema.safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    await plannerService.revokeSorryExcuse(userId, parsed.data);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("revokeSorryExcuse error:", e);
+    return { success: false, error: "Failed to revoke sorry token." };
+  }
+}
+
 /** Update series config and reset the streak */
 export async function updateSeriesResetStreak(
   seriesId: string,

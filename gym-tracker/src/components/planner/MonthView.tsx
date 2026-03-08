@@ -63,7 +63,7 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
             return (
               <div
                 key={`empty-${i}`}
-                className="aspect-square border-r border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30"
+                className="h-12 border-r border-b border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30"
               />
             );
           }
@@ -73,19 +73,24 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
           const isToday = iso === today;
           const groups = trackedGroupsByDate[iso];
           const isAnyTracked = blocks.some((b) => isBlockTracked(groups, b.blockType));
-          const isMissed = blocks.length > 0 && !isAnyTracked && iso < today;
+          const isAnySorryExcused = blocks.some((b) => b.sorryExcused);
+          const isMissed = blocks.length > 0 && !isAnyTracked && !isAnySorryExcused && iso < today;
+          const showSorryBadge = isAnySorryExcused && !isAnyTracked;
 
           return (
             <button
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "aspect-square p-1 border-r border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col items-center justify-start gap-0.5",
+                "relative h-12 p-0.5 border-r border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col items-center justify-center gap-px",
                 isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
               )}
             >
+              {showSorryBadge && (
+                <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full border border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center pointer-events-none font-bold text-amber-600 dark:text-amber-400" style={{ fontSize: "6px" }}>S</span>
+              )}
               <span className={cn(
-                "text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full shrink-0",
+                "text-[10px] font-medium w-4 h-4 flex items-center justify-center rounded-full shrink-0",
                 isToday
                   ? "bg-emerald-500 text-white"
                   : "text-zinc-700 dark:text-zinc-300"
@@ -94,13 +99,18 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
               </span>
 
               {/* Block dots */}
-              <div className="flex flex-wrap gap-0.5 justify-center">
-                {blocks.map((b) => (
-                  <BlockDot key={b.id} blockType={b.blockType} size="lg" />
-                ))}
-                {isAnyTracked && <span className="text-emerald-500 text-[8px] leading-none">✓</span>}
-                {isMissed && <span className="text-red-500 text-[8px] leading-none">✗</span>}
-              </div>
+              {blocks.length > 0 && (
+                <div className="flex flex-wrap gap-px justify-center items-center">
+                  {blocks.map((b) => (
+                    <BlockDot
+                      key={b.id}
+                      blockType={b.blockType}
+                      size="md"
+                      status={(isAnyTracked || isAnySorryExcused) ? "tracked" : isMissed ? "missed" : undefined}
+                    />
+                  ))}
+                </div>
+              )}
             </button>
           );
         })}
