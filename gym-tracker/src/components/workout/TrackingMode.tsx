@@ -87,7 +87,7 @@ export function TrackingMode({
     const allDone = exercises.length > 0 && exercises.every((ex) => completedIds.has(ex.id));
 
     return (
-      <div className="fixed inset-0 z-40 bg-white dark:bg-zinc-950 overflow-y-auto flex flex-col">
+      <div className="fixed inset-0 z-[60] bg-white dark:bg-zinc-950 overflow-y-auto flex flex-col">
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
           <button
@@ -170,7 +170,7 @@ export function TrackingMode({
   const isCardio = ex.muscleGroup === "CARDIO";
 
   return (
-    <div className="fixed inset-0 z-40 bg-white dark:bg-zinc-950 flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-white dark:bg-zinc-950 flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
         <button
