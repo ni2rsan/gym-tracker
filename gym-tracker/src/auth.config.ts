@@ -21,7 +21,7 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const protectedRoutes = ["/workout", "/reports", "/dashboard", "/logs"];
+      const protectedRoutes = ["/workout", "/planner", "/reports", "/dashboard", "/logs"];
       const isProtected = protectedRoutes.some((r) =>
         nextUrl.pathname.startsWith(r)
       );
@@ -33,7 +33,7 @@ export const authConfig: NextAuthConfig = {
       }
 
       if ((nextUrl.pathname === "/" || nextUrl.pathname === "/login") && isLoggedIn) {
-        return Response.redirect(new URL("/workout", nextUrl.origin));
+        return Response.redirect(new URL("/planner", nextUrl.origin));
       }
 
       return true;
