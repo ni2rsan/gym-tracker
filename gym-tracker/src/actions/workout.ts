@@ -118,6 +118,7 @@ export async function deleteExerciseTracking(exerciseId: string, date: string): 
     await workoutService.deleteExerciseSetsForDate(userId, exerciseId, parsed.data);
     revalidatePath("/workout");
     revalidatePath("/reports");
+    revalidatePath("/logs");
     return { success: true };
   } catch (error) {
     console.error("deleteExerciseTracking error:", error);

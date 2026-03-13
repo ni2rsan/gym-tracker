@@ -134,25 +134,25 @@ export function ExerciseCard({
       )}>
         {cardHeader}
         {trackedBar}
-        <div className={cn("flex items-center gap-2", locked && "opacity-50")}>
-          <label className="text-xs text-zinc-400 dark:text-zinc-500 shrink-0">Minutes</label>
+        <div className={cn("flex items-center justify-center gap-2", locked && "opacity-50")}>
           <input
             type="number"
             inputMode="numeric"
             min={0}
             max={999}
             value={!minutes || minutes === 0 ? "" : minutes}
-            placeholder="min"
+            placeholder="0"
             disabled={locked}
             onChange={(e) => {
               const mins = e.target.value === "" ? 0 : parseInt(e.target.value, 10) || 0;
               onSetsChange([{ setNumber: 1, reps: mins, weightKg: "" }]);
             }}
             className={cn(
-              "h-9 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-center text-sm text-zinc-900 placeholder-zinc-300 focus:border-rose-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-600 dark:focus:border-rose-400 dark:focus:bg-zinc-800 dark:focus:ring-rose-400 transition-colors",
+              "h-9 w-16 rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-center text-sm text-zinc-900 placeholder-zinc-300 focus:border-rose-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-rose-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-600 dark:focus:border-rose-400 dark:focus:bg-zinc-800 dark:focus:ring-rose-400 transition-colors",
               locked && "cursor-not-allowed"
             )}
           />
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">min</span>
         </div>
         {!locked && (
           <div className="flex justify-end mt-2">
