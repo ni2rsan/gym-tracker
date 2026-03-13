@@ -13,19 +13,25 @@ export function BlockDot({ blockType, size = "sm", status }: BlockDotProps) {
   const textSizeClass = size === "lg" ? "text-sm" : size === "md" ? "text-[11px]" : "text-[9px]";
   const title = BLOCK_LABELS[blockType as BlockType] ?? blockType;
 
-  if (status) {
+  if (status === "tracked") {
+    return (
+      <span
+        className={cn("inline-flex items-center justify-center rounded-full shrink-0 bg-amber-500 ring-2 ring-amber-300", sizeClass)}
+        title={title}
+      >
+        <span className={cn("font-black leading-none text-white drop-shadow-sm", textSizeClass)}>✓</span>
+      </span>
+    );
+  }
+
+  if (status === "missed") {
     const borderColor = BLOCK_BORDER_COLORS[blockType as BlockType] ?? "border-zinc-400";
     return (
       <span
         className={cn("inline-flex items-center justify-center rounded-full shrink-0 border-2 bg-white dark:bg-zinc-900", sizeClass, borderColor)}
         title={title}
       >
-        {status === "tracked" && (
-          <span className={cn("font-bold leading-none", textSizeClass)} style={{ color: "#00cc00" }}>✓</span>
-        )}
-        {status === "missed" && (
-          <span className={cn("font-bold leading-none", textSizeClass)} style={{ color: "#cc0000" }}>✗</span>
-        )}
+        <span className={cn("font-bold leading-none", textSizeClass)} style={{ color: "#cc0000" }}>✗</span>
       </span>
     );
   }

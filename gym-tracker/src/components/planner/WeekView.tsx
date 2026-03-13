@@ -53,8 +53,8 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
             <div key={iso} className="py-2 text-center">
               <div className="text-xs text-zinc-500 dark:text-zinc-400">{WEEKDAY_NAMES[i]}</div>
               <div className={cn(
-                "mx-auto mt-0.5 w-7 h-7 flex items-center justify-center rounded-full text-sm font-medium",
-                isToday ? "bg-emerald-500 text-white" : "text-zinc-700 dark:text-zinc-300"
+                "mx-auto mt-0.5 flex items-center justify-center text-sm font-medium",
+                isToday ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-zinc-700 dark:text-zinc-300"
               )}>
                 {d.getDate()}
               </div>
@@ -63,7 +63,7 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
         })}
       </div>
 
-      <div className="grid grid-cols-7 min-h-[120px]">
+      <div className="grid grid-cols-7">
         {days.map((d) => {
           const iso = toISO(d);
           const blocks = blocksByDate[iso] ?? [];
@@ -79,25 +79,31 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "relative p-2 border-r border-zinc-100 dark:border-zinc-800/50 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col gap-1.5",
-                isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
+                "relative p-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-wrap gap-1 items-center justify-center min-h-[48px]",
+                isToday
+                  ? "border border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10"
+                  : "border-r border-zinc-100 dark:border-zinc-800/50"
               )}
             >
               {showSorryBadge && (
                 <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full border border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center pointer-events-none font-bold text-amber-600 dark:text-amber-400" style={{ fontSize: "7px" }}>S</span>
               )}
-              {blocks.map((b) => {
-                const tracked = isBlockTracked(groups, b.blockType);
-                const missed = !tracked && !b.sorryExcused && !isToday && iso < today;
-                return (
-                  <BlockDot
-                    key={b.id}
-                    blockType={b.blockType}
-                    size="lg"
-                    status={(tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined}
-                  />
-                );
-              })}
+              {blocks.every((b) => isBlockTracked(groups, b.blockType) || b.sorryExcused) ? (
+                <BlockDot blockType={blocks[0].blockType} size="md" status="tracked" />
+              ) : (
+                blocks.map((b) => {
+                  const tracked = isBlockTracked(groups, b.blockType);
+                  const missed = !tracked && !b.sorryExcused && !isToday && iso < today;
+                  return (
+                    <BlockDot
+                      key={b.id}
+                      blockType={b.blockType}
+                      size="md"
+                      status={(tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined}
+                    />
+                  );
+                })
+              )}
               {blocks.length === 0 && (
                 <span className="text-zinc-300 dark:text-zinc-600 text-xs">+</span>
               )}

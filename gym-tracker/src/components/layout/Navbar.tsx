@@ -68,6 +68,7 @@ export function Navbar({ userName, userImage }: NavbarProps) {
             <img
               src={userImage}
               alt={userName ?? "User"}
+              referrerPolicy="no-referrer"
               className="h-8 w-8 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700"
             />
           ) : (

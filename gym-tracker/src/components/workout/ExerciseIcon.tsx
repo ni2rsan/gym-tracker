@@ -32,6 +32,8 @@ const EXERCISE_ICONS: Record<string, React.ElementType> = {
   "BACK EXTENSION": RotateCcw,
   "PUSHUPS": Target,
   "PULLUPS": ArrowUpFromLine,
+  "CRUNCHES": RotateCcw,
+  "LEG RAISES": ArrowUpFromLine,
   "BIKING": Bike,
   "JOGGING": Footprints,
   "PADEL": Zap,
@@ -41,7 +43,7 @@ const EXERCISE_ICONS: Record<string, React.ElementType> = {
 
 const MUSCLE_GROUP_COLORS: Record<MuscleGroup, string> = {
   UPPER_BODY: "text-blue-500 dark:text-blue-400",
-  LOWER_BODY: "text-amber-500 dark:text-amber-400",
+  LOWER_BODY: "text-green-600 dark:text-green-400",
   BODYWEIGHT: "text-purple-500 dark:text-purple-400",
   CARDIO: "text-rose-500 dark:text-rose-400",
 };

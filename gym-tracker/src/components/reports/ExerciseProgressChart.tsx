@@ -111,7 +111,7 @@ export function ExerciseProgressChart({ series }: ExerciseProgressChartProps) {
               strokeWidth={2}
               dot={{ r: 4, fill: LINE_COLORS[i % LINE_COLORS.length], strokeWidth: 0 }}
               activeDot={{ r: 6 }}
-              connectNulls={false}
+              connectNulls={true}
             />
           ))}
         </LineChart>
