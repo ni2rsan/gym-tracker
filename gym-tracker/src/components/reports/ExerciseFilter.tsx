@@ -10,12 +10,14 @@ const CATEGORIES: { value: MuscleGroup; label: string }[] = [
   { value: "UPPER_BODY", label: MUSCLE_GROUP_LABELS.UPPER_BODY },
   { value: "LOWER_BODY", label: MUSCLE_GROUP_LABELS.LOWER_BODY },
   { value: "BODYWEIGHT", label: MUSCLE_GROUP_LABELS.BODYWEIGHT },
+  { value: "CARDIO", label: MUSCLE_GROUP_LABELS.CARDIO },
 ];
 
 const CATEGORY_ACTIVE: Record<MuscleGroup, string> = {
   UPPER_BODY: "bg-blue-600 text-white border-blue-600",
   LOWER_BODY: "bg-amber-500 text-white border-amber-500",
   BODYWEIGHT: "bg-purple-600 text-white border-purple-600",
+  CARDIO: "bg-rose-600 text-white border-rose-600",
 };
 
 interface ExerciseFilterProps {
