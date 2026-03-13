@@ -34,6 +34,7 @@ export async function getExercisesForUser(userId: string): Promise<ExerciseWithS
         sortOrder: e.sortOrder,
         isPinned: setting?.isPinned ?? false,
         userSortOrder: setting?.sortOrder ?? e.sortOrder,
+        preferredSets: setting?.preferredSets ?? null,
       };
     });
 }
@@ -100,6 +101,14 @@ export async function togglePinExercise(userId: string, exerciseId: string) {
 
   return prisma.userExerciseSetting.create({
     data: { userId, exerciseId, isPinned: true, sortOrder: 0 },
+  });
+}
+
+export async function setPreferredSets(userId: string, exerciseId: string, count: number) {
+  return prisma.userExerciseSetting.upsert({
+    where: { userId_exerciseId: { userId, exerciseId } },
+    create: { userId, exerciseId, preferredSets: count },
+    update: { preferredSets: count },
   });
 }
 

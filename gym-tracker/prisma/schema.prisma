@@ -95,12 +95,13 @@ model Exercise {
 }
 
 model UserExerciseSetting {
-  id         String  @id @default(cuid())
-  userId     String
-  exerciseId String
-  isPinned   Boolean @default(false)
-  sortOrder  Int     @default(0)
-  isHidden   Boolean @default(false)
+  id            String  @id @default(cuid())
+  userId        String
+  exerciseId    String
+  isPinned      Boolean @default(false)
+  sortOrder     Int     @default(0)
+  isHidden      Boolean @default(false)
+  preferredSets Int?    // null = use default (3 for weighted, 1 for bodyweight/cardio)
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
@@ -163,6 +164,7 @@ model BodyMetricEntry {
 enum BlockType {
   UPPER_BODY
   LOWER_BODY
+  BODYWEIGHT
   FULL_BODY
   CARDIO
 }

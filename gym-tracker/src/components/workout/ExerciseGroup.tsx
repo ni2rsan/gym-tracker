@@ -20,6 +20,13 @@ interface ExerciseGroupProps {
   lastSaved?: Date | null;
   onTrack?: () => void;
   onAdd?: () => void;
+  readOnlyIds?: Set<string>;
+  trackedIds?: Set<string>;
+  onDeleteTracking?: (exerciseId: string) => void;
+  skippedIds?: Set<string>;
+  onSkipChange?: (id: string, skipped: boolean) => void;
+  /** When true, removes outer border/rounding (for use inside a parent container) */
+  isNested?: boolean;
 }
 
 export function ExerciseGroup({
@@ -35,27 +42,36 @@ export function ExerciseGroup({
   lastSaved,
   onTrack,
   onAdd,
+  readOnlyIds,
+  trackedIds,
+  onDeleteTracking,
+  skippedIds,
+  onSkipChange,
+  isNested = false,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   if (exercises.length === 0 && !onAdd) return null;
 
   const GROUP_COLORS: Record<MuscleGroup, string> = {
-    UPPER_BODY: "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
-    LOWER_BODY: "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
-    BODYWEIGHT: "text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/50",
-    CARDIO: "text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/50",
+    UPPER_BODY: "text-blue-500 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
+    LOWER_BODY: "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/50",
+    BODYWEIGHT: "text-purple-500 dark:text-purple-400 border-purple-200 dark:border-purple-800/50",
+    CARDIO: "text-rose-500 dark:text-rose-400 border-rose-200 dark:border-rose-800/50",
   };
 
   const GROUP_BG: Record<MuscleGroup, string> = {
     UPPER_BODY: "bg-blue-50 dark:bg-blue-950/20",
-    LOWER_BODY: "bg-amber-50 dark:bg-amber-950/20",
+    LOWER_BODY: "bg-green-50 dark:bg-green-950/20",
     BODYWEIGHT: "bg-purple-50 dark:bg-purple-950/20",
     CARDIO: "bg-rose-50 dark:bg-rose-950/20",
   };
 
   return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+    <div className={cn(
+      "overflow-hidden",
+      isNested ? "" : "rounded-xl border border-zinc-200 dark:border-zinc-800"
+    )}>
       {/* Section header */}
       <button
         onClick={() => setOpen(!open)}
@@ -89,7 +105,7 @@ export function ExerciseGroup({
               onClick={(e) => { e.stopPropagation(); onTrack(); }}
               className="rounded-lg bg-emerald-500 hover:bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors cursor-pointer"
             >
-              Track
+              Track Mode
             </span>
           )}
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -118,6 +134,11 @@ export function ExerciseGroup({
                   onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
                   onTogglePin={onTogglePin}
                   onRemove={onRemove}
+                  isReadOnly={readOnlyIds?.has(exercise.id)}
+                  isTracked={trackedIds?.has(exercise.id)}
+                  onDeleteTracking={() => onDeleteTracking?.(exercise.id)}
+                  isSkipped={skippedIds?.has(exercise.id)}
+                  onSkipChange={onSkipChange}
                 />
               ))}
             </div>

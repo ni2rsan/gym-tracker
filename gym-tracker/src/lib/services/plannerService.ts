@@ -52,6 +52,7 @@ export async function getWorkedOutDates(
     where: {
       userId,
       date: { gte: new Date(startDate + "T12:00:00"), lte: new Date(endDate + "T12:00:00") },
+      sets: { some: {} },
     },
     select: { date: true },
   });
@@ -286,6 +287,9 @@ export interface StreakData {
   sorryUsed: number;
   sorryRemaining: number;
   month: string; // "YYYY-MM"
+  generalStreak: number; // consecutive days worked out (today exempt — counts from yesterday back)
+  bestStreak: number;    // longest consecutive run in the past year
+  totalWorkoutsThisMonth: number;
 }
 
 async function incrementSorryToken(userId: string, month: string): Promise<void> {
@@ -316,6 +320,51 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   });
   const sorryUsed = sorryToken?.usedCount ?? 0;
 
+  // Fetch all workout dates for the past year (for general streak + this month count)
+  const oneYearAgo = new Date(d);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const oneYearAgoISO = dbDateToISO(oneYearAgo);
+  const allRecentWorkouts = await getWorkedOutDates(userId, oneYearAgoISO, todayISO);
+
+  // General streak: count consecutive days ending at yesterday (today is always exempt —
+  // you have until EOD to work out without breaking your streak). If today already has a
+  // workout, add 1 on top.
+  const yesterdayCursor = new Date(d);
+  yesterdayCursor.setDate(yesterdayCursor.getDate() - 1);
+  let generalStreak = 0;
+  const streakCursor = new Date(yesterdayCursor);
+  while (true) {
+    const iso = `${streakCursor.getFullYear()}-${String(streakCursor.getMonth() + 1).padStart(2, "0")}-${String(streakCursor.getDate()).padStart(2, "0")}`;
+    if (!allRecentWorkouts.has(iso)) break;
+    generalStreak++;
+    streakCursor.setDate(streakCursor.getDate() - 1);
+  }
+  // Add today if already worked out
+  if (allRecentWorkouts.has(todayISO)) generalStreak++;
+
+  // Best streak: longest consecutive run in the past year
+  const sortedDates = [...allRecentWorkouts].sort();
+  let bestStreak = 0;
+  let runLength = 0;
+  let prevMs: number | null = null;
+  for (const iso of sortedDates) {
+    const ms = new Date(iso + "T12:00:00").getTime();
+    if (prevMs !== null && ms - prevMs === 86_400_000) {
+      runLength++;
+    } else {
+      runLength = 1;
+    }
+    if (runLength > bestStreak) bestStreak = runLength;
+    prevMs = ms;
+  }
+
+  // Total distinct workout days this month
+  const monthStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  let totalWorkoutsThisMonth = 0;
+  for (const iso of allRecentWorkouts) {
+    if (iso >= monthStart && iso <= todayISO) totalWorkoutsThisMonth++;
+  }
+
   // Active series: has any instance in past 60 days or in the future
   const sixtyDaysAgo = new Date(d);
   sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
@@ -328,7 +377,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   });
 
   if (allSeries.length === 0) {
-    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, 3 - sorryUsed), month };
+    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, 3 - sorryUsed), month, generalStreak, bestStreak, totalWorkoutsThisMonth };
   }
 
   // Fetch worked-out dates covering all series
@@ -352,15 +401,14 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     const cutoffISO = dbDateToISO(cutoffDate);
 
     if (yesterdayISO < cutoffISO) {
-      // Series started today or cutoff is in the future — no past data yet
       streaks.push({ seriesId: series.id, blockType: series.blockType, count: 0 });
       continue;
     }
 
-    // Fetch all past planned workouts for this series (including sorryExcused)
     const plannedWorkouts = await prisma.plannedWorkout.findMany({
       where: {
-        seriesId: series.id,
+        userId,
+        blockType: series.blockType,
         date: {
           gte: new Date(cutoffISO + "T12:00:00"),
           lte: new Date(yesterdayISO + "T12:00:00"),
@@ -373,18 +421,18 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     let streak = 0;
     for (const pw of plannedWorkouts) {
       const dateISO = dbDateToISO(pw.date);
-      if (pw.sorryExcused) continue; // neutral — skip, don't count, don't break
+      if (pw.sorryExcused) continue;
       if (workedOutDates.has(dateISO)) {
         streak++;
       } else {
-        break; // streak broken here
+        break;
       }
     }
 
     streaks.push({ seriesId: series.id, blockType: series.blockType, count: streak });
   }
 
-  return { streaks, sorryUsed, sorryRemaining: Math.max(0, 3 - sorryUsed), month };
+  return { streaks, sorryUsed, sorryRemaining: Math.max(0, 3 - sorryUsed), month, generalStreak, bestStreak, totalWorkoutsThisMonth };
 }
 
 // ─── SORRY token operations ────────────────────────────────────────────────

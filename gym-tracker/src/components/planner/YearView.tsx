@@ -97,12 +97,14 @@ function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick,
                         key={b.id}
                         className={cn(
                           "w-2 h-2 rounded-full inline-flex items-center justify-center",
-                          hasStatus
-                            ? cn("border bg-white dark:bg-zinc-900", BLOCK_BORDER_COLORS[b.blockType as BlockType] ?? "border-zinc-400")
-                            : (BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")
+                          showCheck
+                            ? "bg-amber-500 ring-1 ring-amber-300"
+                            : hasStatus
+                              ? cn("border bg-white dark:bg-zinc-900", BLOCK_BORDER_COLORS[b.blockType as BlockType] ?? "border-zinc-400")
+                              : (BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")
                         )}
                       >
-                        {showCheck && <span className="font-bold leading-none" style={{ fontSize: "5px", color: "#00cc00" }}>✓</span>}
+                        {showCheck && <span className="font-bold leading-none text-white" style={{ fontSize: "5px" }}>✓</span>}
                         {missed && !showCheck && <span className="font-bold leading-none" style={{ fontSize: "5px", color: "#cc0000" }}>✗</span>}
                       </span>
                     );

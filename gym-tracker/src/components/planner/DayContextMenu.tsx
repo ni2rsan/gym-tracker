@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Pencil, Trash2, Activity, Plus } from "lucide-react";
+import { X, Pencil, Trash2, Activity, Plus, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BLOCK_LABELS } from "@/constants/exercises";
 import type { BlockType } from "@/constants/exercises";
@@ -167,9 +167,14 @@ export function DayContextMenu({
     });
   };
 
-  const handleTrack = () => {
+  const handleTrackSection = () => {
     onClose();
     router.push(`/workout?date=${date}&section=${activeBlock.blockType}`);
+  };
+
+  const handleTrackFull = () => {
+    onClose();
+    router.push(`/workout?date=${date}&from=planner`);
   };
 
   const handleDeleteTrackedWorkout = () => {
@@ -191,6 +196,7 @@ export function DayContextMenu({
   })();
   const isPast = date < todayISO;
   const isPresent = date >= todayISO; // today or future
+  const isFuture = date > todayISO;
   const alreadyExcused = blocks.length > 0 && blocks.every(b => b.sorryExcused) && !workedOut;
   const hasUnexcused = blocks.some(b => !b.sorryExcused);
   const isMissedDay = !workedOut && isPast && hasUnexcused;
@@ -377,10 +383,7 @@ export function DayContextMenu({
             <div className="px-4 py-2 flex items-center gap-2">
               <span className="text-xs text-zinc-500 flex-1">Delete this block?</span>
               <button
-                onClick={() => activeBlock.seriesId
-                  ? handleDeleteBlockWithReset(activeBlock.id)
-                  : handleDeleteBlock(activeBlock.id)
-                }
+                onClick={() => handleDeleteBlock(activeBlock.id)}
                 disabled={isPending}
                 className="text-xs text-red-500 font-semibold hover:text-red-600"
               >
@@ -516,15 +519,24 @@ export function DayContextMenu({
           Add another block
         </button>
 
-        {/* TRACK — hidden for Cardio */}
-        {activeBlock.blockType !== "CARDIO" && (
-          <button
-            onClick={handleTrack}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
-          >
-            <Activity className="h-4 w-4" />
-            Track workout →
-          </button>
+        {/* TRACK — only for today and past */}
+        {!isFuture && (
+          <>
+            <button
+              onClick={handleTrackSection}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
+            >
+              <Activity className="h-4 w-4" />
+              Track {BLOCK_LABELS[activeBlock.blockType as BlockType] ?? activeBlock.blockType} →
+            </button>
+            <button
+              onClick={handleTrackFull}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left"
+            >
+              <Dumbbell className="h-4 w-4" />
+              Open full workout tracker →
+            </button>
+          </>
         )}
 
         {/* Delete tracked workout */}
