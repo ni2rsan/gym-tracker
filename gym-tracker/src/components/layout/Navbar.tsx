@@ -8,8 +8,8 @@ import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/workout", label: "Tracker", icon: Dumbbell },
   { href: "/planner", label: "Planner", icon: CalendarDays },
+  { href: "/workout", label: "Tracker", icon: Dumbbell },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/logs", label: "Logs", icon: ScrollText },
 ];
@@ -28,7 +28,7 @@ export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
     <header className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/90 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         {/* Logo */}
-        <Link href="/workout" className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
+        <Link href="/planner" className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500">
             <DumbbellIcon className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>

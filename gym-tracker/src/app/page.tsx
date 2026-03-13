@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 export default async function HomePage() {
   const session = await auth();
   if (session?.user) {
-    redirect("/workout");
+    redirect("/planner");
   } else {
     redirect("/login");
   }
