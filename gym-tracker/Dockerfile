@@ -14,6 +14,4 @@ ENV DATABASE_URL=$DATABASE_URL
 
 RUN npm run build
 
-EXPOSE 3000
-
-CMD sh -c "npx prisma migrate deploy && node_modules/.bin/next start"
+CMD sh -c "npx prisma migrate deploy && node_modules/.bin/next start -p ${PORT:-3000}"
