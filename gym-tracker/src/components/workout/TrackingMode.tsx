@@ -638,20 +638,15 @@ export function TrackingMode({
                       isPendingRow && "opacity-40",
                     )}
                   >
-                    {isActive ? (
-                      <div className="flex items-center gap-2">
-                        <span className="w-10 shrink-0 text-center text-xs text-zinc-400 dark:text-zinc-500">S{set.setNumber}</span>
-                        <button
-                          onClick={() => handleSetDone(ex, i)}
-                          className="flex-1 rounded-md bg-emerald-500 hover:bg-emerald-600 py-1.5 text-sm font-bold text-white transition-colors"
-                        >
-                          Done ✓
-                        </button>
-                        <span className="w-16 shrink-0" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        {isDoneRow || isTimerRow ? (
+                    <div className="flex items-center gap-1.5">
+                        {isActive ? (
+                          <button
+                            onClick={() => handleSetDone(ex, i)}
+                            className="w-10 shrink-0 rounded-md bg-emerald-500 hover:bg-emerald-600 py-1 text-[10px] font-bold text-white transition-colors text-center"
+                          >
+                            Done
+                          </button>
+                        ) : isDoneRow || isTimerRow ? (
                           <span className="w-10 shrink-0 text-center text-emerald-500 font-bold text-sm">✓</span>
                         ) : (
                           <span className="w-10 shrink-0 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">
@@ -722,7 +717,6 @@ export function TrackingMode({
                           <span className="w-16 shrink-0" />
                         )}
                       </div>
-                    )}
                   </div>
                 );
               })}
