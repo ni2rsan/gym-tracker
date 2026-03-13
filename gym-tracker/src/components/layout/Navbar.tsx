@@ -42,28 +42,28 @@ export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                 pathname.startsWith(href)
                   ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
                   : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
               )}
             >
               <Icon className="h-4 w-4" />
-              {label}
+              <span className="hidden sm:inline">{label}</span>
             </Link>
           ))}
           {isAdmin && (
             <Link
               href="/admin"
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                 pathname.startsWith("/admin")
                   ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                   : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
               )}
             >
               <Shield className="h-4 w-4" />
-              Admin
+              <span className="hidden sm:inline">Admin</span>
             </Link>
           )}
         </nav>

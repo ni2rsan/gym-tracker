@@ -123,7 +123,7 @@ export function ExerciseGroup({
             <div className={cn(
               "p-3 grid gap-3",
               muscleGroup === "BODYWEIGHT" || muscleGroup === "CARDIO"
-                ? "grid-cols-2 sm:grid-cols-3"
+                ? "grid-cols-1 sm:grid-cols-2"
                 : "grid-cols-1 lg:grid-cols-3"
             )}>
               {exercises.map((exercise) => (

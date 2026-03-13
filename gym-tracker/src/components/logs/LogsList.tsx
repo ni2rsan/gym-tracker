@@ -148,7 +148,7 @@ function WorkoutEntry({
                 </p>
                 <button
                   onClick={() => setIsEditingDate(true)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-zinc-600"
+                  className="text-zinc-300 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors"
                   title="Edit date"
                 >
                   <Pencil className="h-3 w-3" />
@@ -179,7 +179,7 @@ function WorkoutEntry({
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-red-500"
+                className="text-zinc-400 hover:text-red-500 transition-colors"
                 title="Delete workout"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -238,7 +238,7 @@ function WorkoutEntry({
               ) : (
                 <button
                   onClick={() => setConfirmDeleteExId(ex.exerciseId)}
-                  className="opacity-0 group-hover/ex:opacity-100 transition-opacity ml-auto shrink-0 text-zinc-400 hover:text-red-500"
+                  className="ml-auto shrink-0 text-zinc-400 hover:text-red-500 transition-colors"
                   title="Delete exercise entry"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -322,7 +322,7 @@ function MetricEntry({
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-red-500"
+                className="text-zinc-400 hover:text-red-500 transition-colors"
                 title="Delete entry"
               >
                 <Trash2 className="h-3.5 w-3.5" />
