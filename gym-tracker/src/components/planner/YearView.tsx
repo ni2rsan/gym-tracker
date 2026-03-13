@@ -20,13 +20,11 @@ function toISO(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-function isAnyBlockTracked(groups: Set<string> | undefined, blocks: PlannedBlock[]): boolean {
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
   if (!groups || groups.size === 0) return false;
-  return blocks.some((b) => {
-    if (b.blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
-    if (b.blockType === "CARDIO") return groups.has("CARDIO");
-    return groups.has(b.blockType);
-  });
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
 }
 
 function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick, onMonthClick }: {
@@ -63,10 +61,11 @@ function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick,
           const iso = toISO(new Date(year, month, dayNum));
           const blocks = blocksByDate[iso] ?? [];
           const isToday = iso === today;
-          const tracked = isAnyBlockTracked(trackedGroupsByDate[iso], blocks);
+          const groups = trackedGroupsByDate[iso];
           const isAnySorryExcused = blocks.some((b) => b.sorryExcused);
-          const missed = blocks.length > 0 && !tracked && !isAnySorryExcused && iso < today;
-          const showSorryBadge = isAnySorryExcused && !tracked;
+          const isAnyTracked = blocks.some((b) => isBlockTracked(groups, b.blockType));
+          const allDone = blocks.length > 0 && blocks.every((b) => isBlockTracked(groups, b.blockType) || b.sorryExcused);
+          const showSorryBadge = isAnySorryExcused && !isAnyTracked;
 
           return (
             <button
@@ -89,26 +88,33 @@ function MiniMonth({ year, month, blocksByDate, trackedGroupsByDate, onDayClick,
               </span>
               {blocks.length > 0 && (
                 <div className="flex gap-px mt-0.5 items-center">
-                  {blocks.slice(0, 2).map((b) => {
-                    const hasStatus = tracked || missed || isAnySorryExcused;
-                    const showCheck = tracked || (b.sorryExcused && !tracked);
-                    return (
-                      <span
-                        key={b.id}
-                        className={cn(
-                          "w-2 h-2 rounded-full inline-flex items-center justify-center",
-                          showCheck
-                            ? "bg-amber-500 ring-1 ring-amber-300"
-                            : hasStatus
-                              ? cn("border bg-white dark:bg-zinc-900", BLOCK_BORDER_COLORS[b.blockType as BlockType] ?? "border-zinc-400")
-                              : (BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")
-                        )}
-                      >
-                        {showCheck && <span className="font-bold leading-none text-white" style={{ fontSize: "5px" }}>✓</span>}
-                        {missed && !showCheck && <span className="font-bold leading-none" style={{ fontSize: "5px", color: "#cc0000" }}>✗</span>}
-                      </span>
-                    );
-                  })}
+                  {allDone ? (
+                    <span className="w-2 h-2 rounded-full inline-flex items-center justify-center bg-amber-500 ring-1 ring-amber-300">
+                      <span className="font-bold leading-none text-white" style={{ fontSize: "5px" }}>✓</span>
+                    </span>
+                  ) : (
+                    blocks.slice(0, 2).map((b) => {
+                      const trackedBlock = isBlockTracked(groups, b.blockType);
+                      const showCheck = trackedBlock || b.sorryExcused;
+                      const missed = !trackedBlock && !b.sorryExcused && !isToday && iso < today;
+                      return (
+                        <span
+                          key={b.id}
+                          className={cn(
+                            "w-2 h-2 rounded-full inline-flex items-center justify-center",
+                            showCheck
+                              ? "bg-amber-500 ring-1 ring-amber-300"
+                              : missed
+                                ? cn("border bg-white dark:bg-zinc-900", BLOCK_BORDER_COLORS[b.blockType as BlockType] ?? "border-zinc-400")
+                                : (BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-400")
+                          )}
+                        >
+                          {showCheck && <span className="font-bold leading-none text-white" style={{ fontSize: "5px" }}>✓</span>}
+                          {missed && <span className="font-bold leading-none" style={{ fontSize: "5px", color: "#cc0000" }}>✗</span>}
+                        </span>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </button>

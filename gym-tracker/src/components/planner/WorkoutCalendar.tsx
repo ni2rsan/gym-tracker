@@ -12,6 +12,7 @@ import { DayContextMenu } from "./DayContextMenu";
 import { StreakCounter } from "./StreakCounter";
 import { getStreakDataAction } from "@/actions/planner";
 import type { StreakData } from "@/lib/services/plannerService";
+import type { PRRecord } from "@/types";
 
 export interface PlannedBlock {
   id: string;
@@ -34,6 +35,7 @@ interface WorkoutCalendarProps {
   initialYear: number;
   initialMonth: number; // 0-indexed
   initialStreakData: StreakData;
+  prs: PRRecord[];
 }
 
 function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
@@ -49,6 +51,7 @@ export function WorkoutCalendar({
   initialYear,
   initialMonth,
   initialStreakData,
+  prs,
 }: WorkoutCalendarProps) {
   const [view, setView] = useState<View>("month");
   const [year, setYear] = useState(initialYear);
@@ -165,11 +168,18 @@ export function WorkoutCalendar({
     refreshStreak();
   };
 
-  const handleWorkedOutDeleted = (date: string) => {
+  const handleWorkedOutDeleted = (date: string, removedGroups: string[]) => {
     setTrackedGroups(prev => {
-      const next = { ...prev };
-      delete next[date];
-      return next;
+      const existing = prev[date];
+      if (!existing) return prev;
+      const next = new Set(existing);
+      for (const g of removedGroups) next.delete(g);
+      if (next.size === 0) {
+        const copy = { ...prev };
+        delete copy[date];
+        return copy;
+      }
+      return { ...prev, [date]: next };
     });
   };
 
@@ -309,7 +319,7 @@ export function WorkoutCalendar({
       </div>
 
       {/* Streak counter */}
-      <StreakCounter streakData={streakData} />
+      <StreakCounter streakData={streakData} prs={prs} />
 
       {/* Add block modal */}
       {addModalDate && (

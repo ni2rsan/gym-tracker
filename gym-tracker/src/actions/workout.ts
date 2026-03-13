@@ -90,6 +90,26 @@ export async function deleteWorkoutSessionByDate(date: string): Promise<ActionRe
   }
 }
 
+export async function deleteTrackedBlockByDate(date: string, blockType: string): Promise<ActionResult<{ removedGroups: string[] }>> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const muscleGroups =
+      blockType === "FULL_BODY" ? ["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT"] :
+      blockType === "CARDIO" ? ["CARDIO"] :
+      [blockType];
+    const userId = await getCurrentUserId();
+    await workoutService.deleteWorkoutSetsByMuscleGroups(userId, parsed.data, muscleGroups);
+    revalidatePath("/workout");
+    revalidatePath("/reports");
+    revalidatePath("/planner");
+    return { success: true, data: { removedGroups: muscleGroups } };
+  } catch (error) {
+    console.error("deleteTrackedBlockByDate error:", error);
+    return { success: false, error: "Failed to delete tracking." };
+  }
+}
+
 export async function deleteExerciseTracking(exerciseId: string, date: string): Promise<ActionResult> {
   try {
     const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);

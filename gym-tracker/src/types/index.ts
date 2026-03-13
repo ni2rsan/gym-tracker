@@ -41,6 +41,8 @@ export interface MetricPoint {
   date: string;
   weightKg: number | null;
   bodyFatPct: number | null;
+  fatMassKg: number | null;
+  muscleMassKg: number | null;
 }
 
 export interface ExerciseProgressPoint {
@@ -53,6 +55,7 @@ export interface ExerciseProgressPoint {
 export interface PRRecord {
   exerciseId: string;
   exerciseName: string;
+  muscleGroup: string;
   maxWeightKg: number | null;
   repsAtMaxWeight: number | null;
   maxReps: number | null;

@@ -113,16 +113,24 @@ export function WorkoutMonthView({ anchorDate, data, selectedDate, onDateSelect,
               </span>
               <div className="flex flex-wrap gap-px justify-center min-h-[20px] items-center">
                 {plannerBlocks.length > 0 ? (
-                  plannerBlocks.slice(0, 3).map((b) => {
-                    const tracked = isBlockTracked(trackedGroups, b.blockType);
-                    const missed = !tracked && !b.sorryExcused && !isToday && date < today;
-                    const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
-                    return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
-                  })
+                  plannerBlocks.every((b) => isBlockTracked(trackedGroups, b.blockType) || b.sorryExcused) ? (
+                    <BlockDot blockType={plannerBlocks[0].blockType} size="sm" status="tracked" />
+                  ) : (
+                    plannerBlocks.slice(0, 3).map((b) => {
+                      const tracked = isBlockTracked(trackedGroups, b.blockType);
+                      const missed = !tracked && !b.sorryExcused && !isToday && date < today;
+                      const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
+                      return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
+                    })
+                  )
                 ) : (
-                  workoutMuscleGroups.slice(0, 3).map((mg) => (
-                    <BlockDot key={mg} blockType={mg} size="sm" status="tracked" />
-                  ))
+                  workoutMuscleGroups.length > 1 ? (
+                    <BlockDot blockType={workoutMuscleGroups[0]} size="sm" status="tracked" />
+                  ) : (
+                    workoutMuscleGroups.slice(0, 3).map((mg) => (
+                      <BlockDot key={mg} blockType={mg} size="sm" status="tracked" />
+                    ))
+                  )
                 )}
               </div>
             </button>
