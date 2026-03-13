@@ -14,6 +14,7 @@ import { ReportFilters } from "@/components/reports/ReportFilters";
 import { ExerciseFilter } from "@/components/reports/ExerciseFilter";
 import { MetricsCards } from "@/components/metrics/MetricsCards";
 import { WithingsPanel } from "@/components/metrics/WithingsPanel";
+import { WithingsToast } from "@/components/reports/WithingsToast";
 import type { TimeRange, MuscleGroup } from "@/types";
 
 export const metadata = { title: "Reports — Gym Tracker" };
@@ -85,6 +86,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   return (
     <div className="space-y-6">
+      <Suspense><WithingsToast /></Suspense>
       {/* Page header + time range */}
       <div className="flex items-start justify-between gap-4">
         <div>

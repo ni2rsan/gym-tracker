@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Dumbbell, Scale, Trash2, Pencil, Check, X } from "lucide-react";
-import { deleteWorkoutSessionByDate, changeWorkoutSessionDate } from "@/actions/workout";
+import { deleteWorkoutSessionByDate, changeWorkoutSessionDate, deleteExerciseTracking } from "@/actions/workout";
 import { deleteBodyMetricEntry } from "@/actions/metrics";
 
 // Serialized versions of log entry types (Dates → strings for RSC→client boundary)
@@ -75,13 +75,16 @@ function WorkoutEntry({
   onDelete,
   isDeleting,
   onDateChange,
+  onDeleteExercise,
 }: {
   entry: SerializedWorkoutEntry;
   onDelete: () => void;
   isDeleting: boolean;
   onDateChange: (newDate: string) => void;
+  onDeleteExercise: (exerciseId: string) => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteExId, setConfirmDeleteExId] = useState<string | null>(null);
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [editDate, setEditDate] = useState(entry.workoutDate);
   const [, startDateTransition] = useTransition();
@@ -187,7 +190,7 @@ function WorkoutEntry({
 
         <div className="space-y-2">
           {entry.exercises.map((ex) => (
-            <div key={ex.exerciseId} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div key={ex.exerciseId} className="group/ex flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-xs font-semibold tracking-wide text-zinc-700 dark:text-zinc-300 uppercase shrink-0">
                 {ex.name}
               </span>
@@ -216,6 +219,30 @@ function WorkoutEntry({
                     </span>
                   ))}
                 </div>
+              )}
+              {confirmDeleteExId === ex.exerciseId ? (
+                <div className="flex items-center gap-1 ml-auto">
+                  <button
+                    onClick={() => { setConfirmDeleteExId(null); onDeleteExercise(ex.exerciseId); }}
+                    className="text-xs text-red-500 font-semibold hover:text-red-600"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteExId(null)}
+                    className="text-xs text-zinc-400 hover:text-zinc-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDeleteExId(ex.exerciseId)}
+                  className="opacity-0 group-hover/ex:opacity-100 transition-opacity ml-auto shrink-0 text-zinc-400 hover:text-red-500"
+                  title="Delete exercise entry"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
               )}
             </div>
           ))}
@@ -345,6 +372,24 @@ export function LogsList({ initialEntries }: { initialEntries: SerializedLogEntr
     });
   };
 
+  const handleDeleteExercise = (entry: SerializedWorkoutEntry, exerciseId: string) => {
+    startTransition(async () => {
+      const result = await deleteExerciseTracking(exerciseId, entry.workoutDate);
+      if (result.success) {
+        setEntries((prev) =>
+          prev
+            .map((e) => {
+              if (e.id !== entry.id || e.type !== "workout") return e;
+              const remaining = e.exercises.filter((ex) => ex.exerciseId !== exerciseId);
+              if (remaining.length === 0) return null;
+              return { ...e, exercises: remaining };
+            })
+            .filter(Boolean) as SerializedLogEntry[]
+        );
+      }
+    });
+  };
+
   const handleDateChange = (entryId: string, newDate: string) => {
     setEntries((prev) =>
       prev.map((e) =>
@@ -395,6 +440,7 @@ export function LogsList({ initialEntries }: { initialEntries: SerializedLogEntr
                   onDelete={() => handleDeleteWorkout(entry)}
                   isDeleting={deletingIds.has(entry.id)}
                   onDateChange={(newDate) => handleDateChange(entry.id, newDate)}
+                  onDeleteExercise={(exerciseId) => handleDeleteExercise(entry, exerciseId)}
                 />
               ) : (
                 <MetricEntry

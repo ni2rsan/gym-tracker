@@ -18,17 +18,17 @@ export async function GET(req: NextRequest) {
 
   // User denied access
   if (error) {
-    return NextResponse.redirect(`${BASE_URL}/workout?withings=denied`);
+    return NextResponse.redirect(`${BASE_URL}/reports?withings=denied`);
   }
 
   if (!code || !state) {
-    return NextResponse.redirect(`${BASE_URL}/workout?withings=error`);
+    return NextResponse.redirect(`${BASE_URL}/reports?withings=error`);
   }
 
   // Verify CSRF state
   const storedState = req.cookies.get("withings_oauth_state")?.value;
   if (!storedState || storedState !== state) {
-    return NextResponse.redirect(`${BASE_URL}/workout?withings=error`);
+    return NextResponse.redirect(`${BASE_URL}/reports?withings=error`);
   }
 
   try {
@@ -36,10 +36,10 @@ export async function GET(req: NextRequest) {
     await storeWithingsConnection(session.user.id, tokens);
   } catch (err) {
     console.error("Withings OAuth callback error:", err);
-    return NextResponse.redirect(`${BASE_URL}/workout?withings=error`);
+    return NextResponse.redirect(`${BASE_URL}/reports?withings=error`);
   }
 
-  const response = NextResponse.redirect(`${BASE_URL}/workout?withings=connected`);
+  const response = NextResponse.redirect(`${BASE_URL}/reports?withings=connected`);
 
   // Clear the state cookie
   response.cookies.set("withings_oauth_state", "", { maxAge: 0, path: "/" });

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { X, ArrowLeft, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
-import { saveWorkout } from "@/actions/workout";
+import { saveWorkout, deleteExerciseTracking } from "@/actions/workout";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
 import type { ExerciseWithSettings, SetData, MuscleGroup } from "@/types";
@@ -102,6 +102,25 @@ export function TrackingMode({
 
   const hasNonCardio = exercises.some((ex) => ex.muscleGroup !== "CARDIO");
 
+  // ── Wake Lock ────────────────────────────────────────────────────────────
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  useEffect(() => {
+    if (!autoTrack) {
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+      return;
+    }
+    if ("wakeLock" in navigator) {
+      navigator.wakeLock.request("screen").then((lock) => {
+        wakeLockRef.current = lock;
+      }).catch(() => {});
+    }
+    return () => {
+      wakeLockRef.current?.release().catch(() => {});
+      wakeLockRef.current = null;
+    };
+  }, [autoTrack]);
+
   // ── Timer effect ────────────────────────────────────────────────────────
   useEffect(() => {
     if (timerSetIdx === null || timerLeft <= 0) return;
@@ -195,10 +214,11 @@ export function TrackingMode({
     newFlags[idx] = true;
     setCompletedSetFlags(newFlags);
     const isLast = idx === sets.length - 1;
-    setTimerSetIdx(idx);
-    setTimerLeft(breakDuration);
-    if (!isLast) {
-      // next set activates after timer; timer effect handles it
+    if (isLast) {
+      handleAutoSave(ex);
+    } else {
+      setTimerSetIdx(idx);
+      setTimerLeft(breakDuration);
     }
   };
 
@@ -380,17 +400,21 @@ export function TrackingMode({
                 <div className="px-4 pb-4 flex gap-2">
                   <button
                     onClick={() => {
+                      const exId = summaryOverlay.id;
                       setCompletedIds((prev) => {
                         const next = new Set(prev);
-                        next.delete(summaryOverlay.id);
+                        next.delete(exId);
                         return next;
                       });
                       setSessionSavedSets((prev) => {
                         const next = { ...prev };
-                        delete next[summaryOverlay.id];
+                        delete next[exId];
                         return next;
                       });
                       setSummaryOverlay(null);
+                      startTransition(async () => {
+                        await deleteExerciseTracking(exId, date);
+                      });
                     }}
                     className="flex-1 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 py-2.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
                   >
@@ -445,6 +469,38 @@ export function TrackingMode({
           <X className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Automated toggle (non-cardio only) */}
+      {!isCardio && hasNonCardio && (
+        <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Automated</span>
+          <button
+            onClick={() => setAutoTrack((v) => !v)}
+            className={cn(
+              "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors",
+              autoTrack ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"
+            )}
+            role="switch"
+            aria-checked={autoTrack}
+          >
+            <span className={cn("inline-block h-4 w-4 rounded-full bg-white shadow transition-transform", autoTrack ? "translate-x-4" : "translate-x-0.5")} />
+          </button>
+          {autoTrack && (
+            <>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 ml-auto">Break</span>
+              <select
+                value={breakDuration}
+                onChange={(e) => setBreakDuration(Number(e.target.value))}
+                className="text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-2 py-1 text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              >
+                {BREAK_OPTIONS.map((o) => (
+                  <option key={o.seconds} value={o.seconds}>{o.label}</option>
+                ))}
+              </select>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Discard warning */}
       {showDiscardWarning && (
