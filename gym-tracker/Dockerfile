@@ -7,6 +7,11 @@ RUN npm ci
 
 COPY . .
 RUN npx prisma generate
+
+# DATABASE_URL is needed at build time for Next.js page data collection
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN npm run build
 
 EXPOSE 3000
