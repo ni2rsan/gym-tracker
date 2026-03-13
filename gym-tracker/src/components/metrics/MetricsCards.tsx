@@ -101,9 +101,9 @@ export function MetricsCards({
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 items-start">
+      <div className="grid grid-cols-2 gap-4 items-stretch">
         {/* Left: Body Weight */}
-        <Card className="relative">
+        <Card className="relative h-full">
           <CardBody className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
@@ -229,7 +229,7 @@ export function MetricsCards({
           </div>
         ) : (
           /* Not connected: toggle for body fat tracking */
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 h-full">
             <div className="rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 px-4 py-3">
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
@@ -243,7 +243,7 @@ export function MetricsCards({
             </div>
 
             {showBodyFat && (
-              <Card className="relative">
+              <Card className="relative flex-1">
                 <CardBody className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">

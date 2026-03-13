@@ -3,7 +3,6 @@ import { getCurrentUserId } from "@/lib/auth-helpers";
 import {
   getWeightTrendData,
   getMultiExerciseProgressData,
-  getPersonalRecords,
 } from "@/lib/services/reportService";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
 import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getWeekAgoMetrics } from "@/lib/services/metricsService";
@@ -11,7 +10,6 @@ import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/with
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { WeightTrendChart } from "@/components/reports/WeightTrendChart";
 import { ExerciseProgressChart } from "@/components/reports/ExerciseProgressChart";
-import { PRCards } from "@/components/reports/PRCards";
 import { ReportFilters } from "@/components/reports/ReportFilters";
 import { ExerciseFilter } from "@/components/reports/ExerciseFilter";
 import { MetricsCards } from "@/components/metrics/MetricsCards";
@@ -52,10 +50,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   // Sync Withings data before loading the page (no-op if not connected)
   await syncWithingsIfNeeded(userId);
 
-  const [exercises, weightTrend, prs, latestMetric, recentEntries, withingsConnection, latestWithings, weekAgoMetric] = await Promise.all([
+  const [exercises, weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, weekAgoMetric] = await Promise.all([
     getExercisesForUser(userId),
     getWeightTrendData(userId, range),
-    getPersonalRecords(userId),
     getLatestBodyMetric(userId),
     getLastNBodyMetrics(userId, 7),
     getWithingsConnection(userId),
@@ -136,7 +133,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </h2>
         </CardHeader>
         <CardBody>
-          <WeightTrendChart data={weightTrend} />
+          <WeightTrendChart data={weightTrend} isWithingsConnected={isWithingsConnected} />
         </CardBody>
       </Card>
 
@@ -159,13 +156,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </CardBody>
       </Card>
 
-      {/* Personal Records */}
-      <div>
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-white mb-3">
-          Personal Records
-        </h2>
-        <PRCards prs={prs} />
-      </div>
     </div>
   );
 }

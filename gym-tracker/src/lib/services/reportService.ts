@@ -10,12 +10,14 @@ export async function getWeightTrendData(userId: string, range: TimeRange): Prom
   const entries = await prisma.bodyMetricEntry.findMany({
     where: { userId, recordedAt: { gte: since } },
     orderBy: { recordedAt: "desc" },
-    select: { weightKg: true, bodyFatPct: true, recordedAt: true },
+    select: { weightKg: true, bodyFatPct: true, fatMassKg: true, muscleMassKg: true, recordedAt: true },
   });
 
-  // Weight and body fat are stored in separate rows — deduplicate each independently per day
+  // Each metric is stored in separate rows — deduplicate each independently per day
   const byDayWeight: Record<string, number> = {};
   const byDayBF: Record<string, number> = {};
+  const byDayFatMass: Record<string, number> = {};
+  const byDayMuscleMass: Record<string, number> = {};
   const allDays = new Set<string>();
 
   for (const entry of entries) {
@@ -27,6 +29,12 @@ export async function getWeightTrendData(userId: string, range: TimeRange): Prom
     if (entry.bodyFatPct != null && byDayBF[day] === undefined) {
       byDayBF[day] = Number(entry.bodyFatPct);
     }
+    if (entry.fatMassKg != null && byDayFatMass[day] === undefined) {
+      byDayFatMass[day] = Number(entry.fatMassKg);
+    }
+    if (entry.muscleMassKg != null && byDayMuscleMass[day] === undefined) {
+      byDayMuscleMass[day] = Number(entry.muscleMassKg);
+    }
   }
 
   return [...allDays]
@@ -35,6 +43,8 @@ export async function getWeightTrendData(userId: string, range: TimeRange): Prom
       date: day,
       weightKg: byDayWeight[day] ?? null,
       bodyFatPct: byDayBF[day] ?? null,
+      fatMassKg: byDayFatMass[day] ?? null,
+      muscleMassKg: byDayMuscleMass[day] ?? null,
     }));
 }
 
@@ -129,7 +139,7 @@ export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
         some: { session: { userId } },
       },
     },
-    select: { id: true, name: true, isBodyweight: true },
+    select: { id: true, name: true, isBodyweight: true, muscleGroup: true },
   });
 
   const prs: PRRecord[] = [];
@@ -152,6 +162,7 @@ export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
       prs.push({
         exerciseId: exercise.id,
         exerciseName: exercise.name,
+        muscleGroup: exercise.muscleGroup,
         maxWeightKg: best.weightKg ? Number(best.weightKg) : null,
         repsAtMaxWeight: best.reps,
         maxReps: exercise.isBodyweight ? best.reps : null,

@@ -14,7 +14,7 @@ import {
   excuseMissedDay,
   revokeSorryExcuse,
 } from "@/actions/planner";
-import { deleteWorkoutSessionByDate, getWorkoutSummaryForDate } from "@/actions/workout";
+import { deleteTrackedBlockByDate, getWorkoutSummaryForDate } from "@/actions/workout";
 import type { WorkoutExerciseSummary } from "@/lib/services/workoutService";
 import type { PlannedBlock } from "./WorkoutCalendar";
 import { BlockBadge } from "./BlockDot";
@@ -33,7 +33,7 @@ interface DayContextMenuProps {
   onBlockUpdated: (blockId: string, blockType: string) => void;
   onSeriesUpdated: (seriesId: string, blocks: PlannedBlock[]) => void;
   onAddBlock: () => void;
-  onWorkedOutDeleted?: (date: string) => void;
+  onWorkedOutDeleted?: (date: string, removedGroups: string[]) => void;
   onBlockExcused?: (date: string) => void;
   onBlockSorryRevoked?: (date: string) => void;
   /** Streak count per seriesId (from streakData) */
@@ -179,9 +179,9 @@ export function DayContextMenu({
 
   const handleDeleteTrackedWorkout = () => {
     startTransition(async () => {
-      const result = await deleteWorkoutSessionByDate(date);
-      if (result.success) {
-        onWorkedOutDeleted?.(date);
+      const result = await deleteTrackedBlockByDate(date, activeBlock.blockType);
+      if (result.success && result.data) {
+        onWorkedOutDeleted?.(date, result.data.removedGroups);
         onClose();
       }
     });
@@ -559,7 +559,7 @@ export function DayContextMenu({
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
             >
               <Trash2 className="h-4 w-4" />
-              Delete tracked workout
+              Delete tracked {BLOCK_LABELS[activeBlock.blockType as BlockType] ?? activeBlock.blockType}
             </button>
           )
         )}
