@@ -6,14 +6,16 @@ import {
   getPersonalRecords,
 } from "@/lib/services/reportService";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
-import { getLatestBodyMetric } from "@/lib/services/metricsService";
+import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getWeekAgoMetrics } from "@/lib/services/metricsService";
+import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { WeightTrendChart } from "@/components/reports/WeightTrendChart";
 import { ExerciseProgressChart } from "@/components/reports/ExerciseProgressChart";
 import { PRCards } from "@/components/reports/PRCards";
 import { ReportFilters } from "@/components/reports/ReportFilters";
 import { ExerciseFilter } from "@/components/reports/ExerciseFilter";
-import { formatWeight, formatPct } from "@/lib/utils";
+import { MetricsCards } from "@/components/metrics/MetricsCards";
+import { WithingsPanel } from "@/components/metrics/WithingsPanel";
 import type { TimeRange, MuscleGroup } from "@/types";
 
 export const metadata = { title: "Reports — Gym Tracker" };
@@ -37,26 +39,42 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       ? params.range
       : "month";
 
-  // Single selected category — default to UPPER_BODY
   const selectedCategory: MuscleGroup = VALID_CATS.includes(params.cat as MuscleGroup)
     ? (params.cat as MuscleGroup)
     : "UPPER_BODY";
 
-  // Refinement: specific exercise IDs within the selected category (empty = show all)
   const selectedExerciseIds: string[] = params.exIds
     ? params.exIds.split(",").filter(Boolean)
     : [];
 
   const userId = await getCurrentUserId();
 
-  const [exercises, weightTrend, prs, latestMetric] = await Promise.all([
+  // Sync Withings data before loading the page (no-op if not connected)
+  await syncWithingsIfNeeded(userId);
+
+  const [exercises, weightTrend, prs, latestMetric, recentEntries, withingsConnection, latestWithings, weekAgoMetric] = await Promise.all([
     getExercisesForUser(userId),
     getWeightTrendData(userId, range),
     getPersonalRecords(userId),
     getLatestBodyMetric(userId),
+    getLastNBodyMetrics(userId, 7),
+    getWithingsConnection(userId),
+    getLatestWithingsMetric(userId),
+    getWeekAgoMetrics(userId),
   ]);
 
-  // Chart = refined exercises if any selected, otherwise all in the category
+  const isWithingsConnected = !!(withingsConnection?.isActive);
+
+  const serializedEntries = recentEntries.map((e) => ({
+    date: e.date,
+    weightKg: e.weightKg !== null ? e.weightKg.toFixed(1) : null,
+    bodyFatPct: e.bodyFatPct !== null ? e.bodyFatPct.toFixed(1) : null,
+    fatMassKg: e.fatMassKg !== null ? e.fatMassKg.toFixed(1) : null,
+    muscleMassKg: e.muscleMassKg !== null ? e.muscleMassKg.toFixed(1) : null,
+    recordedAt: e.recordedAt.toISOString(),
+    source: e.source,
+  }));
+
   const categoryExerciseIds = exercises
     .filter((e) => e.muscleGroup === selectedCategory)
     .map((e) => e.id);
@@ -83,28 +101,31 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </Suspense>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardBody>
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-              Current Weight
-            </p>
-            <p className="text-xl font-bold text-zinc-900 dark:text-white mt-1">
-              {latestMetric?.weightKg ? formatWeight(Number(latestMetric.weightKg)) : "—"}
-            </p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardBody>
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-              Body Fat
-            </p>
-            <p className="text-xl font-bold text-zinc-900 dark:text-white mt-1">
-              {latestMetric?.bodyFatPct ? formatPct(Number(latestMetric.bodyFatPct)) : "—"}
-            </p>
-          </CardBody>
-        </Card>
+      {/* Body metrics */}
+      <div className="space-y-3">
+        <Suspense fallback={<div className="grid grid-cols-2 gap-4"><div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" /><div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" /></div>}>
+          <MetricsCards
+            currentWeight={latestMetric?.weightKg ? Number(latestMetric.weightKg) : null}
+            currentBodyFat={latestMetric?.bodyFatPct ? Number(latestMetric.bodyFatPct) : null}
+            currentFatMassKg={latestMetric?.fatMassKg ? Number(latestMetric.fatMassKg) : null}
+            currentMuscleMassKg={latestMetric?.muscleMassKg ? Number(latestMetric.muscleMassKg) : null}
+            weightSource={latestMetric?.weightSource}
+            bodyFatSource={latestMetric?.bodyFatSource}
+            withingsWeight={latestWithings.weightKg ? Number(latestWithings.weightKg) : null}
+            withingsBodyFat={latestWithings.bodyFatPct ? Number(latestWithings.bodyFatPct) : null}
+            weekAgoWeight={weekAgoMetric.weightKg}
+            weekAgoBodyFat={weekAgoMetric.bodyFatPct}
+            weekAgoFatMassKg={weekAgoMetric.fatMassKg}
+            weekAgoMuscleMassKg={weekAgoMetric.muscleMassKg}
+            isWithingsConnected={isWithingsConnected}
+          />
+        </Suspense>
+
+        <WithingsPanel
+          isConnected={isWithingsConnected}
+          lastSyncAt={withingsConnection?.lastSyncAt?.toISOString() ?? null}
+          recentEntries={serializedEntries}
+        />
       </div>
 
       {/* Weight & Body Fat Trend */}
@@ -119,7 +140,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </CardBody>
       </Card>
 
-      {/* Exercise Progress — filter sits directly above chart */}
+      {/* Exercise Progress */}
       <Card>
         <CardHeader className="flex-col items-start gap-3">
           <h2 className="text-base font-semibold text-zinc-900 dark:text-white">

@@ -66,7 +66,7 @@ export function AllView({ workouts, trackedGroupsByDate, onDayClick, onAddClick 
                     onClick={(e) => onDayClick(b.date, e)}
                     className={cn(
                       "w-full flex items-center justify-between px-4 py-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors",
-                      isToday && "bg-emerald-50/50 dark:bg-emerald-900/10"
+                      isToday && "bg-emerald-50 dark:bg-emerald-500/10"
                     )}
                   >
                     <div className="flex items-center gap-3">

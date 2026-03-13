@@ -12,15 +12,15 @@ interface WorkoutDayViewProps {
 }
 
 const GROUP_COLORS: Record<MuscleGroup, string> = {
-  UPPER_BODY: "text-blue-600 dark:text-blue-400",
-  LOWER_BODY: "text-amber-600 dark:text-amber-400",
-  BODYWEIGHT: "text-purple-600 dark:text-purple-400",
-  CARDIO: "text-rose-600 dark:text-rose-400",
+  UPPER_BODY: "text-blue-500 dark:text-blue-400",
+  LOWER_BODY: "text-green-600 dark:text-green-400",
+  BODYWEIGHT: "text-purple-500 dark:text-purple-400",
+  CARDIO: "text-rose-500 dark:text-rose-400",
 };
 
 const GROUP_BG: Record<MuscleGroup, string> = {
   UPPER_BODY: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/50",
-  LOWER_BODY: "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/50",
+  LOWER_BODY: "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/50",
   BODYWEIGHT: "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/50",
   CARDIO: "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/50",
 };
@@ -123,8 +123,8 @@ export function WorkoutDayView({ exercises, workoutData, onTrack }: WorkoutDayVi
                       </p>
                     </div>
                     {hasData && (
-                      <span className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                        <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
+                      <span className="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-amber-300 flex items-center justify-center shrink-0">
+                        <span className="text-white font-black leading-none drop-shadow-sm" style={{ fontSize: "9px" }}>✓</span>
                       </span>
                     )}
                   </div>

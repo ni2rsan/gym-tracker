@@ -6,7 +6,7 @@ import { getCurrentUserId } from "@/lib/auth-helpers";
 import * as plannerService from "@/lib/services/plannerService";
 import type { ActionResult } from "@/types";
 
-const BlockTypeSchema = z.enum(["UPPER_BODY", "LOWER_BODY", "FULL_BODY", "CARDIO"]);
+const BlockTypeSchema = z.enum(["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT", "FULL_BODY", "CARDIO"]);
 const SeriesRuleTypeSchema = z.enum(["WEEKDAYS", "INTERVAL"]);
 const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -22,6 +22,39 @@ const CreateSeriesSchema = z.object({
   intervalDays: z.number().int().min(1).max(365).optional(),
   startDate: DateSchema,
 });
+
+export type PlannerBlockInfo = {
+  id: string;
+  blockType: string;
+  sorryExcused: boolean;
+};
+
+export async function getBlocksForRange(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<{ blocksByDate: Record<string, PlannerBlockInfo[]>; sorryRemaining: number }>> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!DateSchema.safeParse(startDate).success || !DateSchema.safeParse(endDate).success) {
+      return { success: false, error: "Invalid date range." };
+    }
+    const [blocks, sorryData] = await Promise.all([
+      plannerService.getPlannedWorkoutsInRange(userId, startDate, endDate),
+      plannerService.getSorryTokensThisMonth(userId),
+    ]);
+    const blocksByDate: Record<string, PlannerBlockInfo[]> = {};
+    for (const block of blocks) {
+      const d = block.date;
+      const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      if (!blocksByDate[iso]) blocksByDate[iso] = [];
+      blocksByDate[iso].push({ id: block.id, blockType: block.blockType, sorryExcused: block.sorryExcused });
+    }
+    return { success: true, data: { blocksByDate, sorryRemaining: Math.max(0, 3 - sorryData.usedCount) } };
+  } catch (e) {
+    console.error("getBlocksForRange error:", e);
+    return { success: false, error: "Failed to load planner blocks." };
+  }
+}
 
 export async function createBlock(formData: unknown): Promise<ActionResult> {
   try {

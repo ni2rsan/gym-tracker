@@ -30,6 +30,8 @@ const DEFAULT_EXERCISES = [
   // Bodyweight
   { name: "PUSHUPS", muscleGroup: MuscleGroup.BODYWEIGHT, isBodyweight: true, sortOrder: 1 },
   { name: "PULLUPS", muscleGroup: MuscleGroup.BODYWEIGHT, isBodyweight: true, sortOrder: 2 },
+  { name: "CRUNCHES", muscleGroup: MuscleGroup.BODYWEIGHT, isBodyweight: true, sortOrder: 3 },
+  { name: "LEG RAISES", muscleGroup: MuscleGroup.BODYWEIGHT, isBodyweight: true, sortOrder: 4 },
   // Cardio
   { name: "BIKING", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 1 },
   { name: "JOGGING", muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, sortOrder: 2 },

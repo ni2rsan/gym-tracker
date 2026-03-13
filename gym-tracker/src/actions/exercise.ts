@@ -76,6 +76,17 @@ export async function hideExercise(exerciseId: string): Promise<ActionResult> {
   }
 }
 
+export async function setPreferredSets(exerciseId: string, count: number): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await exerciseService.setPreferredSets(userId, exerciseId, count);
+    return { success: true };
+  } catch (error) {
+    console.error("setPreferredSets error:", error);
+    return { success: false, error: "Failed to save set preference." };
+  }
+}
+
 export async function deleteExerciseData(exerciseId: string): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();

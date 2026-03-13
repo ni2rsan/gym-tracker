@@ -90,6 +90,21 @@ export async function deleteWorkoutSessionByDate(date: string): Promise<ActionRe
   }
 }
 
+export async function deleteExerciseTracking(exerciseId: string, date: string): Promise<ActionResult> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const userId = await getCurrentUserId();
+    await workoutService.deleteExerciseSetsForDate(userId, exerciseId, parsed.data);
+    revalidatePath("/workout");
+    revalidatePath("/reports");
+    return { success: true };
+  } catch (error) {
+    console.error("deleteExerciseTracking error:", error);
+    return { success: false, error: "Failed to delete tracking." };
+  }
+}
+
 export async function getWorkoutSummaryForDate(date: string): Promise<ActionResult<workoutService.WorkoutExerciseSummary[]>> {
   try {
     const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);

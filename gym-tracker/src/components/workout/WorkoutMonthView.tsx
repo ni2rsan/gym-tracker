@@ -1,16 +1,19 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { BlockDot } from "@/components/planner/BlockDot";
 import type { WorkoutDayData } from "@/lib/services/workoutService";
 
-const MUSCLE_GROUP_COLORS: Record<string, string> = {
-  UPPER_BODY: "bg-blue-400",
-  LOWER_BODY: "bg-amber-400",
-  BODYWEIGHT: "bg-purple-400",
-  CARDIO: "bg-rose-400",
-};
+type PlannerBlock = { id: string; blockType: string; sorryExcused: boolean };
 
 const DAY_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
+  if (!groups || groups.size === 0) return false;
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
+}
 
 export function getMonthRange(anchorDate: string): { start: string; end: string } {
   const [year, month] = anchorDate.split("-").map(Number);
@@ -40,9 +43,10 @@ interface WorkoutMonthViewProps {
   data: WorkoutDayData[];
   selectedDate: string;
   onDateSelect: (date: string) => void;
+  plannerBlocksByDate?: Record<string, PlannerBlock[]>;
 }
 
-export function WorkoutMonthView({ anchorDate, data, selectedDate, onDateSelect }: WorkoutMonthViewProps) {
+export function WorkoutMonthView({ anchorDate, data, selectedDate, onDateSelect, plannerBlocksByDate }: WorkoutMonthViewProps) {
   const cells = buildCalendarGrid(anchorDate);
   const dataByDate = Object.fromEntries(data.map((d) => [d.date, d]));
   const today = new Date().toISOString().split("T")[0];
@@ -67,31 +71,39 @@ export function WorkoutMonthView({ anchorDate, data, selectedDate, onDateSelect 
           const dayData = dataByDate[date];
           const isSelected = date === selectedDate;
           const isToday = date === today;
-          const muscleGroups = dayData
+          const dayNum = parseInt(date.split("-")[2], 10);
+
+          const trackedGroups = dayData
+            ? new Set(dayData.exercises.map((e) => e.muscleGroup))
+            : undefined;
+
+          const plannerBlocks = plannerBlocksByDate?.[date] ?? [];
+          const workoutMuscleGroups = dayData
             ? [...new Set(dayData.exercises.map((e) => e.muscleGroup))]
             : [];
-          const dayNum = parseInt(date.split("-")[2], 10);
+
+          const hasActivity = plannerBlocks.length > 0 || workoutMuscleGroups.length > 0;
 
           return (
             <button
               key={date}
               onClick={() => onDateSelect(date)}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-lg p-1.5 border transition-colors",
+                "flex flex-col items-center gap-0.5 p-1.5 border transition-colors",
                 isSelected
-                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                  ? "rounded-none border-amber-400 bg-amber-50 dark:bg-amber-500/15 dark:border-amber-400/50"
                   : isToday
-                    ? "border-zinc-400 dark:border-zinc-500 bg-zinc-50 dark:bg-zinc-900"
-                    : dayData
-                      ? "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950"
-                      : "border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
+                    ? "rounded-lg border-zinc-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/10"
+                    : hasActivity
+                      ? "rounded-lg border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-950"
+                      : "rounded-lg border-transparent hover:border-zinc-200 dark:hover:border-zinc-800"
               )}
             >
               <span
                 className={cn(
                   "text-xs font-semibold leading-none",
                   isSelected
-                    ? "text-emerald-700 dark:text-emerald-300"
+                    ? "text-amber-700 dark:text-amber-300"
                     : isToday
                       ? "text-zinc-900 dark:text-white"
                       : "text-zinc-600 dark:text-zinc-400"
@@ -99,13 +111,19 @@ export function WorkoutMonthView({ anchorDate, data, selectedDate, onDateSelect 
               >
                 {dayNum}
               </span>
-              <div className="flex flex-wrap gap-px justify-center min-h-[6px]">
-                {muscleGroups.slice(0, 3).map((mg) => (
-                  <span
-                    key={mg}
-                    className={cn("w-1.5 h-1.5 rounded-full", MUSCLE_GROUP_COLORS[mg] ?? "bg-zinc-400")}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-px justify-center min-h-[20px] items-center">
+                {plannerBlocks.length > 0 ? (
+                  plannerBlocks.slice(0, 3).map((b) => {
+                    const tracked = isBlockTracked(trackedGroups, b.blockType);
+                    const missed = !tracked && !b.sorryExcused && !isToday && date < today;
+                    const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
+                    return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
+                  })
+                ) : (
+                  workoutMuscleGroups.slice(0, 3).map((mg) => (
+                    <BlockDot key={mg} blockType={mg} size="sm" status="tracked" />
+                  ))
+                )}
               </div>
             </button>
           );

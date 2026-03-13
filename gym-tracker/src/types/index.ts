@@ -10,6 +10,7 @@ export interface ExerciseWithSettings {
   sortOrder: number;
   isPinned: boolean;
   userSortOrder: number;
+  preferredSets?: number | null;
 }
 
 export interface SetData {
