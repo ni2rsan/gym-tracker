@@ -122,6 +122,16 @@ export async function getLatestSetsPerExercise(userId: string) {
   return result;
 }
 
+export async function deleteExerciseSetsForDate(userId: string, exerciseId: string, date: string): Promise<void> {
+  const session = await prisma.workoutSession.findFirst({
+    where: { userId, date: new Date(date + "T12:00:00") },
+  });
+  if (!session) return;
+  await prisma.exerciseSet.deleteMany({
+    where: { sessionId: session.id, exerciseId },
+  });
+}
+
 export async function deleteWorkoutSessionByDate(userId: string, date: string): Promise<void> {
   await prisma.workoutSession.deleteMany({
     where: { userId, date: new Date(date + "T12:00:00") },
@@ -183,6 +193,82 @@ export async function getWorkoutSummaryForDate(userId: string, date: string): Pr
   }
 
   return Object.values(exerciseMap);
+}
+
+export type WorkoutDayData = {
+  date: string;
+  exercises: Array<{
+    exerciseId: string;
+    name: string;
+    muscleGroup: string;
+    isBodyweight: boolean;
+    isCardio: boolean;
+    sets: Array<{ setNumber: number; reps: number; weightKg: number | null }>;
+  }>;
+};
+
+export async function getWorkoutsForDateRange(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<WorkoutDayData[]> {
+  const sessions = await prisma.workoutSession.findMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(startDate + "T00:00:00"),
+        lte: new Date(endDate + "T23:59:59"),
+      },
+    },
+    orderBy: { date: "asc" },
+    include: {
+      sets: {
+        orderBy: { recordedAt: "desc" },
+        include: {
+          exercise: {
+            select: { id: true, name: true, isBodyweight: true, muscleGroup: true },
+          },
+        },
+      },
+    },
+  });
+
+  return sessions.map((session) => {
+    const latestByKey: Record<string, typeof session.sets[0]> = {};
+    for (const set of session.sets) {
+      const key = `${set.exerciseId}:${set.setNumber}`;
+      if (!latestByKey[key]) latestByKey[key] = set;
+    }
+
+    const exerciseMap: Record<string, WorkoutDayData["exercises"][0]> = {};
+    for (const set of Object.values(latestByKey)) {
+      const isCardio = (set.exercise.muscleGroup as string) === "CARDIO";
+      if (!exerciseMap[set.exerciseId]) {
+        exerciseMap[set.exerciseId] = {
+          exerciseId: set.exerciseId,
+          name: set.exercise.name,
+          muscleGroup: set.exercise.muscleGroup as string,
+          isBodyweight: set.exercise.isBodyweight,
+          isCardio,
+          sets: [],
+        };
+      }
+      exerciseMap[set.exerciseId].sets.push({
+        setNumber: set.setNumber,
+        reps: set.reps,
+        weightKg: set.weightKg !== null ? Number(set.weightKg) : null,
+      });
+    }
+
+    for (const ex of Object.values(exerciseMap)) {
+      ex.sets.sort((a, b) => a.setNumber - b.setNumber);
+    }
+
+    return {
+      date: session.date.toISOString().split("T")[0],
+      exercises: Object.values(exerciseMap),
+    };
+  });
 }
 
 export async function getRecentWorkoutDates(userId: string, limit = 30): Promise<string[]> {

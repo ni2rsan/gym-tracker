@@ -1,18 +1,19 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { BLOCK_LABELS } from "@/constants/exercises";
-import type { BlockType } from "@/constants/exercises";
 import type { StreakData } from "@/lib/services/plannerService";
 
 const SORRY_MAX = 3;
 
 function getMotivation(streak: number): string {
   if (streak === 0) return "Start your streak today!";
-  if (streak < 7) return "Keep it up!";
-  if (streak < 14) return "One week strong! 💪";
-  if (streak < 30) return "Two weeks! You're on fire! 🔥";
-  return "Incredible dedication! 🏆";
+  if (streak === 1) return "First day down. Keep going!";
+  if (streak < 5) return "Building momentum!";
+  if (streak < 7) return "Almost a week — keep it up!";
+  if (streak < 14) return "One week strong!";
+  if (streak < 21) return "Two weeks — you're on fire!";
+  if (streak < 30) return "Three weeks of consistency!";
+  return "Incredible dedication!";
 }
 
 interface SorryTokensProps {
@@ -20,8 +21,9 @@ interface SorryTokensProps {
 }
 
 function SorryTokens({ used }: SorryTokensProps) {
+  const remaining = SORRY_MAX - used;
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex items-center gap-3">
       <div className="flex gap-1.5">
         {Array.from({ length: SORRY_MAX }, (_, i) => {
           const isUsed = i < used;
@@ -41,51 +43,9 @@ function SorryTokens({ used }: SorryTokensProps) {
           );
         })}
       </div>
-      <span className="text-[10px] text-amber-700/70 dark:text-amber-300/50 font-medium">
-        SORRY tokens — {SORRY_MAX - used} of {SORRY_MAX} left this month
+      <span className="text-xs text-amber-700/70 dark:text-amber-300/50 font-medium">
+        {remaining} of {SORRY_MAX} SORRY tokens left this month
       </span>
-    </div>
-  );
-}
-
-interface StreakCardProps {
-  blockType: string;
-  count: number;
-}
-
-function StreakCard({ blockType, count }: StreakCardProps) {
-  const label = BLOCK_LABELS[blockType as BlockType] ?? blockType;
-  const motivation = getMotivation(count);
-
-  return (
-    <div className="flex flex-col items-center gap-1 px-6">
-      {/* Flame + count */}
-      <div className="flex items-end gap-1">
-        <span
-          className={cn(
-            "text-4xl leading-none transition-transform",
-            count > 0 ? "animate-none" : "opacity-30 grayscale"
-          )}
-        >
-          🔥
-        </span>
-        <span className="text-5xl font-black leading-none text-white drop-shadow-md tabular-nums">
-          {count}
-        </span>
-      </div>
-
-      {/* "day streak" label */}
-      <div className="text-xs font-semibold text-white/80 uppercase tracking-widest">
-        day streak
-      </div>
-
-      {/* Block type badge */}
-      <div className="text-xs text-white/60 font-medium">{label}</div>
-
-      {/* Motivation */}
-      <div className="mt-1 text-sm font-semibold text-white/90 text-center leading-tight">
-        {motivation}
-      </div>
     </div>
   );
 }
@@ -95,31 +55,44 @@ interface StreakCounterProps {
 }
 
 export function StreakCounter({ streakData }: StreakCounterProps) {
-  const { streaks, sorryUsed } = streakData;
+  const { generalStreak, bestStreak, totalWorkoutsThisMonth, sorryUsed } = streakData;
 
-  // Only show when there are active series
-  if (!streaks || streaks.length === 0) return null;
+  const isActive = generalStreak > 0;
+  const motivation = getMotivation(generalStreak);
 
   return (
     <div className="mt-6 rounded-2xl overflow-hidden shadow-lg">
-      {/* Gradient header */}
-      <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-orange-500 dark:from-amber-700 dark:via-orange-700 dark:to-orange-800 p-5">
-        <div className="text-center mb-4">
-          <h3 className="text-base font-bold text-white/90 uppercase tracking-wider text-sm">
-            Workout Streak
-          </h3>
+      {/* Main area */}
+      <div className="bg-gradient-to-br from-amber-400 via-orange-400 to-orange-500 dark:from-amber-700 dark:via-orange-700 dark:to-orange-800 px-6 pt-5 pb-4 space-y-4">
+
+        {/* Top row: flame + streak + motivation */}
+        <div className="flex items-center gap-4">
+          <span className={cn("text-5xl leading-none shrink-0", !isActive && "opacity-30 grayscale")}>
+            🔥
+          </span>
+          <div>
+            <div className="flex items-end gap-1.5 leading-none">
+              <span className="text-6xl font-black text-white drop-shadow-md tabular-nums leading-none">
+                {generalStreak}
+              </span>
+              <span className="text-sm font-bold text-white/70 uppercase tracking-widest pb-1">
+                day streak
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-white/80 mt-1">{motivation}</p>
+          </div>
         </div>
 
-        {/* Streak cards — one per series */}
-        <div
-          className={cn(
-            "flex justify-center gap-8 flex-wrap",
-            streaks.length === 1 && "justify-center"
-          )}
-        >
-          {streaks.map((s) => (
-            <StreakCard key={s.seriesId} blockType={s.blockType} count={s.count} />
-          ))}
+        {/* Stats row */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl bg-white/15 px-4 py-2.5">
+            <div className="text-2xl font-black text-white tabular-nums leading-none">{bestStreak}</div>
+            <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">Best streak</div>
+          </div>
+          <div className="rounded-xl bg-white/15 px-4 py-2.5">
+            <div className="text-2xl font-black text-white tabular-nums leading-none">{totalWorkoutsThisMonth}</div>
+            <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">This month</div>
+          </div>
         </div>
       </div>
 
