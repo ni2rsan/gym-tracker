@@ -95,16 +95,24 @@ export function WorkoutWeekView({ anchorDate, data, selectedDate, onDateSelect, 
             </span>
             <div className="flex flex-wrap gap-0.5 justify-center min-h-[16px]">
               {plannerBlocks.length > 0 ? (
-                plannerBlocks.map((b) => {
-                  const tracked = isBlockTracked(trackedGroups, b.blockType);
-                  const missed = !tracked && !b.sorryExcused && !isToday && date < today;
-                  const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
-                  return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
-                })
+                plannerBlocks.every((b) => isBlockTracked(trackedGroups, b.blockType) || b.sorryExcused) ? (
+                  <BlockDot blockType={plannerBlocks[0].blockType} size="sm" status="tracked" />
+                ) : (
+                  plannerBlocks.map((b) => {
+                    const tracked = isBlockTracked(trackedGroups, b.blockType);
+                    const missed = !tracked && !b.sorryExcused && !isToday && date < today;
+                    const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
+                    return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
+                  })
+                )
               ) : (
-                workoutMuscleGroups.map((mg) => (
-                  <BlockDot key={mg} blockType={mg} size="sm" status="tracked" />
-                ))
+                workoutMuscleGroups.length > 1 ? (
+                  <BlockDot blockType={workoutMuscleGroups[0]} size="sm" status="tracked" />
+                ) : (
+                  workoutMuscleGroups.map((mg) => (
+                    <BlockDot key={mg} blockType={mg} size="sm" status="tracked" />
+                  ))
+                )
               )}
             </div>
             {dayData && (

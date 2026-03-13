@@ -132,6 +132,19 @@ export async function deleteExerciseSetsForDate(userId: string, exerciseId: stri
   });
 }
 
+export async function deleteWorkoutSetsByMuscleGroups(userId: string, date: string, muscleGroups: string[]): Promise<void> {
+  const session = await prisma.workoutSession.findFirst({
+    where: { userId, date: new Date(date + "T12:00:00") },
+  });
+  if (!session) return;
+  await prisma.exerciseSet.deleteMany({
+    where: {
+      sessionId: session.id,
+      exercise: { muscleGroup: { in: muscleGroups as never[] } },
+    },
+  });
+}
+
 export async function deleteWorkoutSessionByDate(userId: string, date: string): Promise<void> {
   await prisma.workoutSession.deleteMany({
     where: { userId, date: new Date(date + "T12:00:00") },
