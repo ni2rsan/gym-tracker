@@ -364,6 +364,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
 
   const handleTrackingBack = () => {
     if (fromPlannerRef.current) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       router.push("/planner");
     } else {
       setTrackingScope(null);
@@ -790,7 +792,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               onBack={handleTrackingBack}
               onExit={() => {
                 setTrackingScope(null);
-                if (fromPlannerRef.current) router.push("/planner");
+                if (fromPlannerRef.current) {
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                  router.push("/planner");
+                }
               }}
               onExerciseSaved={(exerciseId, sets) => {
                 setWorkoutData((prev) => ({ ...prev, [exerciseId]: sets }));

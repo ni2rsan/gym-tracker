@@ -79,7 +79,34 @@ export function ExerciseCard({
   );
 
   const trackedBar = isTracked && (
-    <div className="flex items-center justify-end gap-1.5 mb-3 -mt-1">
+    <div className="flex items-center gap-1.5 mb-3 -mt-1">
+      {!isCardio && (
+        <>
+          <button
+            onClick={() => {
+              if (sets.length <= 1) return;
+              const next = sets.slice(0, -1);
+              onSetsChange(next);
+              startTransition(async () => { await setPreferredSets(exercise.id, next.length); });
+            }}
+            disabled={sets.length <= 1}
+            className="flex items-center gap-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Minus className="h-2.5 w-2.5" /> Set
+          </button>
+          <button
+            onClick={() => {
+              const next = [...sets, { setNumber: sets.length + 1, reps: 0, weightKg: "" }];
+              onSetsChange(next);
+              startTransition(async () => { await setPreferredSets(exercise.id, next.length); });
+            }}
+            className="flex items-center gap-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Plus className="h-2.5 w-2.5" /> Set
+          </button>
+        </>
+      )}
+      <div className="flex-1" />
       {isEditMode ? (
         <button
           onClick={() => setIsEditMode(false)}
@@ -181,9 +208,18 @@ export function ExerciseCard({
 
       {/* Column headers */}
       <div className="flex items-center gap-1.5 mb-1.5 text-xs text-zinc-400 dark:text-zinc-500">
-        <span className="w-10 shrink-0 text-center">Set</span>
-        <span className="flex-1 text-center">Reps</span>
-        {!exercise.isBodyweight && <span className="flex-1 text-center">kg</span>}
+        {exercise.isBodyweight ? (
+          <>
+            <span className="w-10 shrink-0 text-center">Set</span>
+            <span className="flex-1 text-center">Reps</span>
+          </>
+        ) : (
+          <>
+            <span className="w-10 shrink-0 text-center">Set</span>
+            <span className="flex-1 text-center">Reps</span>
+            <span className="flex-1 text-center">kg</span>
+          </>
+        )}
       </div>
 
       {/* Sets */}

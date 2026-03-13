@@ -97,6 +97,9 @@ export function TrackingMode({
   const [timerSetIdx, setTimerSetIdx] = useState<number | null>(null);
   const [timerLeft, setTimerLeft] = useState(0);
 
+  // Manual mode edit toggle
+  const [isManualEditMode, setIsManualEditMode] = useState(false);
+
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
 
@@ -160,6 +163,7 @@ export function TrackingMode({
     setCompletedSetFlags(Array(snapshot.length).fill(false));
     setTimerSetIdx(null);
     setTimerLeft(0);
+    setIsManualEditMode(false);
     setView({ kind: "exercise", exercise: ex });
   };
 
@@ -231,6 +235,17 @@ export function TrackingMode({
     } else {
       setActiveSetIdx(idx + 1);
     }
+  };
+
+  const handleUndoLastSet = () => {
+    const lastIdx = completedSetFlags.lastIndexOf(true);
+    if (lastIdx < 0) return;
+    const newFlags = [...completedSetFlags];
+    newFlags[lastIdx] = false;
+    setCompletedSetFlags(newFlags);
+    setTimerSetIdx(null);
+    setTimerLeft(0);
+    setActiveSetIdx(lastIdx);
   };
 
   // ── Icons view ─────────────────────────────────────────────────────────
@@ -524,10 +539,11 @@ export function TrackingMode({
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-6">
         {/* Large icon */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-1">
           <div className="w-24 h-24 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700">
             <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-12 w-12" />
           </div>
+          <p className="mt-1 text-base font-bold text-zinc-900 dark:text-white text-center">{ex.name}</p>
           <span className={cn("text-xs font-semibold uppercase tracking-wide", GROUP_COLORS[ex.muscleGroup])}>
             {MUSCLE_GROUP_LABELS[ex.muscleGroup]}
           </span>
@@ -558,8 +574,14 @@ export function TrackingMode({
               {sets.length > 0 && !autoTrack && (
                 <div className="flex items-center gap-1.5 mb-1.5 text-xs text-zinc-400 dark:text-zinc-500">
                   <span className="w-10 shrink-0 text-center">Set</span>
-                  <span className="flex-1 text-center">Reps</span>
+                  <span className={cn("text-center", ex.isBodyweight ? "flex-1" : "flex-1")}>Reps</span>
                   {!ex.isBodyweight && <span className="flex-1 text-center">kg</span>}
+                  <button
+                    onClick={() => setIsManualEditMode((v) => !v)}
+                    className="ml-1 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 text-[11px] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    {isManualEditMode ? "Done" : "Edit"}
+                  </button>
                 </div>
               )}
               {sets.length > 0 && autoTrack && (
@@ -583,6 +605,18 @@ export function TrackingMode({
                 const rowDisabled = autoTrack && !isActive;
 
                 if (!autoTrack) {
+                  if (!isManualEditMode) {
+                    return (
+                      <div key={set.setNumber} className="flex items-center gap-1.5 py-1.5">
+                        <span className="w-10 shrink-0 text-center text-xs text-zinc-400 dark:text-zinc-500">S{set.setNumber}</span>
+                        <span className="flex-1 text-center text-sm font-medium text-zinc-900 dark:text-white">{set.reps || 0}</span>
+                        {!ex.isBodyweight && (
+                          <span className="flex-1 text-center text-sm font-medium text-zinc-900 dark:text-white">{set.weightKg || 0}</span>
+                        )}
+                        <span className="w-9 shrink-0" />
+                      </div>
+                    );
+                  }
                   return (
                     <SetRow
                       key={set.setNumber}
@@ -604,24 +638,29 @@ export function TrackingMode({
                       isPendingRow && "opacity-40",
                     )}
                   >
-                    <div className="flex items-center gap-1.5">
-                      {isActive ? (
+                    {isActive ? (
+                      <div className="flex items-center gap-2">
+                        <span className="w-10 shrink-0 text-center text-xs text-zinc-400 dark:text-zinc-500">S{set.setNumber}</span>
                         <button
                           onClick={() => handleSetDone(ex, i)}
-                          className="w-10 shrink-0 rounded-md bg-emerald-500 hover:bg-emerald-600 py-1 text-[10px] font-bold text-white transition-colors text-center"
+                          className="flex-1 rounded-md bg-emerald-500 hover:bg-emerald-600 py-1.5 text-sm font-bold text-white transition-colors"
                         >
-                          Done
+                          Done ✓
                         </button>
-                      ) : isDoneRow || isTimerRow ? (
-                        <span className="w-10 shrink-0 text-center text-emerald-500 font-bold text-sm">✓</span>
-                      ) : (
-                        <span className="w-10 shrink-0 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                          S{set.setNumber}
-                        </span>
-                      )}
+                        <span className="w-16 shrink-0" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        {isDoneRow || isTimerRow ? (
+                          <span className="w-10 shrink-0 text-center text-emerald-500 font-bold text-sm">✓</span>
+                        ) : (
+                          <span className="w-10 shrink-0 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">
+                            S{set.setNumber}
+                          </span>
+                        )}
 
-                      <div className={cn("flex items-center gap-1.5 flex-1", rowDisabled && "pointer-events-none")}>
-                        <div className="flex-1 min-w-0">
+                        <div className={cn("flex items-center gap-1.5 flex-1", rowDisabled && "pointer-events-none")}>
+                          <div className="flex-1 min-w-0">
                             <input
                               type="number"
                               inputMode="numeric"
@@ -666,28 +705,29 @@ export function TrackingMode({
                           )}
                         </div>
 
-                      {isTimerRow && (
-                        <div className="flex items-center gap-1.5 w-16 shrink-0">
-                          <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                            {formatTimer(timerLeft)}
-                          </span>
-                          <button
-                            onClick={() => handleSkipTimer(i, ex)}
-                            className="text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-1"
-                          >
-                            Skip
-                          </button>
-                        </div>
-                      )}
-                      {!isTimerRow && (
-                        <span className="w-16 shrink-0" />
-                      )}
-                    </div>
+                        {isTimerRow && (
+                          <div className="flex items-center gap-1.5 w-16 shrink-0">
+                            <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
+                              {formatTimer(timerLeft)}
+                            </span>
+                            <button
+                              onClick={() => handleSkipTimer(i, ex)}
+                              className="text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-1"
+                            >
+                              Skip
+                            </button>
+                          </div>
+                        )}
+                        {!isTimerRow && (
+                          <span className="w-16 shrink-0" />
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
 
-              {/* Add / Remove set */}
+              {/* Add / Remove set + Undo last set (automated) */}
               <div className="flex items-center gap-1.5 pt-1">
                 <button
                   onClick={() => {
@@ -710,6 +750,14 @@ export function TrackingMode({
                 >
                   <Plus className="h-2.5 w-2.5" /> Set
                 </button>
+                {autoTrack && completedSetFlags.some((f) => f) && (
+                  <button
+                    onClick={handleUndoLastSet}
+                    className="ml-auto flex items-center gap-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <ArrowLeft className="h-2.5 w-2.5" /> Back
+                  </button>
+                )}
               </div>
             </>
           )}
