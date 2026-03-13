@@ -655,12 +655,14 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                     {(exercisesByGroup["UPPER_BODY"]?.length ?? 0) + (exercisesByGroup["LOWER_BODY"]?.length ?? 0)} exercises
                   </span>
                 </span>
-                <button
-                  onClick={() => setTrackingScope("FULL_BODY")}
-                  className="rounded-lg bg-emerald-500 hover:bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors"
-                >
-                  Track Mode
-                </button>
+                {selectedDate <= todayISO && (
+                  <button
+                    onClick={() => setTrackingScope("FULL_BODY")}
+                    className="rounded-lg bg-emerald-500 hover:bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors"
+                  >
+                    Track Mode
+                  </button>
+                )}
               </div>
               <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 <ExerciseGroup
@@ -719,7 +721,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onSave={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 ? () => handleSaveGroup(mg) : undefined}
                 isSaving={savingGroups.has(mg)}
                 lastSaved={lastSavedByGroup[mg] ?? null}
-                onTrack={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 ? () => setTrackingScope(mg) : undefined}
+                onTrack={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 && selectedDate <= todayISO ? () => setTrackingScope(mg) : undefined}
                 onAdd={isGroupEditable(mg) ? () => setAddTargetGroup(mg) : undefined}
                 readOnlyIds={readOnlyIds}
                 trackedIds={savedTodayIds}

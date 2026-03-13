@@ -486,7 +486,7 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
         bestStreak={bestStreak}
         totalWorkoutsThisMonth={totalWorkoutsThisMonth}
       />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ConsistencyCard last30DaysWorkouts={last30DaysWorkouts} />
         <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} />
       </div>
