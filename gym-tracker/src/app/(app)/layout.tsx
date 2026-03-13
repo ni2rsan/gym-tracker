@@ -1,14 +1,22 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { getSessionContext } from "@/lib/auth-helpers";
 import { Navbar } from "@/components/layout/Navbar";
+import { ImpersonationBanner } from "@/components/layout/ImpersonationBanner";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  const ctx = await getSessionContext();
+  if (!ctx) redirect("/login");
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <Navbar userName={session.user.name} userImage={session.user.image} />
+      {ctx.isImpersonating && ctx.impersonatedUser && (
+        <ImpersonationBanner impersonatedUser={ctx.impersonatedUser} />
+      )}
+      <Navbar
+        userName={ctx.realUserName}
+        userImage={ctx.realUserImage}
+        isAdmin={ctx.isAdmin}
+      />
       <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
     </div>
   );

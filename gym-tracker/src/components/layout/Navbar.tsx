@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays } from "lucide-react";
+import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays, Shield } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -17,9 +17,10 @@ const NAV_ITEMS = [
 interface NavbarProps {
   userName?: string | null;
   userImage?: string | null;
+  isAdmin?: boolean;
 }
 
-export function Navbar({ userName, userImage }: NavbarProps) {
+export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
@@ -51,6 +52,20 @@ export function Navbar({ userName, userImage }: NavbarProps) {
               {label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                pathname.startsWith("/admin")
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                  : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
+              )}
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         {/* Right controls */}
