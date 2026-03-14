@@ -252,6 +252,30 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     });
   };
 
+  const [isSavingFullBody, setIsSavingFullBody] = useState(false);
+
+  const handleSaveFullBody = () => {
+    setIsSavingFullBody(true);
+    startTransition(async () => {
+      const fullBodyExercises = sortedExercises.filter(
+        (ex) => (ex.muscleGroup === "UPPER_BODY" || ex.muscleGroup === "LOWER_BODY") && !skippedIds.has(ex.id)
+      );
+      const result = await saveWorkout({
+        date: selectedDate,
+        exercises: fullBodyExercises.map((ex) => ({ exerciseId: ex.id, sets: workoutData[ex.id] ?? [] })),
+      });
+      if (result.success) {
+        setLastSavedAll(new Date());
+        refreshSavedIds(workoutData, fullBodyExercises);
+        refreshRangeData();
+        setToast({ message: "Full Body saved ✓", type: "success" });
+      } else {
+        setToast({ message: result.error ?? "Failed to save", type: "error" });
+      }
+      setIsSavingFullBody(false);
+    });
+  };
+
   const handleSaveGroup = (mg: MuscleGroup) => {
     setSavingGroups((prev) => new Set(prev).add(mg));
     startTransition(async () => {
@@ -661,14 +685,23 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                     {(exercisesByGroup["UPPER_BODY"]?.length ?? 0) + (exercisesByGroup["LOWER_BODY"]?.length ?? 0)} exercises
                   </span>
                 </span>
-                {selectedDate <= todayISO && (
+                <div className="flex items-center gap-1.5">
                   <button
-                    onClick={() => setTrackingScope("FULL_BODY")}
-                    className="rounded-lg bg-emerald-500 hover:bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors"
+                    onClick={handleSaveFullBody}
+                    disabled={isSavingFullBody || isPending}
+                    className="rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 transition-colors disabled:opacity-50"
                   >
-                    Track Mode
+                    Save All
                   </button>
-                )}
+                  {selectedDate <= todayISO && (
+                    <button
+                      onClick={() => setTrackingScope("FULL_BODY")}
+                      className="rounded-lg bg-emerald-500 hover:bg-emerald-600 px-2 py-1 text-xs font-semibold text-white transition-colors"
+                    >
+                      Track Mode
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
                 <ExerciseGroup

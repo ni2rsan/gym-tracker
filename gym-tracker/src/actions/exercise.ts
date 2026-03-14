@@ -65,6 +65,29 @@ export async function reorderExercises(orderedIds: string[]): Promise<ActionResu
   }
 }
 
+export async function getHiddenExercises(): Promise<ActionResult<Awaited<ReturnType<typeof exerciseService.getHiddenExercisesForUser>>>> {
+  try {
+    const userId = await getCurrentUserId();
+    const data = await exerciseService.getHiddenExercisesForUser(userId);
+    return { success: true, data };
+  } catch (error) {
+    console.error("getHiddenExercises error:", error);
+    return { success: false, error: "Failed to load hidden exercises." };
+  }
+}
+
+export async function unhideExercise(exerciseId: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await exerciseService.unhideExercise(userId, exerciseId);
+    revalidatePath("/workout");
+    return { success: true };
+  } catch (error) {
+    console.error("unhideExercise error:", error);
+    return { success: false, error: "Failed to restore exercise." };
+  }
+}
+
 export async function hideExercise(exerciseId: string): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();

@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { RotateCcw } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { createExercise } from "@/actions/exercise";
+import { createExercise, getHiddenExercises, unhideExercise } from "@/actions/exercise";
 import { MuscleGroup, MUSCLE_GROUP_LABELS } from "@/constants/exercises";
+
+interface HiddenExercise {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+}
 
 interface AddCustomExerciseProps {
   open: boolean;
@@ -19,15 +26,22 @@ export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(defaultMuscleGroup ?? MuscleGroup.UPPER_BODY);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [hiddenExercises, setHiddenExercises] = useState<HiddenExercise[]>([]);
 
-  // Sync muscle group and reset form whenever the modal opens
   useEffect(() => {
     if (open) {
       setMuscleGroup(defaultMuscleGroup ?? MuscleGroup.UPPER_BODY);
       setName("");
       setError("");
+      // Load hidden exercises so user can restore them
+      getHiddenExercises().then((result) => {
+        if (result.success && result.data) setHiddenExercises(result.data as HiddenExercise[]);
+      });
     }
   }, [open, defaultMuscleGroup]);
+
+  // Filter hidden exercises to the currently selected muscle group
+  const suggestedHidden = hiddenExercises.filter((e) => e.muscleGroup === muscleGroup);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,18 +63,20 @@ export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup
     });
   };
 
-  return (
-    <Modal open={open} onClose={onClose} title="Add Custom Exercise">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input
-          label="Exercise name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. CABLE CRUNCH"
-          error={error}
-          autoFocus
-        />
+  const handleRestore = (exerciseId: string) => {
+    startTransition(async () => {
+      const result = await unhideExercise(exerciseId);
+      if (result.success) {
+        setHiddenExercises((prev) => prev.filter((e) => e.id !== exerciseId));
+        onCreated(); // refresh the list
+      }
+    });
+  };
 
+  return (
+    <Modal open={open} onClose={onClose} title="Add Exercise">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Muscle group selector */}
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
             Muscle group
@@ -77,6 +93,53 @@ export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup
             ))}
           </select>
         </div>
+
+        {/* Previously removed exercises */}
+        {suggestedHidden.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Previously removed — add back</p>
+            <div className="flex flex-col gap-1">
+              {suggestedHidden.map((ex) => (
+                <div
+                  key={ex.id}
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2"
+                >
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                    {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRestore(ex.id)}
+                    disabled={isPending}
+                    className="flex items-center gap-1 rounded-md bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors disabled:opacity-50"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Divider */}
+        {suggestedHidden.length > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+            <span className="text-[10px] text-zinc-400 uppercase tracking-wide">or create new</span>
+            <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+          </div>
+        )}
+
+        {/* Custom name input */}
+        <Input
+          label="Custom exercise name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. CABLE CRUNCH"
+          error={error}
+          autoFocus={suggestedHidden.length === 0}
+        />
 
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
