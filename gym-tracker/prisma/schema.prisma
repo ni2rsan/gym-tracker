@@ -69,6 +69,7 @@ model User {
   plannedWorkouts       PlannedWorkout[]
   plannedWorkoutSeries  PlannedWorkoutSeries[]
   sorryTokens           UserSorryToken[]
+  requests              UserRequest[]
 }
 
 enum MuscleGroup {
@@ -217,6 +218,37 @@ model UserSorryToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month])
+}
+
+// ─── Bug Reports & Feature Requests ───────────────────────────────────────
+
+enum RequestType {
+  BUG
+  FEATURE
+}
+
+enum RequestStatus {
+  IN_REVIEW
+  ACCEPTED
+  DECLINED
+  DEPLOYED
+}
+
+model UserRequest {
+  id               String        @id @default(cuid())
+  userId           String
+  type             RequestType
+  status           RequestStatus @default(IN_REVIEW)
+  text             String        @db.Text
+  screenshotBase64 String?       @db.Text
+  adminNote        String?       @db.Text
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }
 
 // ─── Withings integration ──────────────────────────────────────────────────
