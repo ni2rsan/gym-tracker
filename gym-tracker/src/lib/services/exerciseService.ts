@@ -8,6 +8,8 @@ export async function getExercisesForUser(userId: string): Promise<ExerciseWithS
       OR: [
         { isDefault: true },
         { createdByUserId: userId },
+        // Exercises created by other users that this user has explicitly adopted
+        { userSettings: { some: { userId, isHidden: false } } },
       ],
     },
     include: {
@@ -66,6 +68,47 @@ export async function getHiddenExercisesForUser(userId: string) {
     name: s.exercise.name,
     muscleGroup: s.exercise.muscleGroup as MuscleGroup,
   }));
+}
+
+export async function getCommunityExercisesForUser(userId: string) {
+  // All settings this user already has (adopted, hidden, own)
+  const userSettings = await prisma.userExerciseSetting.findMany({
+    where: { userId },
+    select: { exerciseId: true },
+  });
+  const alreadyLinkedIds = new Set([
+    ...userSettings.map((s) => s.exerciseId),
+  ]);
+
+  // Also exclude exercises the user created themselves
+  const ownExercises = await prisma.exercise.findMany({
+    where: { createdByUserId: userId },
+    select: { id: true },
+  });
+  ownExercises.forEach((e) => alreadyLinkedIds.add(e.id));
+
+  const community = await prisma.exercise.findMany({
+    where: {
+      isDefault: false,
+      id: { notIn: [...alreadyLinkedIds] },
+    },
+    select: { id: true, name: true, muscleGroup: true },
+    orderBy: [{ muscleGroup: "asc" }, { name: "asc" }],
+  });
+
+  return community.map((e) => ({
+    id: e.id,
+    name: e.name,
+    muscleGroup: e.muscleGroup as MuscleGroup,
+  }));
+}
+
+export async function adoptExercise(userId: string, exerciseId: string) {
+  return prisma.userExerciseSetting.upsert({
+    where: { userId_exerciseId: { userId, exerciseId } },
+    update: { isHidden: false },
+    create: { userId, exerciseId, isHidden: false, isPinned: false, sortOrder: 0 },
+  });
 }
 
 export async function deleteExerciseData(userId: string, exerciseId: string) {
