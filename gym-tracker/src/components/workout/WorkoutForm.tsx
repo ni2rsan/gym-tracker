@@ -65,7 +65,12 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [plannerData, setPlannerData] = useState<{ blocksByDate: Record<string, PlannerBlockInfo[]>; sorryRemaining: number } | null>(null);
   const [sorryConfirm, setSorryConfirm] = useState(false);
 
-  const [trackingScope, setTrackingScope] = useState<"all" | "FULL_BODY" | MuscleGroup | null>(null);
+  const [trackingScope, setTrackingScope] = useState<"all" | "FULL_BODY" | MuscleGroup | null>(() => {
+    const section = searchParams.get("section");
+    if (section === "FULL_BODY") return "FULL_BODY";
+    if (section && (MUSCLE_GROUP_ORDER as readonly string[]).includes(section)) return section as MuscleGroup;
+    return null;
+  });
   const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [savingGroups, setSavingGroups] = useState<Set<MuscleGroup>>(new Set());
   const [lastSavedByGroup, setLastSavedByGroup] = useState<Partial<Record<MuscleGroup, Date>>>({});
@@ -76,7 +81,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const didScrollRef = useRef(false);
+  // If we already opened tracking from the URL param, mark as done so the effect doesn't re-fire
+  const didScrollRef = useRef(!!searchParams.get("section"));
   const fromPlannerRef = useRef(!!searchParams.get("section") || searchParams.get("from") === "planner");
 
   // Derive range dates from selectedDate + viewMode

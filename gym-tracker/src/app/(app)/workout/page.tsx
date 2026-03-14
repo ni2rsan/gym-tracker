@@ -1,6 +1,7 @@
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
 import { WorkoutForm } from "@/components/workout/WorkoutForm";
+import { TrackerGuide } from "@/components/guide/TrackerGuide";
 
 export const metadata = { title: "Workout Tracker — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -18,15 +19,18 @@ export default async function WorkoutPage({
   const exercises = await getExercisesForUser(userId);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Workout Tracker</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-          Log your sets and track your progress.
-        </p>
-      </div>
+    <>
+      <TrackerGuide />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Workout Tracker</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Log your sets and track your progress.
+          </p>
+        </div>
 
-      <WorkoutForm initialExercises={exercises} initialDate={initialDate} />
-    </div>
+        <WorkoutForm initialExercises={exercises} initialDate={initialDate} />
+      </div>
+    </>
   );
 }

@@ -9,6 +9,9 @@ import { saveWorkout, deleteExerciseTracking } from "@/actions/workout";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
 import type { ExerciseWithSettings, SetData, MuscleGroup } from "@/types";
+import { GuideModal } from "@/components/guide/GuideModal";
+import { trackingIconSteps, trackingExerciseSteps } from "@/components/guide/trackingSteps";
+import { GuideButton } from "@/components/guide/GuideButton";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -103,6 +106,19 @@ export function TrackingMode({
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
 
+  // Guide modals (shown once ever per context)
+  const [showIconGuide, setShowIconGuide] = useState(false);
+  const [iconGuideStep, setIconGuideStep] = useState(0);
+  const [showExerciseGuide, setShowExerciseGuide] = useState(false);
+  const [exerciseGuideStep, setExerciseGuideStep] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!localStorage.getItem("gymtracker_guide_seen_tracking_icons")) {
+      setShowIconGuide(true);
+    }
+  }, []);
+
   const hasNonCardio = exercises.some((ex) => ex.muscleGroup !== "CARDIO");
 
   // ── Wake Lock ────────────────────────────────────────────────────────────
@@ -165,6 +181,10 @@ export function TrackingMode({
     setTimerLeft(0);
     setIsManualEditMode(false);
     setView({ kind: "exercise", exercise: ex });
+    // Show exercise guide once ever
+    if (!localStorage.getItem("gymtracker_guide_seen_tracking_exercise")) {
+      setShowExerciseGuide(true);
+    }
   };
 
   const handleIconClick = (ex: ExerciseWithSettings) => {
@@ -267,13 +287,16 @@ export function TrackingMode({
             <p className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wide font-medium">Tracking Mode</p>
             <p className="text-sm font-semibold text-zinc-900 dark:text-white">{scopeLabel}</p>
           </div>
-          <button
-            onClick={onExit}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <X className="h-4 w-4" />
-            Exit
-          </button>
+          <div className="flex items-center gap-1.5">
+            <GuideButton />
+            <button
+              onClick={onExit}
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Exit
+            </button>
+          </div>
         </div>
 
         {/* Automated Tracking controls */}
@@ -373,6 +396,19 @@ export function TrackingMode({
           </button>
         </div>
 
+        {/* Icon grid guide — shown once on first visit */}
+        <GuideModal
+          open={showIconGuide}
+          onClose={() => {
+            setShowIconGuide(false);
+            localStorage.setItem("gymtracker_guide_seen_tracking_icons", "1");
+          }}
+          steps={trackingIconSteps}
+          currentStep={iconGuideStep}
+          onStepChange={setIconGuideStep}
+          zClass="z-[80]"
+        />
+
         {/* Summary overlay (automated mode — tap done icon) */}
         {summaryOverlay && (() => {
           const savedSets = sessionSavedSets[summaryOverlay.id] ?? workoutData?.[summaryOverlay.id] ?? [];
@@ -461,6 +497,18 @@ export function TrackingMode({
 
   return (
     <div className="fixed inset-0 z-[60] bg-white dark:bg-zinc-950 flex flex-col">
+      {/* Exercise detail guide — shown once ever across all exercises */}
+      <GuideModal
+        open={showExerciseGuide}
+        onClose={() => {
+          setShowExerciseGuide(false);
+          localStorage.setItem("gymtracker_guide_seen_tracking_exercise", "1");
+        }}
+        steps={trackingExerciseSteps}
+        currentStep={exerciseGuideStep}
+        onStepChange={setExerciseGuideStep}
+        zClass="z-[80]"
+      />
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
         <button
@@ -477,12 +525,15 @@ export function TrackingMode({
             {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
           </p>
         </div>
-        <button
-          onClick={onExit}
-          className="flex items-center justify-center w-8 h-8 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <GuideButton />
+          <button
+            onClick={onExit}
+            className="flex items-center justify-center w-8 h-8 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Automated toggle (non-cardio only) */}
