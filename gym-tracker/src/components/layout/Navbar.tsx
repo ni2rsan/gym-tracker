@@ -6,6 +6,7 @@ import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, Scrol
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { GuideButton } from "@/components/guide/GuideButton";
 
 const NAV_ITEMS = [
   { href: "/planner", label: "Planner", icon: CalendarDays },
@@ -70,6 +71,7 @@ export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
+          <GuideButton />
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white transition-colors"

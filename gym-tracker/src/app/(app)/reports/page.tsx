@@ -1,3 +1,4 @@
+import { ReportsGuide } from "@/components/guide/ReportsGuide";
 import { Suspense } from "react";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import {
@@ -85,7 +86,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const exerciseSeries = await getMultiExerciseProgressData(userId, allExerciseIdsToShow, range);
 
   return (
-    <div className="space-y-6">
+    <>
+      <ReportsGuide />
+      <div className="space-y-6">
       <Suspense><WithingsToast /></Suspense>
       {/* Page header + time range */}
       <div className="flex items-start justify-between gap-4">
@@ -159,5 +162,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       </Card>
 
     </div>
+    </>
   );
 }

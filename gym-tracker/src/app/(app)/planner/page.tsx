@@ -2,6 +2,7 @@ import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getPlannedWorkoutsInRange, getTrackedGroupsByDate, getStreakData } from "@/lib/services/plannerService";
 import { getPersonalRecords } from "@/lib/services/reportService";
 import { WorkoutCalendar } from "@/components/planner/WorkoutCalendar";
+import { PlannerGuide } from "@/components/guide/PlannerGuide";
 
 export const metadata = { title: "Planner — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -38,21 +39,24 @@ export default async function PlannerPage({
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Workout Planner</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-          Plan and schedule your workouts.
-        </p>
+    <>
+      <PlannerGuide />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Workout Planner</h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Plan and schedule your workouts.
+          </p>
+        </div>
+        <WorkoutCalendar
+          plannedWorkouts={serialized}
+          trackedGroupsByDate={trackedGroupsByDate}
+          initialYear={year}
+          initialMonth={month}
+          initialStreakData={streakData}
+          prs={prs}
+        />
       </div>
-      <WorkoutCalendar
-        plannedWorkouts={serialized}
-        trackedGroupsByDate={trackedGroupsByDate}
-        initialYear={year}
-        initialMonth={month}
-        initialStreakData={streakData}
-        prs={prs}
-      />
-    </div>
+    </>
   );
 }
