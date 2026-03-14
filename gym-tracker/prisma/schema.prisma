@@ -84,6 +84,7 @@ model Exercise {
   muscleGroup     MuscleGroup
   isDefault       Boolean     @default(false)
   isBodyweight    Boolean     @default(false)
+  isCompound      Boolean     @default(false)
   sortOrder       Int         @default(0)
   createdByUserId String?
 

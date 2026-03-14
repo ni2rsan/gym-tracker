@@ -31,6 +31,7 @@ export async function getExercisesForUser(userId: string): Promise<ExerciseWithS
         muscleGroup: e.muscleGroup,
         isDefault: e.isDefault,
         isBodyweight: e.isBodyweight,
+        isCompound: e.isCompound,
         sortOrder: e.sortOrder,
         isPinned: setting?.isPinned ?? false,
         userSortOrder: setting?.sortOrder ?? e.sortOrder,

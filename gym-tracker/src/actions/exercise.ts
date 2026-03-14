@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/lib/auth-helpers";
+import { getCurrentUserId, requireAdmin } from "@/lib/auth-helpers";
 import * as exerciseService from "@/lib/services/exerciseService";
 import { MuscleGroup } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types";
 
 const CreateExerciseSchema = z.object({
@@ -84,6 +85,26 @@ export async function setPreferredSets(exerciseId: string, count: number): Promi
   } catch (error) {
     console.error("setPreferredSets error:", error);
     return { success: false, error: "Failed to save set preference." };
+  }
+}
+
+export async function adminUpdateExercise(
+  exerciseId: string,
+  data: { name?: string; isCompound?: boolean }
+): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    const updates: { name?: string; isCompound?: boolean } = {};
+    if (data.name !== undefined) updates.name = data.name.toUpperCase().trim();
+    if (data.isCompound !== undefined) updates.isCompound = data.isCompound;
+    if (Object.keys(updates).length === 0) return { success: true };
+    await prisma.exercise.update({ where: { id: exerciseId }, data: updates });
+    revalidatePath("/workout");
+    revalidatePath("/admin/exercises");
+    return { success: true };
+  } catch (error) {
+    console.error("adminUpdateExercise error:", error);
+    return { success: false, error: "Failed to update exercise." };
   }
 }
 

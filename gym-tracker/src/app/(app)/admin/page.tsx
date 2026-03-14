@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/auth-helpers";
 import { listUsers, impersonateUser } from "@/actions/admin";
 import { auth } from "@/auth";
-import { Shield, Eye } from "lucide-react";
+import { Shield, Eye, Dumbbell } from "lucide-react";
+import Link from "next/link";
 
 export const metadata = { title: "Admin — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -21,6 +22,17 @@ export default async function AdminPage() {
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Admin</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">{users.length} registered users</p>
         </div>
+      </div>
+
+      {/* Quick links */}
+      <div className="flex gap-3">
+        <Link
+          href="/admin/exercises"
+          className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+        >
+          <Dumbbell className="h-4 w-4 text-blue-500" />
+          Manage Exercises
+        </Link>
       </div>
 
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900">

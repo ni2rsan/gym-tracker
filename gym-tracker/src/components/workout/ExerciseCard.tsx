@@ -50,12 +50,19 @@ export function ExerciseCard({
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
         <ExerciseIcon name={exercise.name} muscleGroup={exercise.muscleGroup} />
       </div>
-      <h3 className="flex-1 min-w-0 font-semibold text-sm text-zinc-900 dark:text-white break-words leading-tight">
-        {exercise.name}
-        {exercise.isPinned && (
-          <span className="ml-1.5 text-emerald-500 text-xs" aria-label="Pinned">★</span>
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <h3 className="font-semibold text-sm text-zinc-900 dark:text-white break-words leading-tight">
+          {exercise.name}
+          {exercise.isPinned && (
+            <span className="ml-1.5 text-emerald-500 text-xs" aria-label="Pinned">★</span>
+          )}
+        </h3>
+        {exercise.isCompound && (
+          <span className="inline-flex w-fit items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+            Compound
+          </span>
         )}
-      </h3>
+      </div>
       {isTracked && (
         <span className="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-amber-300 flex items-center justify-center shrink-0">
           <span className="text-white font-black leading-none" style={{ fontSize: "9px" }}>✓</span>
