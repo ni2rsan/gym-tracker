@@ -7,6 +7,7 @@ export interface ExerciseWithSettings {
   muscleGroup: MuscleGroup;
   isDefault: boolean;
   isBodyweight: boolean;
+  isCompound: boolean;
   sortOrder: number;
   isPinned: boolean;
   userSortOrder: number;
