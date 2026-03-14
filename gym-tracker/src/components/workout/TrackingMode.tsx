@@ -381,6 +381,11 @@ export function TrackingMode({
                 >
                   {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
                 </span>
+                {ex.isCompound && (
+                  <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                    Compound
+                  </span>
+                )}
               </button>
             );
           })}
