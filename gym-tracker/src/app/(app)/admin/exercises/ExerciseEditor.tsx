@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Pencil, X, Dumbbell } from "lucide-react";
+import { Check, Pencil, X, Dumbbell, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { adminUpdateExercise } from "@/actions/exercise";
+import { adminUpdateExercise, adminDeleteExercise } from "@/actions/exercise";
 
 interface Exercise {
   id: string;
@@ -30,11 +30,13 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [localExercises, setLocalExercises] = useState(exercises);
   const [isPending, startTransition] = useTransition();
 
   const grouped = GROUP_ORDER.map((group) => ({
     group,
-    items: exercises.filter((e) => e.muscleGroup === group),
+    items: localExercises.filter((e) => e.muscleGroup === group),
   }));
 
   function startEdit(ex: Exercise) {
@@ -55,6 +57,9 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
     startTransition(async () => {
       const result = await adminUpdateExercise(id, { name: trimmed });
       if (result.success) {
+        setLocalExercises((prev) =>
+          prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e))
+        );
         setEditingId(null);
         setEditName("");
       } else {
@@ -66,6 +71,30 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
   function toggleCompound(id: string, current: boolean) {
     startTransition(async () => {
       await adminUpdateExercise(id, { isCompound: !current });
+      setLocalExercises((prev) =>
+        prev.map((e) => (e.id === id ? { ...e, isCompound: !current } : e))
+      );
+    });
+  }
+
+  function confirmDelete(id: string) {
+    setConfirmDeleteId(id);
+  }
+
+  function cancelDelete() {
+    setConfirmDeleteId(null);
+  }
+
+  function doDelete(id: string) {
+    startTransition(async () => {
+      const result = await adminDeleteExercise(id);
+      if (result.success) {
+        setLocalExercises((prev) => prev.filter((e) => e.id !== id));
+        setConfirmDeleteId(null);
+      } else {
+        setError(result.error ?? "Failed to delete.");
+        setConfirmDeleteId(null);
+      }
     });
   }
 
@@ -122,28 +151,57 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
 
                   {!isEditing && (
                     <div className="flex items-center gap-2 shrink-0">
-                      {/* Compound toggle */}
-                      <button
-                        onClick={() => toggleCompound(ex.id, ex.isCompound)}
-                        disabled={isPending}
-                        title={ex.isCompound ? "Mark as isolation" : "Mark as compound"}
-                        className={cn(
-                          "text-[10px] font-medium rounded-full px-2 py-0.5 border transition-colors disabled:opacity-50",
-                          ex.isCompound
-                            ? "border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40"
-                            : "border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                        )}
-                      >
-                        {ex.isCompound ? "Compound ✓" : "Isolation"}
-                      </button>
-                      {/* Edit name */}
-                      <button
-                        onClick={() => startEdit(ex)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                        aria-label="Edit name"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
+                      {confirmDeleteId === ex.id ? (
+                        <>
+                          <span className="text-xs text-red-600 dark:text-red-400 font-medium">Delete?</span>
+                          <button
+                            onClick={() => doDelete(ex.id)}
+                            disabled={isPending}
+                            className="text-[10px] font-semibold rounded-md px-2 py-0.5 bg-red-500 hover:bg-red-600 text-white transition-colors disabled:opacity-50"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={cancelDelete}
+                            className="text-[10px] font-semibold rounded-md px-2 py-0.5 border border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {/* Compound toggle */}
+                          <button
+                            onClick={() => toggleCompound(ex.id, ex.isCompound)}
+                            disabled={isPending}
+                            title={ex.isCompound ? "Mark as isolation" : "Mark as compound"}
+                            className={cn(
+                              "text-[10px] font-medium rounded-full px-2 py-0.5 border transition-colors disabled:opacity-50",
+                              ex.isCompound
+                                ? "border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                                : "border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            )}
+                          >
+                            {ex.isCompound ? "Compound ✓" : "Isolation"}
+                          </button>
+                          {/* Edit name */}
+                          <button
+                            onClick={() => startEdit(ex)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                            aria-label="Edit name"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          {/* Delete */}
+                          <button
+                            onClick={() => confirmDelete(ex.id)}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-colors"
+                            aria-label="Delete exercise"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

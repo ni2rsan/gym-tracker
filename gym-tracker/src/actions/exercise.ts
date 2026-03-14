@@ -134,6 +134,19 @@ export async function setPreferredSets(exerciseId: string, count: number): Promi
   }
 }
 
+export async function adminDeleteExercise(exerciseId: string): Promise<ActionResult> {
+  try {
+    await requireAdmin();
+    await prisma.exercise.delete({ where: { id: exerciseId } });
+    revalidatePath("/workout");
+    revalidatePath("/admin/exercises");
+    return { success: true };
+  } catch (error) {
+    console.error("adminDeleteExercise error:", error);
+    return { success: false, error: "Failed to delete exercise." };
+  }
+}
+
 export async function adminUpdateExercise(
   exerciseId: string,
   data: { name?: string; isCompound?: boolean }
