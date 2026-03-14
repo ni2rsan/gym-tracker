@@ -48,6 +48,26 @@ export async function hideExercise(userId: string, exerciseId: string) {
   });
 }
 
+export async function unhideExercise(userId: string, exerciseId: string) {
+  return prisma.userExerciseSetting.upsert({
+    where: { userId_exerciseId: { userId, exerciseId } },
+    update: { isHidden: false },
+    create: { userId, exerciseId, isHidden: false, isPinned: false, sortOrder: 0 },
+  });
+}
+
+export async function getHiddenExercisesForUser(userId: string) {
+  const settings = await prisma.userExerciseSetting.findMany({
+    where: { userId, isHidden: true },
+    include: { exercise: { select: { id: true, name: true, muscleGroup: true } } },
+  });
+  return settings.map((s) => ({
+    id: s.exercise.id,
+    name: s.exercise.name,
+    muscleGroup: s.exercise.muscleGroup as MuscleGroup,
+  }));
+}
+
 export async function deleteExerciseData(userId: string, exerciseId: string) {
   const exercise = await prisma.exercise.findUnique({
     where: { id: exerciseId },
