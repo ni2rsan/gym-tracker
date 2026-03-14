@@ -65,6 +65,29 @@ export async function reorderExercises(orderedIds: string[]): Promise<ActionResu
   }
 }
 
+export async function getCommunityExercises(): Promise<ActionResult<Awaited<ReturnType<typeof exerciseService.getCommunityExercisesForUser>>>> {
+  try {
+    const userId = await getCurrentUserId();
+    const data = await exerciseService.getCommunityExercisesForUser(userId);
+    return { success: true, data };
+  } catch (error) {
+    console.error("getCommunityExercises error:", error);
+    return { success: false, error: "Failed to load community exercises." };
+  }
+}
+
+export async function adoptExercise(exerciseId: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await exerciseService.adoptExercise(userId, exerciseId);
+    revalidatePath("/workout");
+    return { success: true };
+  } catch (error) {
+    console.error("adoptExercise error:", error);
+    return { success: false, error: "Failed to add exercise." };
+  }
+}
+
 export async function getHiddenExercises(): Promise<ActionResult<Awaited<ReturnType<typeof exerciseService.getHiddenExercisesForUser>>>> {
   try {
     const userId = await getCurrentUserId();

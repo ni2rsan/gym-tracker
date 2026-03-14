@@ -5,7 +5,7 @@ import { RotateCcw } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { createExercise, getHiddenExercises, unhideExercise } from "@/actions/exercise";
+import { createExercise, getHiddenExercises, unhideExercise, getCommunityExercises, adoptExercise } from "@/actions/exercise";
 import { MuscleGroup, MUSCLE_GROUP_LABELS } from "@/constants/exercises";
 
 interface HiddenExercise {
@@ -27,21 +27,24 @@ export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
   const [hiddenExercises, setHiddenExercises] = useState<HiddenExercise[]>([]);
+  const [communityExercises, setCommunityExercises] = useState<HiddenExercise[]>([]);
 
   useEffect(() => {
     if (open) {
       setMuscleGroup(defaultMuscleGroup ?? MuscleGroup.UPPER_BODY);
       setName("");
       setError("");
-      // Load hidden exercises so user can restore them
-      getHiddenExercises().then((result) => {
-        if (result.success && result.data) setHiddenExercises(result.data as HiddenExercise[]);
+      // Load hidden + community exercises
+      Promise.all([getHiddenExercises(), getCommunityExercises()]).then(([hidden, community]) => {
+        if (hidden.success && hidden.data) setHiddenExercises(hidden.data as HiddenExercise[]);
+        if (community.success && community.data) setCommunityExercises(community.data as HiddenExercise[]);
       });
     }
   }, [open, defaultMuscleGroup]);
 
-  // Filter hidden exercises to the currently selected muscle group
+  // Filter to the currently selected muscle group
   const suggestedHidden = hiddenExercises.filter((e) => e.muscleGroup === muscleGroup);
+  const suggestedCommunity = communityExercises.filter((e) => e.muscleGroup === muscleGroup);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +71,17 @@ export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup
       const result = await unhideExercise(exerciseId);
       if (result.success) {
         setHiddenExercises((prev) => prev.filter((e) => e.id !== exerciseId));
-        onCreated(); // refresh the list
+        onCreated();
+      }
+    });
+  };
+
+  const handleAdopt = (exerciseId: string) => {
+    startTransition(async () => {
+      const result = await adoptExercise(exerciseId);
+      if (result.success) {
+        setCommunityExercises((prev) => prev.filter((e) => e.id !== exerciseId));
+        onCreated();
       }
     });
   };
@@ -122,8 +135,35 @@ export function AddCustomExercise({ open, onClose, onCreated, defaultMuscleGroup
           </div>
         )}
 
+        {/* Community exercises */}
+        {suggestedCommunity.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Exercises added by other users</p>
+            <div className="flex flex-col gap-1">
+              {suggestedCommunity.map((ex) => (
+                <div
+                  key={ex.id}
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2"
+                >
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                    {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleAdopt(ex.id)}
+                    disabled={isPending}
+                    className="rounded-md bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 px-2 py-1 text-[11px] font-semibold text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
+                  >
+                    + Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Divider */}
-        {suggestedHidden.length > 0 && (
+        {(suggestedHidden.length > 0 || suggestedCommunity.length > 0) && (
           <div className="flex items-center gap-2">
             <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
             <span className="text-[10px] text-zinc-400 uppercase tracking-wide">or create new</span>
