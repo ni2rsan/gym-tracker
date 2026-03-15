@@ -75,7 +75,7 @@ function FeedCard({
 }) {
   const displayName = entry.isOwnWorkout
     ? "You"
-    : entry.name ?? entry.username ?? "Someone";
+    : entry.username ?? entry.name ?? "Someone";
   const dateLabel = formatDateAgo(entry.date);
   const bumpCount = entry.fistBumps.length;
 
@@ -150,7 +150,7 @@ function FriendExpandableCard({
   globalPrivacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
 }) {
   const [expanded, setExpanded] = useState(false);
-  const displayName = data.name ?? data.username ?? "Unknown";
+  const displayName = data.username ?? data.name ?? "Unknown";
   const topMilestone = [...data.milestonesUnlocked].sort((a, b) => b - a)[0];
 
   return (
@@ -169,8 +169,8 @@ function FriendExpandableCard({
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{displayName}</p>
-            {data.username && data.name && (
-              <p className="text-xs text-zinc-400 truncate">@{data.username}</p>
+            {data.name && data.username && (
+              <p className="text-xs text-zinc-400 truncate">{data.name}</p>
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -226,7 +226,7 @@ function FriendManageRow({
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const displayName = friend.name ?? friend.username ?? "Unknown";
+  const displayName = friend.username ?? friend.name ?? "Unknown";
   const avatar = friend.image;
 
   const effective = (key: keyof typeof globalPrivacy) => overrides[key] ?? globalPrivacy[key];
@@ -284,8 +284,8 @@ function FriendManageRow({
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{displayName}</p>
-            {friend.username && friend.name && (
-              <p className="text-xs text-zinc-400 truncate">@{friend.username}</p>
+            {friend.name && friend.username && (
+              <p className="text-xs text-zinc-400 truncate">{friend.name}</p>
             )}
           </div>
           <div className="hidden sm:flex items-center gap-1 mr-1">
@@ -445,15 +445,15 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                 return (
                   <div key={req.id} className="flex items-center gap-3 px-4 py-3">
                     {r.image ? (
-                      <img src={r.image} alt={r.name ?? r.username ?? ""} className="h-8 w-8 rounded-full object-cover" />
+                      <img src={r.image} alt={r.username ?? r.name ?? ""} className="h-8 w-8 rounded-full object-cover" />
                     ) : (
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-sm font-bold">
                         {(r.username?.[0] ?? r.name?.[0] ?? "?").toUpperCase()}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{r.name ?? r.username ?? "Unknown"}</p>
-                      {r.username && r.name && <p className="text-xs text-zinc-400 truncate">@{r.username}</p>}
+                      <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{r.username ?? r.name ?? "Unknown"}</p>
+                      {r.name && r.username && <p className="text-xs text-zinc-400 truncate">{r.name}</p>}
                     </div>
                     <span className="text-xs text-zinc-400 dark:text-zinc-500">Pending</span>
                   </div>
