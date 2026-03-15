@@ -1,10 +1,29 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Pencil, Check, X, Cloud, RotateCcw, TrendingUp, TrendingDown } from "lucide-react";
+import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Toast } from "@/components/ui/Toast";
 import { addBodyMetric, revertToWithings } from "@/actions/metrics";
+
+const FFMI_TIERS = [
+  { max: 18,       label: "Below average",    textColor: "text-zinc-500 dark:text-zinc-400", dotColor: "bg-zinc-400" },
+  { max: 20,       label: "Average",          textColor: "text-blue-500",                    dotColor: "bg-blue-400" },
+  { max: 22,       label: "Above average",    textColor: "text-sky-500",                     dotColor: "bg-sky-400" },
+  { max: 24,       label: "Trained",          textColor: "text-emerald-500",                 dotColor: "bg-emerald-500" },
+  { max: 26,       label: "Very trained",     textColor: "text-indigo-500",                  dotColor: "bg-indigo-500" },
+  { max: Infinity, label: "Elite / Enhanced", textColor: "text-purple-500",                  dotColor: "bg-purple-500" },
+] as const;
+
+function getFFMITier(ffmi: number) {
+  return FFMI_TIERS.find((t) => ffmi < t.max) ?? FFMI_TIERS[FFMI_TIERS.length - 1];
+}
+
+function calcFFMI(weightKg: number, bodyFatPct: number, heightCm: number): number {
+  const heightM = heightCm / 100;
+  return (weightKg * (1 - bodyFatPct / 100)) / (heightM * heightM);
+}
 
 interface MetricsCardsProps {
   currentWeight: number | null;
@@ -21,6 +40,7 @@ interface MetricsCardsProps {
   rangeAgoMuscleMassKg: number | null;
   rangeLabel: string;
   isWithingsConnected: boolean;
+  heightCm: number | null;
 }
 
 type EditField = "weight" | "bodyFat" | null;
@@ -56,13 +76,31 @@ export function MetricsCards({
   rangeAgoMuscleMassKg,
   rangeLabel,
   isWithingsConnected,
+  heightCm,
 }: MetricsCardsProps) {
   const [editing, setEditing] = useState<EditField>(null);
   const [weightValue, setWeightValue] = useState("");
   const [bodyFatValue, setBodyFatValue] = useState("");
   const [showBodyFat, setShowBodyFat] = useState(false);
+  const [showFFMI, setShowFFMI] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setShowFFMI(localStorage.getItem("gymtracker_show_ffmi") === "1");
+  }, []);
+
+  const toggleFFMI = (v: boolean) => {
+    setShowFFMI(v);
+    localStorage.setItem("gymtracker_show_ffmi", v ? "1" : "0");
+  };
+
+  const ffmi =
+    currentWeight != null && currentBodyFat != null && heightCm != null
+      ? calcFFMI(currentWeight, currentBodyFat, heightCm)
+      : null;
+
+  const ffmiTier = ffmi != null ? getFFMITier(ffmi) : null;
 
   const handleSave = (field: EditField) => {
     const data =
@@ -100,6 +138,11 @@ export function MetricsCards({
         setToast({ message: result.error ?? "Failed to revert", type: "error" });
       }
     });
+  };
+
+  const openWeightEdit = () => {
+    setEditing("weight");
+    setWeightValue(currentWeight ? String(currentWeight) : "");
   };
 
   return (
@@ -301,6 +344,95 @@ export function MetricsCards({
           </div>
         )}
       </div>
+
+      {/* FFMI toggle */}
+      <div className="rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 px-4 py-3">
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showFFMI}
+            onChange={(e) => toggleFFMI(e.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500"
+          />
+          <span className="text-sm text-zinc-500 dark:text-zinc-400">Show FFMI</span>
+        </label>
+      </div>
+
+      {/* FFMI card */}
+      {showFFMI && (
+        <Card>
+          <CardBody className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                FFMI
+              </span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500">Fat-Free Mass Index</span>
+            </div>
+
+            {/* Value or missing-data prompts */}
+            {ffmi != null && ffmiTier != null ? (
+              <div className="flex items-end gap-3">
+                <p className="text-3xl font-bold text-zinc-900 dark:text-white">
+                  {ffmi.toFixed(1)}
+                </p>
+                <span className={`mb-1 text-base font-semibold ${ffmiTier.textColor}`}>
+                  {ffmiTier.label}
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {currentWeight == null && (
+                  <button
+                    onClick={openWeightEdit}
+                    className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Input weight
+                  </button>
+                )}
+                {heightCm == null && (
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Input height
+                  </Link>
+                )}
+                {currentWeight != null && heightCm != null && currentBodyFat == null && (
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                    Body fat % required — connect Withings or enable tracking above
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+              {FFMI_TIERS.map((tier, i) => {
+                const prevMax = i === 0 ? null : FFMI_TIERS[i - 1].max;
+                const rangeLabel =
+                  tier.max === Infinity
+                    ? `> ${prevMax}`
+                    : prevMax == null
+                    ? `< ${tier.max}`
+                    : `${prevMax}–${tier.max}`;
+                const isActive = ffmiTier?.label === tier.label;
+                return (
+                  <span
+                    key={tier.label}
+                    className={`flex items-center gap-1.5 text-xs transition-opacity ${isActive ? "opacity-100" : "opacity-50"}`}
+                  >
+                    <span className={`h-2 w-2 rounded-full flex-shrink-0 ${tier.dotColor}`} />
+                    <span className="text-zinc-400 dark:text-zinc-500 tabular-nums">{rangeLabel}</span>
+                    <span className={`font-medium ${tier.textColor}`}>{tier.label}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />

@@ -6,7 +6,7 @@ import {
   getMultiExerciseProgressData,
 } from "@/lib/services/reportService";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
-import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getRangeAgoMetrics } from "@/lib/services/metricsService";
+import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getRangeAgoMetrics, getUserHeightCm } from "@/lib/services/metricsService";
 import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { WeightTrendChart } from "@/components/reports/WeightTrendChart";
@@ -52,7 +52,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   // Sync Withings data before loading the page (no-op if not connected)
   await syncWithingsIfNeeded(userId);
 
-  const [exercises, weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, rangeAgoMetric] = await Promise.all([
+  const [exercises, weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, rangeAgoMetric, heightCm] = await Promise.all([
     getExercisesForUser(userId),
     getWeightTrendData(userId, range),
     getLatestBodyMetric(userId),
@@ -60,6 +60,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     getWithingsConnection(userId),
     getLatestWithingsMetric(userId),
     getRangeAgoMetrics(userId, range),
+    getUserHeightCm(userId),
   ]);
 
   const RANGE_LABELS: Record<typeof range, string> = { week: "7d", month: "30d", year: "1yr" };
@@ -124,6 +125,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             rangeAgoMuscleMassKg={rangeAgoMetric.muscleMassKg}
             rangeLabel={rangeLabel}
             isWithingsConnected={isWithingsConnected}
+            heightCm={heightCm}
           />
         </Suspense>
 
