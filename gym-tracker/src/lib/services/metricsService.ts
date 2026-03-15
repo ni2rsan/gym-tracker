@@ -73,6 +73,8 @@ export async function getLatestBodyMetric(userId: string) {
 /** Returns averaged metrics from the day closest to the start of the given range */
 export async function getRangeAgoMetrics(userId: string, range: TimeRange) {
   const cutoff = getRangeStart(range);
+  // Use end-of-day so measurements taken later in the boundary day are included
+  cutoff.setHours(23, 59, 59, 999);
   return _getMetricsAtOrBefore(userId, cutoff);
 }
 
