@@ -34,7 +34,10 @@ function AddExerciseIllustration() {
           </div>
           {["BENCH PRESS", "LAT PULLDOWN", "SHOULDER PRESS"].map((e) => (
             <div key={e} className="flex items-center gap-1.5 px-1.5 py-1 rounded-md">
-              <div className="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-700" />
+              <div className="w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-700 overflow-hidden flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/exercises/${e}.png`} alt={e} className="w-full h-full object-contain" />
+              </div>
               <span className="text-[9px] text-zinc-700 dark:text-zinc-300">{e}</span>
             </div>
           ))}
@@ -51,11 +54,9 @@ function RemoveExerciseIllustration() {
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm">
         {/* Card header — matches ExerciseCard exactly */}
         <div className="flex items-center gap-2 mb-2.5">
-          <div className="h-8 w-8 shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-            {/* ExerciseIcon placeholder */}
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-500" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 4v6a6 6 0 0 0 12 0V4"/><line x1="4" y1="2" x2="4" y2="7"/><line x1="20" y1="2" x2="20" y2="7"/>
-            </svg>
+          <div className="h-8 w-8 shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/exercises/BENCH PRESS.png" alt="BENCH PRESS" className="w-full h-full object-contain" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-semibold text-zinc-900 dark:text-white leading-tight">BENCH PRESS</div>
@@ -94,11 +95,9 @@ function SetCountIllustration() {
       <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm">
         {/* Card header */}
         <div className="flex items-center gap-2 mb-2">
-          <div className="h-8 w-8 shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-            {/* Leg/squat icon */}
-            <svg viewBox="0 0 24 24" className="h-4 w-4 text-zinc-500" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="5" r="2"/><path d="M10 9 7 22"/><path d="M14 9l3 13"/><path d="M8 14h8"/>
-            </svg>
+          <div className="h-8 w-8 shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/exercises/SQUAT.png" alt="SQUAT" className="w-full h-full object-contain" />
           </div>
           <div className="flex-1">
             <div className="text-xs font-semibold text-zinc-900 dark:text-white leading-tight">SQUAT</div>

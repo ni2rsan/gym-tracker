@@ -1,39 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Dumbbell, ArrowUpFromLine, ArrowDownToLine, Waves, ChevronUp,
-  Target, Zap, Circle, RotateCcw, PersonStanding, Bike, Footprints,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
-
-const EXERCISE_ICONS: Record<string, React.ElementType> = {
-  "LAT PULL": ArrowDownToLine,
-  "TRICEPS PUSH": ArrowUpFromLine,
-  "ROWING PULL": Waves,
-  "SHOULDER PRESS": ChevronUp,
-  "CHEST PRESS": Target,
-  "LATERAL RAISE": Zap,
-  "BICEPS CURLS": Circle,
-  "BICEPS DUMBBELL": Dumbbell,
-  "PEC FLY": Waves,
-  "SQUATS": PersonStanding,
-  "LEG PUSH": ArrowUpFromLine,
-  "LEG PULL": ArrowDownToLine,
-  "CALF EXTENSION": ChevronUp,
-  "BACK EXTENSION": RotateCcw,
-  "PUSHUPS": Target,
-  "PULLUPS": ArrowUpFromLine,
-  "CRUNCHES": RotateCcw,
-  "LEG RAISES": ArrowUpFromLine,
-  "BIKING": Bike,
-  "JOGGING": Footprints,
-  "PADEL": Zap,
-  "PICKLEBALL": Zap,
-  "BADMINTON": Zap,
-};
+import type { MuscleGroup } from "@/types";
+import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -384,13 +356,14 @@ function PRPanel({ prs }: { prs: PRRecord[] }) {
               {/* 4-column card grid */}
               <div className="grid grid-cols-4 gap-1.5">
                 {grouped[group].map((pr) => {
-                  const Icon = EXERCISE_ICONS[pr.exerciseName.toUpperCase()] ?? Dumbbell;
                   return (
                     <div
                       key={pr.exerciseId}
                       className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-2 flex flex-col gap-0.5 min-w-0"
                     >
-                      <Icon className="h-3.5 w-3.5 text-amber-400 dark:text-amber-400 shrink-0 mb-0.5" strokeWidth={2} />
+                      <div className="w-7 h-7 mb-0.5 shrink-0">
+                        <ExerciseIcon name={pr.exerciseName} muscleGroup={pr.muscleGroup as MuscleGroup} className="w-7 h-7" />
+                      </div>
                       <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight line-clamp-2">
                         {pr.exerciseName}
                       </span>
