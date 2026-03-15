@@ -135,6 +135,14 @@ export async function getLatestWithingsMetric(userId: string) {
   };
 }
 
+export async function getUserHeightCm(userId: string): Promise<number | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { heightCm: true },
+  });
+  return user?.heightCm ?? null;
+}
+
 export async function deleteBodyMetricEntry(userId: string, entryId: string): Promise<void> {
   await prisma.bodyMetricEntry.deleteMany({
     where: { id: entryId, userId },
