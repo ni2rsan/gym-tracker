@@ -52,7 +52,7 @@ export async function updateProfile(data: unknown): Promise<ActionResult> {
     const userId = await getCurrentUserId();
     const parsed = UpdateProfileSchema.safeParse(data);
     if (!parsed.success) {
-      return { success: false, error: parsed.error.errors[0]?.message ?? "Invalid data." };
+      return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid data." };
     }
     const updates: Record<string, unknown> = {};
     if (parsed.data.username !== undefined) updates.username = parsed.data.username || null;
