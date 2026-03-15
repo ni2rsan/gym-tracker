@@ -94,6 +94,7 @@ export interface FriendProfileData {
   bestStreak: number;
   milestonesUnlocked: number[];
   totalWorkoutsThisMonth: number;
+  heightCm: number | null;
   weight: number | null;
   bodyFatPct: number | null;
   prs: PRRecord[];
@@ -107,6 +108,20 @@ export interface FriendProfileData {
     shareBodyFat: boolean | null;
     sharePRs: boolean | null;
   };
+}
+
+export interface WorkoutFeedEntry {
+  sessionId: string;
+  userId: string;
+  username: string | null;
+  name: string | null;
+  image: string | null;
+  date: string; // YYYY-MM-DD
+  workoutType: string; // "Upper Body", "Lower Body", "Bodyweight", "Full Body", "Cardio", "Workout"
+  exerciseCount: number;
+  totalSets: number;
+  prCount: number; // 0 if PRs not visible to viewer
+  isOwnWorkout: boolean;
 }
 
 export interface UserRequestItem {
