@@ -47,6 +47,8 @@ export function getRangeStart(range: "week" | "month" | "year"): Date {
   if (range === "week") start.setDate(now.getDate() - 7);
   else if (range === "month") start.setMonth(now.getMonth() - 1);
   else start.setFullYear(now.getFullYear() - 1);
+  // Snap to start of that day so measurements from any time on the boundary date are included
+  start.setHours(0, 0, 0, 0);
   return start;
 }
 
