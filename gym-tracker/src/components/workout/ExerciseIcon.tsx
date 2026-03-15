@@ -1,67 +1,41 @@
-import {
-  Dumbbell,
-  ArrowUpFromLine,
-  ArrowDownToLine,
-  Waves,
-  ChevronUp,
-  Target,
-  Zap,
-  RotateCcw,
-  PersonStanding,
-  Timer,
-  Bike,
-  Footprints,
-  MoveHorizontal,
-} from "lucide-react";
+import { Dumbbell, Bike } from "lucide-react";
 import type { MuscleGroup } from "@/types";
 
-const EXERCISE_ICONS: Record<string, React.ElementType> = {
-  // ── Upper Body ──────────────────────────────────────────────────────────
-  "BENCH PRESS":      Target,
-  "INCLINE PRESS":    ArrowUpFromLine,
-  "CHEST PRESS":      Target,
-  "PEC DECK":         MoveHorizontal,
-  "LAT PULLDOWN":     ArrowDownToLine,
-  "ASSISTED PULLUPS": ArrowUpFromLine,
-  "CABLE ROW":        Waves,
-  "SUPPORTED ROW":    Waves,
-  "BARBELL ROW":      Waves,
-  "SHOULDER PRESS":   ChevronUp,
-  "OVERHEAD PRESS":   ChevronUp,
-  "LATERAL RAISE":    Zap,
-  "ASSISTED DIPS":    ArrowDownToLine,
-  "TRICEPS PUSHDOWN": ArrowDownToLine,
-  "BICEPS MACHINE":   RotateCcw,
+// Exercise names that have a PNG in /public/exercises/
+const EXERCISE_IMAGES = new Set([
+  "ASSISTED DIPS",
+  "ASSISTED PULLUPS",
+  "BACK EXTENSION",
+  "BENCH PRESS",
+  "BICEPS CURL (DUMBBELL)",
+  "BICEPS CURL (MACHINE)",
+  "CABLE ROW",
+  "CHEST PRESS",
+  "CRUNCHES",
+  "DEADLIFT",
+  "HIP THRUST",
+  "INCLINE PRESS",
+  "LAT PULLDOWN",
+  "LATERAL RAISE",
+  "LEG EXTENSION",
+  "LEG PRESS",
+  "LEG RAISES",
+  "LYING CURL",
+  "PEC FLY",
+  "PULLUPS",
+  "PUSHUPS",
+  "SEATED CALF EXTENSION",
+  "SHOULDER PRESS",
+  "SQUAT",
+  "STANDING CALF EXTENSION",
+  "TRICEPS PUSHDOWN",
+]);
 
-  // ── Lower Body ──────────────────────────────────────────────────────────
-  "BACK SQUAT":        PersonStanding,
-  "LEG PRESS":         ArrowUpFromLine,
-  "ROMANIAN DEADLIFT": Dumbbell,
-  "DEADLIFT":          Dumbbell,
-  "HACK SQUAT":        PersonStanding,
-  "SMITH SQUAT":       PersonStanding,
-  "BULGARIAN SQUAT":   PersonStanding,
-  "WALKING LUNGES":    Footprints,
-  "HIP THRUST":        ChevronUp,
-  "LEG EXTENSION":     ArrowUpFromLine,
-  "SEATED CURL":       RotateCcw,
-  "LYING CURL":        RotateCcw,
-  "GLUTE DRIVE":       ChevronUp,
-  "BACK EXTENSION":    RotateCcw,
-  "STANDING CALVES":   ChevronUp,
-
-  // ── Bodyweight ──────────────────────────────────────────────────────────
-  "PUSHUPS":    Target,
-  "PULLUPS":    ArrowUpFromLine,
-  "CRUNCHES":   RotateCcw,
-  "LEG RAISES": ArrowUpFromLine,
-
-  // ── Cardio ───────────────────────────────────────────────────────────────
-  "BIKING":      Bike,
-  "JOGGING":     Footprints,
-  "PADEL":       Zap,
-  "PICKLEBALL":  Zap,
-  "BADMINTON":   Zap,
+const FALLBACK_ICONS: Record<MuscleGroup, React.ElementType> = {
+  UPPER_BODY: Dumbbell,
+  LOWER_BODY: Dumbbell,
+  BODYWEIGHT: Dumbbell,
+  CARDIO: Bike,
 };
 
 const MUSCLE_GROUP_COLORS: Record<MuscleGroup, string> = {
@@ -78,7 +52,18 @@ interface ExerciseIconProps {
 }
 
 export function ExerciseIcon({ name, muscleGroup, className }: ExerciseIconProps) {
-  const Icon = EXERCISE_ICONS[name] ?? Dumbbell;
+  if (EXERCISE_IMAGES.has(name)) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return (
+      <img
+        src={`/exercises/${name}.png`}
+        alt={name}
+        className={`object-contain ${className ?? "w-full h-full"}`}
+      />
+    );
+  }
+
+  const Icon = FALLBACK_ICONS[muscleGroup] ?? Dumbbell;
   const colorClass = MUSCLE_GROUP_COLORS[muscleGroup];
   return <Icon className={`h-4.5 w-4.5 ${colorClass} ${className ?? ""}`} strokeWidth={2} />;
 }
