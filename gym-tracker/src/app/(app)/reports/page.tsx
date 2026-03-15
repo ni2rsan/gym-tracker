@@ -113,8 +113,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           <MetricsCards
             currentWeight={latestMetric?.weightKg ? Number(latestMetric.weightKg) : null}
             currentBodyFat={latestMetric?.bodyFatPct ? Number(latestMetric.bodyFatPct) : null}
-            currentFatMassKg={latestMetric?.fatMassKg ? Number(latestMetric.fatMassKg) : null}
-            currentMuscleMassKg={latestMetric?.muscleMassKg ? Number(latestMetric.muscleMassKg) : null}
+            currentFatMassKg={recentEntries[0]?.fatMassKg ?? null}
+            currentMuscleMassKg={recentEntries[0]?.muscleMassKg ?? null}
             weightSource={latestMetric?.weightSource}
             bodyFatSource={latestMetric?.bodyFatSource}
             withingsWeight={latestWithings.weightKg ? Number(latestWithings.weightKg) : null}
