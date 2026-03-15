@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Pin, Trash2, Plus, Minus, ChevronDown, ChevronUp } from "lucide-react";
 import { GuideModal, type GuideStep } from "./GuideModal";
 
-const STORAGE_KEY = "gymtracker_guide_seen_tracker";
+const STORAGE_KEY = "gymtracker_guide_seen";
 
 /* ── Illustrations (workout page only) ── */
 

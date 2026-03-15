@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Scale, RefreshCw } from "lucide-react";
 import { GuideModal, type GuideStep } from "./GuideModal";
 
-const STORAGE_KEY = "gymtracker_guide_seen_reports";
+const STORAGE_KEY = "gymtracker_guide_seen";
 
 /* ── Illustrations ── */
 

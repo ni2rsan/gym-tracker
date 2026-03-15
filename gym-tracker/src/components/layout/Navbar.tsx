@@ -122,6 +122,20 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
             >
               <Inbox className="h-4 w-4" />
             </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  "sm:hidden flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                )}
+                aria-label="Admin"
+              >
+                <Shield className="h-4 w-4" />
+              </Link>
+            )}
             <GuideButton />
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
