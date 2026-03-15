@@ -20,27 +20,16 @@ export async function resolveFriendVisibility(
   viewerId: string,
   friendId: string
 ): Promise<{ canSeeWeight: boolean; canSeeBodyFat: boolean; canSeePRs: boolean }> {
-  const [viewerSettings, friendSettings, viewerOverride, friendOverride] = await Promise.all([
-    getOrCreatePrivacySettings(viewerId),
+  const [friendSettings, friendOverride] = await Promise.all([
     getOrCreatePrivacySettings(friendId),
-    prisma.friendPrivacyOverride.findUnique({ where: { userId_friendId: { userId: viewerId, friendId } } }),
     prisma.friendPrivacyOverride.findUnique({ where: { userId_friendId: { userId: friendId, friendId: viewerId } } }),
   ]);
 
-  // Viewer's willingness (own override for this friend, else global)
-  const iWantWeight  = viewerOverride?.shareWeight  ?? viewerSettings.shareWeight;
-  const iWantBF      = viewerOverride?.shareBodyFat ?? viewerSettings.shareBodyFat;
-  const iWantPRs     = viewerOverride?.sharePRs     ?? viewerSettings.sharePRs;
-
-  // Friend's willingness to share with viewer
-  const friendSharesWeight = friendOverride?.shareWeight  ?? friendSettings.shareWeight;
-  const friendSharesBF     = friendOverride?.shareBodyFat ?? friendSettings.shareBodyFat;
-  const friendSharesPRs    = friendOverride?.sharePRs     ?? friendSettings.sharePRs;
-
+  // Visibility is determined solely by what the friend chooses to share
   return {
-    canSeeWeight:  iWantWeight && friendSharesWeight,
-    canSeeBodyFat: iWantBF    && friendSharesBF,
-    canSeePRs:     iWantPRs   && friendSharesPRs,
+    canSeeWeight:  friendOverride?.shareWeight  ?? friendSettings.shareWeight,
+    canSeeBodyFat: friendOverride?.shareBodyFat ?? friendSettings.shareBodyFat,
+    canSeePRs:     friendOverride?.sharePRs     ?? friendSettings.sharePRs,
   };
 }
 

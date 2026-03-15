@@ -63,9 +63,6 @@ export function GlobalPrivacySettings({ initial }: Props) {
               <div>
                 <p className="text-sm font-medium text-zinc-900 dark:text-white">{label}</p>
                 <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">{description}</p>
-                {!settings[key] && (
-                  <p className="text-xs text-amber-500 mt-0.5">You also won&apos;t see this on your friends</p>
-                )}
               </div>
               <button
                 onClick={() => toggle(key)}
