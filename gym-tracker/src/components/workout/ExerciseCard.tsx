@@ -47,7 +47,7 @@ export function ExerciseCard({
 
   const cardHeader = (
     <div className="flex items-center gap-2 mb-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
         <ExerciseIcon name={exercise.name} muscleGroup={exercise.muscleGroup} />
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -143,7 +143,7 @@ export function ExerciseCard({
   if (isSkipped) {
     return (
       <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 flex items-center gap-2 opacity-50">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
           <ExerciseIcon name={exercise.name} muscleGroup={exercise.muscleGroup} />
         </div>
         <span className="flex-1 text-sm text-zinc-400 dark:text-zinc-500">{exercise.name}</span>
