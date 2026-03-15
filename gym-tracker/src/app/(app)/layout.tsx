@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!ctx) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 overflow-x-hidden">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       {ctx.isImpersonating && ctx.impersonatedUser && (
         <ImpersonationBanner impersonatedUser={ctx.impersonatedUser} />
       )}
