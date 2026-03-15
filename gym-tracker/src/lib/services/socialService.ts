@@ -210,6 +210,21 @@ export async function upsertFriendPrivacyOverride(
   });
 }
 
+// ─── Friends with stats (batch) ─────────────────────────────────────────────
+
+export async function getFriendsWithStats(
+  userId: string
+): Promise<Array<FriendProfileData & { userId: string }>> {
+  const friends = await getFriends(userId);
+  if (friends.length === 0) return [];
+  const profiles = await Promise.all(
+    friends.map((f) => getFriendProfileData(userId, f.userId))
+  );
+  return profiles
+    .map((p, i) => (p ? { ...p, userId: friends[i].userId } : null))
+    .filter((p): p is FriendProfileData & { userId: string } => p !== null);
+}
+
 // ─── Friend profile ─────────────────────────────────────────────────────────
 
 export async function getFriendProfileData(
