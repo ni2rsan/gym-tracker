@@ -27,7 +27,7 @@ function getSvgRingParams(generalStreak: number) {
     ? (generalStreak - prevMilestone) / (nextMilestone - prevMilestone)
     : 1;
   const offset = CIRCUMFERENCE * (1 - ringProgress);
-  return { nextMilestone, offset };
+  return { nextMilestone, prevMilestone, ringProgress, offset };
 }
 
 function toISO(date: Date): string {
@@ -118,11 +118,7 @@ function HeroCard({
   bestStreak: number;
   totalWorkoutsThisMonth: number;
 }) {
-  const { nextMilestone } = getSvgRingParams(generalStreak);
-  const prevMilestone = [...MILESTONES].reverse().find((m) => m <= generalStreak) ?? 0;
-  const ringProgress = nextMilestone
-    ? (generalStreak - prevMilestone) / (nextMilestone - prevMilestone)
-    : 1;
+  const { nextMilestone, prevMilestone, ringProgress } = getSvgRingParams(generalStreak);
   const isPersonalBest = generalStreak > 0 && generalStreak >= bestStreak;
   const [badgeImgError, setBadgeImgError] = useState(false);
 
@@ -148,11 +144,22 @@ function HeroCard({
           {nextMilestone && (
             <div className="mt-3 bg-black/20 rounded-2xl p-3">
               <div className="flex items-center gap-3">
+                {/* Achieved badge (left) */}
+                {prevMilestone > 0 && (
+                  <div className="w-12 h-12 shrink-0">
+                    <img
+                      src={`/milestones/${prevMilestone}.png`}
+                      alt={`${prevMilestone}d badge`}
+                      className="w-full h-full object-contain drop-shadow"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    />
+                  </div>
+                )}
                 {/* Bar + labels */}
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between text-[10px] text-white/50 font-semibold mb-1.5">
                     <span>{prevMilestone}d</span>
-                    <span className="text-amber-400">{Math.round(ringProgress * 100)}%</span>
+                    <span className="text-amber-400">{generalStreak}d</span>
                     <span>{nextMilestone}d</span>
                   </div>
                   {/* Track */}
@@ -168,8 +175,8 @@ function HeroCard({
                     />
                   </div>
                 </div>
-                {/* Badge preview */}
-                <div className="w-16 h-16 shrink-0">
+                {/* Next badge (right, greyed out) */}
+                <div className="w-12 h-12 shrink-0">
                   {!badgeImgError ? (
                     <img
                       src={`/milestones/${nextMilestone}.png`}

@@ -15,17 +15,18 @@ interface MetricsCardsProps {
   bodyFatSource?: string | null;
   withingsWeight?: number | null;
   withingsBodyFat?: number | null;
-  weekAgoWeight: number | null;
-  weekAgoBodyFat: number | null;
-  weekAgoFatMassKg: number | null;
-  weekAgoMuscleMassKg: number | null;
+  rangeAgoWeight: number | null;
+  rangeAgoBodyFat: number | null;
+  rangeAgoFatMassKg: number | null;
+  rangeAgoMuscleMassKg: number | null;
+  rangeLabel: string;
   isWithingsConnected: boolean;
 }
 
 type EditField = "weight" | "bodyFat" | null;
 type ToastState = { message: string; type: "success" | "error" } | null;
 
-function Trend({ current, previous, unit }: { current: number | null; previous: number | null; unit: string }) {
+function Trend({ current, previous, unit, rangeLabel }: { current: number | null; previous: number | null; unit: string; rangeLabel: string }) {
   if (current == null || previous == null) return null;
   const delta = current - previous;
   if (Math.abs(delta) < 0.05) return null;
@@ -35,6 +36,7 @@ function Trend({ current, previous, unit }: { current: number | null; previous: 
     <span className={`flex items-center gap-0.5 text-xs font-medium ${isUp ? "text-blue-500" : "text-orange-500"}`}>
       {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
       {sign}{delta.toFixed(1)} {unit}
+      <span className="text-zinc-400 dark:text-zinc-500 font-normal ml-0.5">{rangeLabel}</span>
     </span>
   );
 }
@@ -48,10 +50,11 @@ export function MetricsCards({
   bodyFatSource,
   withingsWeight,
   withingsBodyFat,
-  weekAgoWeight,
-  weekAgoBodyFat,
-  weekAgoFatMassKg,
-  weekAgoMuscleMassKg,
+  rangeAgoWeight,
+  rangeAgoBodyFat,
+  rangeAgoFatMassKg,
+  rangeAgoMuscleMassKg,
+  rangeLabel,
   isWithingsConnected,
 }: MetricsCardsProps) {
   const [editing, setEditing] = useState<EditField>(null);
@@ -158,7 +161,7 @@ export function MetricsCards({
                     </span>
                   )}
                 </div>
-                <Trend current={currentWeight} previous={weekAgoWeight} unit="kg" />
+                <Trend current={currentWeight} previous={rangeAgoWeight} unit="kg" rangeLabel={rangeLabel} />
                 {weightSource !== "withings" && withingsWeight != null && (
                   <button onClick={handleRevertToWithings} disabled={isPending} className="flex items-center gap-1 text-xs text-zinc-400 hover:text-emerald-500 transition-colors disabled:opacity-50 w-fit mt-1">
                     <RotateCcw className="h-3 w-3" />
@@ -193,7 +196,7 @@ export function MetricsCards({
                     <span className="text-zinc-400 text-lg">—</span>
                   )}
                 </p>
-                <Trend current={currentBodyFat} previous={weekAgoBodyFat} unit="%" />
+                <Trend current={currentBodyFat} previous={rangeAgoBodyFat} unit="%" rangeLabel={rangeLabel} />
               </div>
             </div>
 
@@ -210,7 +213,7 @@ export function MetricsCards({
                     <span className="text-zinc-400 text-base">—</span>
                   )}
                 </p>
-                <Trend current={currentFatMassKg} previous={weekAgoFatMassKg} unit="kg" />
+                <Trend current={currentFatMassKg} previous={rangeAgoFatMassKg} unit="kg" rangeLabel={rangeLabel} />
               </div>
               <div className="px-4 py-3 flex flex-col gap-1">
                 <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
@@ -223,7 +226,7 @@ export function MetricsCards({
                     <span className="text-zinc-400 text-base">—</span>
                   )}
                 </p>
-                <Trend current={currentMuscleMassKg} previous={weekAgoMuscleMassKg} unit="kg" />
+                <Trend current={currentMuscleMassKg} previous={rangeAgoMuscleMassKg} unit="kg" rangeLabel={rangeLabel} />
               </div>
             </div>
           </div>
@@ -289,7 +292,7 @@ export function MetricsCards({
                           <span className="text-zinc-400 text-lg">Not set</span>
                         )}
                       </p>
-                      <Trend current={currentBodyFat} previous={weekAgoBodyFat} unit="%" />
+                      <Trend current={currentBodyFat} previous={rangeAgoBodyFat} unit="%" rangeLabel={rangeLabel} />
                     </div>
                   )}
                 </CardBody>

@@ -70,12 +70,21 @@ export async function getLatestBodyMetric(userId: string) {
   };
 }
 
-/** Returns averaged metrics from the day closest to 7 days ago (at or before 7 days ago) */
+/** Returns averaged metrics from the day closest to the start of the given range */
+export async function getRangeAgoMetrics(userId: string, range: TimeRange) {
+  const cutoff = getRangeStart(range);
+  return _getMetricsAtOrBefore(userId, cutoff);
+}
+
+/** @deprecated Use getRangeAgoMetrics instead */
 export async function getWeekAgoMetrics(userId: string) {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  return _getMetricsAtOrBefore(userId, sevenDaysAgo);
+}
 
+async function _getMetricsAtOrBefore(userId: string, cutoff: Date) {
   const rows = await prisma.bodyMetricEntry.findMany({
-    where: { userId, recordedAt: { lte: sevenDaysAgo } },
+    where: { userId, recordedAt: { lte: cutoff } },
     orderBy: { recordedAt: "desc" },
     take: 50,
     select: { weightKg: true, bodyFatPct: true, fatMassKg: true, muscleMassKg: true, recordedAt: true },

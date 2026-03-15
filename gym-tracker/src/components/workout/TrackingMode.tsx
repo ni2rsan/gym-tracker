@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import { X, ArrowLeft, Plus, Minus } from "lucide-react";
+import { X, ArrowLeft, Plus, Minus, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
 import { saveWorkout, deleteExerciseTracking } from "@/actions/workout";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
+import { EditExercisesOverlay } from "./EditExercisesOverlay";
 import type { ExerciseWithSettings, SetData, MuscleGroup } from "@/types";
 import { GuideModal } from "@/components/guide/GuideModal";
 import { trackingIconSteps, trackingExerciseSteps } from "@/components/guide/trackingSteps";
@@ -21,13 +22,17 @@ type TrackingView =
 
 interface TrackingModeProps {
   exercises: ExerciseWithSettings[];
+  allExercises: ExerciseWithSettings[];
   date: string;
   initialCompletedIds: Set<string>;
   scopeLabel: string;
   workoutData?: Record<string, SetData[]>;
+  skippedIds?: Set<string>;
+  onSkipChange?: (id: string, skipped: boolean) => void;
   onExit: () => void;
   onBack: () => void;
   onExerciseSaved: (exerciseId: string, sets: SetData[]) => void;
+  onExercisesChanged?: () => void;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -73,13 +78,17 @@ function makeEmptySets(ex: ExerciseWithSettings, count?: number): SetData[] {
 
 export function TrackingMode({
   exercises,
+  allExercises,
   date,
   initialCompletedIds,
   scopeLabel,
   workoutData,
+  skippedIds = new Set(),
+  onSkipChange,
   onExit,
   onBack,
   onExerciseSaved,
+  onExercisesChanged,
 }: TrackingModeProps) {
   const [view, setView] = useState<TrackingView>({ kind: "icons" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(initialCompletedIds);
@@ -89,6 +98,7 @@ export function TrackingMode({
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showDiscardWarning, setShowDiscardWarning] = useState(false);
+  const [showSavePartialWarning, setShowSavePartialWarning] = useState(false);
 
   // Automated tracking
   const [autoTrack, setAutoTrack] = useState(false);
@@ -99,12 +109,16 @@ export function TrackingMode({
   const [completedSetFlags, setCompletedSetFlags] = useState<boolean[]>([]);
   const [timerSetIdx, setTimerSetIdx] = useState<number | null>(null);
   const [timerLeft, setTimerLeft] = useState(0);
+  // Absolute end-timestamp so the timer survives phone lock / tab background
+  const timerEndAtRef = useRef<number | null>(null);
 
   // Manual mode edit toggle
   const [isManualEditMode, setIsManualEditMode] = useState(false);
 
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
+
+  const [showEditOverlay, setShowEditOverlay] = useState(false);
 
   // Guide modals (shown once ever per context)
   const [showIconGuide, setShowIconGuide] = useState(false);
@@ -120,6 +134,11 @@ export function TrackingMode({
   }, []);
 
   const hasNonCardio = exercises.some((ex) => ex.muscleGroup !== "CARDIO");
+  // Only show non-skipped exercises in the icon grid
+  const visibleExercises = exercises.filter((ex) => !skippedIds.has(ex.id));
+
+  // Long-press timer ref for skip gesture
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Wake Lock ────────────────────────────────────────────────────────────
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
@@ -141,11 +160,32 @@ export function TrackingMode({
   }, [autoTrack]);
 
   // ── Timer effect ────────────────────────────────────────────────────────
+  // Uses an absolute end-timestamp so the countdown survives phone lock /
+  // tab backgrounding. The interval just refreshes the display; actual
+  // remaining time is always computed from wall-clock.
   useEffect(() => {
-    if (timerSetIdx === null || timerLeft <= 0) return;
-    const id = setInterval(() => setTimerLeft((t) => t - 1), 1000);
+    if (timerSetIdx === null || timerEndAtRef.current === null) return;
+
+    function tick() {
+      const remaining = Math.max(0, Math.round((timerEndAtRef.current! - Date.now()) / 1000));
+      setTimerLeft(remaining);
+    }
+
+    tick(); // immediate update (handles waking up from lock)
+    const id = setInterval(tick, 500); // 500ms so display stays snappy
     return () => clearInterval(id);
-  }, [timerSetIdx, timerLeft]);
+  }, [timerSetIdx]);
+
+  // Recalculate immediately when screen wakes up / tab becomes visible
+  useEffect(() => {
+    function onVisible() {
+      if (timerSetIdx === null || timerEndAtRef.current === null) return;
+      const remaining = Math.max(0, Math.round((timerEndAtRef.current - Date.now()) / 1000));
+      setTimerLeft(remaining);
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [timerSetIdx]);
 
   // When timer hits 0, advance to next set (or auto-save if last)
   useEffect(() => {
@@ -154,6 +194,7 @@ export function TrackingMode({
     const ex = view.exercise;
     const isLast = timerSetIdx === sets.length - 1;
     setTimerSetIdx(null);
+    timerEndAtRef.current = null;
     if (isLast) {
       handleAutoSave(ex);
     } else {
@@ -174,10 +215,12 @@ export function TrackingMode({
     setInitialSets(snapshot);
     setSaveError(null);
     setShowDiscardWarning(false);
+    setShowSavePartialWarning(false);
     // Reset automated state
     setActiveSetIdx(0);
     setCompletedSetFlags(Array(snapshot.length).fill(false));
     setTimerSetIdx(null);
+    timerEndAtRef.current = null;
     setTimerLeft(0);
     setIsManualEditMode(false);
     setView({ kind: "exercise", exercise: ex });
@@ -225,12 +268,38 @@ export function TrackingMode({
   };
 
   const handleBackArrow = () => {
+    if (autoTrack && completedSetFlags.some(Boolean)) {
+      setShowSavePartialWarning(true);
+      return;
+    }
     const isDirty = JSON.stringify(sets) !== JSON.stringify(initialSets);
     if (!autoTrack && isDirty) {
       setShowDiscardWarning(true);
       return;
     }
     setView({ kind: "icons" });
+  };
+
+  const handleSavePartialSets = (ex: ExerciseWithSettings) => {
+    const completedSets = sets.filter((_, i) => completedSetFlags[i]);
+    if (completedSets.length === 0) {
+      setShowSavePartialWarning(false);
+      setView({ kind: "icons" });
+      return;
+    }
+    startTransition(async () => {
+      const result = await saveWorkout({ date, exercises: [{ exerciseId: ex.id, sets: completedSets }] });
+      if (result.success) {
+        setCompletedIds((prev) => new Set(prev).add(ex.id));
+        setSessionSavedSets((prev) => ({ ...prev, [ex.id]: completedSets }));
+        onExerciseSaved(ex.id, completedSets);
+        setShowSavePartialWarning(false);
+        setView({ kind: "icons" });
+      } else {
+        setSaveError(result.error ?? "Failed to save");
+        setShowSavePartialWarning(false);
+      }
+    });
   };
 
   const handleSetDone = (ex: ExerciseWithSettings, idx: number) => {
@@ -242,12 +311,14 @@ export function TrackingMode({
       handleAutoSave(ex);
     } else {
       setTimerSetIdx(idx);
+      timerEndAtRef.current = Date.now() + breakDuration * 1000;
       setTimerLeft(breakDuration);
     }
   };
 
   const handleSkipTimer = (idx: number, ex: ExerciseWithSettings) => {
     setTimerSetIdx(null);
+    timerEndAtRef.current = null;
     setTimerLeft(0);
     const isLast = idx === sets.length - 1;
     if (isLast) {
@@ -264,13 +335,14 @@ export function TrackingMode({
     newFlags[lastIdx] = false;
     setCompletedSetFlags(newFlags);
     setTimerSetIdx(null);
+    timerEndAtRef.current = null;
     setTimerLeft(0);
     setActiveSetIdx(lastIdx);
   };
 
   // ── Icons view ─────────────────────────────────────────────────────────
   if (view.kind === "icons") {
-    const allDone = exercises.length > 0 && exercises.every((ex) => completedIds.has(ex.id));
+    const allDone = visibleExercises.length > 0 && visibleExercises.every((ex) => completedIds.has(ex.id));
 
     return (
       <div className="fixed inset-0 z-[60] bg-white dark:bg-zinc-950 overflow-y-auto flex flex-col">
@@ -302,7 +374,7 @@ export function TrackingMode({
         {/* Automated Tracking controls */}
         {hasNonCardio && (
           <div className="flex items-center gap-3 px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 shrink-0">Automated Tracking</span>
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400 shrink-0">Live Track</span>
             {/* Toggle */}
             <button
               onClick={() => setAutoTrack((v) => !v)}
@@ -350,12 +422,29 @@ export function TrackingMode({
 
         {/* Icon grid */}
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5">
-          {exercises.map((ex) => {
+          {visibleExercises.map((ex) => {
             const done = completedIds.has(ex.id);
+            const handleSkip = () => onSkipChange?.(ex.id, true);
             return (
               <button
                 key={ex.id}
                 onClick={() => handleIconClick(ex)}
+                onContextMenu={(e) => { e.preventDefault(); handleSkip(); }}
+                onTouchStart={() => {
+                  longPressTimerRef.current = setTimeout(handleSkip, 500);
+                }}
+                onTouchEnd={() => {
+                  if (longPressTimerRef.current) {
+                    clearTimeout(longPressTimerRef.current);
+                    longPressTimerRef.current = null;
+                  }
+                }}
+                onTouchMove={() => {
+                  if (longPressTimerRef.current) {
+                    clearTimeout(longPressTimerRef.current);
+                    longPressTimerRef.current = null;
+                  }
+                }}
                 className="flex flex-col items-center gap-2 text-center active:scale-95 transition-transform"
               >
                 <div
@@ -391,15 +480,33 @@ export function TrackingMode({
           })}
         </div>
 
-        {/* Finish button */}
-        <div className="px-5 pb-8">
+        {/* Finish / Edit buttons */}
+        <div className="px-5 pb-8 flex items-center gap-3">
+          <button
+            onClick={() => setShowEditOverlay(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Edit
+          </button>
           <button
             onClick={onExit}
-            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
+            className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
           >
             Finish
           </button>
         </div>
+
+        {/* Edit exercises overlay */}
+        {showEditOverlay && (
+          <EditExercisesOverlay
+            allExercises={allExercises}
+            onClose={(changed) => {
+              setShowEditOverlay(false);
+              if (changed) onExercisesChanged?.();
+            }}
+          />
+        )}
 
         {/* Icon grid guide — shown once on first visit */}
         <GuideModal
@@ -544,7 +651,7 @@ export function TrackingMode({
       {/* Automated toggle (non-cardio only) */}
       {!isCardio && hasNonCardio && (
         <div className="flex items-center gap-3 px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Automated</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Live Track</span>
           <button
             onClick={() => setAutoTrack((v) => !v)}
             className={cn(
@@ -570,6 +677,27 @@ export function TrackingMode({
               </select>
             </>
           )}
+        </div>
+      )}
+
+      {/* Save partial sets prompt (Live Track mode) */}
+      {showSavePartialWarning && (
+        <div className="mx-4 mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 px-4 py-3 flex items-center gap-3">
+          <p className="flex-1 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+            Save {completedSetFlags.filter(Boolean).length} tracked set{completedSetFlags.filter(Boolean).length !== 1 ? "s" : ""}?
+          </p>
+          <button
+            onClick={() => handleSavePartialSets(ex)}
+            className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => { setShowSavePartialWarning(false); setView({ kind: "icons" }); }}
+            className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+          >
+            Discard
+          </button>
         </div>
       )}
 
@@ -756,20 +884,34 @@ export function TrackingMode({
                           )}
                         </div>
 
-                        {isTimerRow && (
-                          <div className="flex items-center gap-1.5 w-16 shrink-0">
-                            <span className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
-                              {formatTimer(timerLeft)}
-                            </span>
+                        {isTimerRow ? (
+                          <div className="flex flex-col items-center gap-0.5 w-16 shrink-0">
+                            <div className="relative w-9 h-9">
+                              <svg className="-rotate-90 w-full h-full" viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="14" fill="none" strokeWidth="3" className="stroke-zinc-200 dark:stroke-zinc-700" />
+                                <circle
+                                  cx="18" cy="18" r="14" fill="none" strokeWidth="3"
+                                  strokeLinecap="round"
+                                  className="stroke-emerald-500 dark:stroke-emerald-400"
+                                  strokeDasharray={2 * Math.PI * 14}
+                                  strokeDashoffset={2 * Math.PI * 14 * (1 - (breakDuration > 0 ? timerLeft / breakDuration : 0))}
+                                  style={{ transition: "stroke-dashoffset 0.5s linear" }}
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[9px] font-mono font-bold text-zinc-900 dark:text-white leading-none">
+                                  {formatTimer(timerLeft)}
+                                </span>
+                              </div>
+                            </div>
                             <button
                               onClick={() => handleSkipTimer(i, ex)}
-                              className="text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-1"
+                              className="text-[9px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-1 leading-none"
                             >
                               Skip
                             </button>
                           </div>
-                        )}
-                        {!isTimerRow && (
+                        ) : (
                           <span className="w-16 shrink-0" />
                         )}
                       </div>

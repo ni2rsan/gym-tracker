@@ -6,7 +6,7 @@ import {
   getMultiExerciseProgressData,
 } from "@/lib/services/reportService";
 import { getExercisesForUser } from "@/lib/services/exerciseService";
-import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getWeekAgoMetrics } from "@/lib/services/metricsService";
+import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getRangeAgoMetrics } from "@/lib/services/metricsService";
 import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { WeightTrendChart } from "@/components/reports/WeightTrendChart";
@@ -52,15 +52,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   // Sync Withings data before loading the page (no-op if not connected)
   await syncWithingsIfNeeded(userId);
 
-  const [exercises, weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, weekAgoMetric] = await Promise.all([
+  const [exercises, weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, rangeAgoMetric] = await Promise.all([
     getExercisesForUser(userId),
     getWeightTrendData(userId, range),
     getLatestBodyMetric(userId),
     getLastNBodyMetrics(userId, 7),
     getWithingsConnection(userId),
     getLatestWithingsMetric(userId),
-    getWeekAgoMetrics(userId),
+    getRangeAgoMetrics(userId, range),
   ]);
+
+  const RANGE_LABELS: Record<typeof range, string> = { week: "7d", month: "30d", year: "1yr" };
+  const rangeLabel = RANGE_LABELS[range];
 
   const isWithingsConnected = !!(withingsConnection?.isActive);
 
@@ -115,10 +118,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             bodyFatSource={latestMetric?.bodyFatSource}
             withingsWeight={latestWithings.weightKg ? Number(latestWithings.weightKg) : null}
             withingsBodyFat={latestWithings.bodyFatPct ? Number(latestWithings.bodyFatPct) : null}
-            weekAgoWeight={weekAgoMetric.weightKg}
-            weekAgoBodyFat={weekAgoMetric.bodyFatPct}
-            weekAgoFatMassKg={weekAgoMetric.fatMassKg}
-            weekAgoMuscleMassKg={weekAgoMetric.muscleMassKg}
+            rangeAgoWeight={rangeAgoMetric.weightKg}
+            rangeAgoBodyFat={rangeAgoMetric.bodyFatPct}
+            rangeAgoFatMassKg={rangeAgoMetric.fatMassKg}
+            rangeAgoMuscleMassKg={rangeAgoMetric.muscleMassKg}
+            rangeLabel={rangeLabel}
             isWithingsConnected={isWithingsConnected}
           />
         </Suspense>
