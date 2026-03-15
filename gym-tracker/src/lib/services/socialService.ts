@@ -528,3 +528,52 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
     };
   });
 }
+
+// ─── Invite links ─────────────────────────────────────────────────────────
+
+export async function getOrCreateInviteToken(userId: string): Promise<string> {
+  const existing = await prisma.friendInvite.findUnique({ where: { userId } });
+  if (existing) return existing.token;
+  const created = await prisma.friendInvite.create({ data: { userId } });
+  return created.token;
+}
+
+export async function acceptInvite(
+  viewerId: string,
+  token: string
+): Promise<{ ok: boolean; error?: string }> {
+  const invite = await prisma.friendInvite.findUnique({
+    where: { token },
+    select: { userId: true },
+  });
+  if (!invite) return { ok: false, error: "Invalid invite link." };
+  if (invite.userId === viewerId) return { ok: false, error: "self" };
+
+  // Already friends?
+  const existing = await prisma.friendship.findFirst({
+    where: {
+      OR: [
+        { senderId: viewerId, receiverId: invite.userId },
+        { senderId: invite.userId, receiverId: viewerId },
+      ],
+    },
+  });
+  if (existing?.status === "ACCEPTED") return { ok: true }; // already friends, silent
+
+  if (existing) {
+    // Pending — just accept it
+    await prisma.friendship.update({
+      where: { id: existing.id },
+      data: { status: "ACCEPTED" },
+    });
+  } else {
+    await prisma.friendship.create({
+      data: {
+        senderId: invite.userId,
+        receiverId: viewerId,
+        status: "ACCEPTED",
+      },
+    });
+  }
+  return { ok: true };
+}

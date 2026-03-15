@@ -81,6 +81,7 @@ model User {
   friendOverridesAboutMe FriendPrivacyOverride[] @relation("PrivacyOverrideFriend")
   fistBumps              WorkoutFistBump[]
   socialNotificationSeen SocialNotificationSeen?
+  friendInvite           FriendInvite?
 }
 
 enum MuscleGroup {
@@ -334,6 +335,17 @@ model FriendPrivacyOverride {
 
   @@unique([userId, friendId])
   @@index([userId])
+}
+
+model FriendInvite {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
 }
 
 // ─── Withings integration ──────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import {
   getPendingReceived,
   getPendingSent,
   getPrivacySettings,
+  getOrCreateInviteToken,
 } from "@/lib/services/socialService";
 import { SocialPageClient } from "@/components/social/SocialPageClient";
 
@@ -14,12 +15,13 @@ export const dynamic = "force-dynamic";
 export default async function SocialPage() {
   const userId = await getCurrentUserId();
 
-  const [friendsWithStats, feed, pendingReceived, pendingSent, privacy] = await Promise.all([
+  const [friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken] = await Promise.all([
     getFriendsWithStats(userId),
     getFriendsFeed(userId),
     getPendingReceived(userId),
     getPendingSent(userId),
     getPrivacySettings(userId),
+    getOrCreateInviteToken(userId),
   ]);
 
   return (
@@ -29,6 +31,7 @@ export default async function SocialPage() {
       pendingReceived={pendingReceived}
       pendingSent={pendingSent}
       privacy={privacy}
+      inviteToken={inviteToken}
     />
   );
 }
