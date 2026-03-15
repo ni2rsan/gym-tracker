@@ -5,8 +5,9 @@
  * Withings API docs: https://developer.withings.com/api-reference
  * Measure types used:
  *   1  = Weight (kg)
- *   5  = Fat mass weight (kg)
+ *   5  = Fat Free Mass (lean body mass, kg) — NOT fat mass
  *   6  = Body fat percentage (%)
+ *   8  = Fat Mass Weight (kg)
  *   76 = Muscle mass (kg)
  */
 
@@ -160,7 +161,7 @@ export async function fetchMeasures(
 ): Promise<WithingsMeasureGroup[]> {
   const params = new URLSearchParams({
     action: "getmeas",
-    meastypes: "1,5,6,76",
+    meastypes: "1,5,6,8,76",
     category: "1",
   });
   if (lastUpdateUnix > 0) {
@@ -187,10 +188,15 @@ export async function fetchMeasures(
 
     for (const m of grp.measures) {
       const val = parseFloat(decodeMeasure(m.value, m.unit).toFixed(2));
-      if (m.type === 1) weightKg = val;
-      if (m.type === 5) fatMassKg = val;
-      if (m.type === 6) bodyFatPct = val;
+      if (m.type === 1)  weightKg = val;
+      if (m.type === 6)  bodyFatPct = val;
+      if (m.type === 8)  fatMassKg = val;  // type 8 = Fat Mass Weight (kg)
       if (m.type === 76) muscleMassKg = val;
+    }
+
+    // Fall back: compute fat mass from weight × fat% if type 8 wasn't returned
+    if (fatMassKg === null && weightKg !== null && bodyFatPct !== null) {
+      fatMassKg = parseFloat((weightKg * (bodyFatPct / 100)).toFixed(2));
     }
 
     return { grpid: grp.grpid, date: grp.date, weightKg, bodyFatPct, fatMassKg, muscleMassKg };
