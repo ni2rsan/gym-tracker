@@ -2,12 +2,12 @@
 
 import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings";
 import { removeFriend, upsertFriendPrivacyOverride, toggleFistBump, markSocialSeen } from "@/actions/social";
+import { FriendProfileView } from "@/components/social/FriendProfileView";
 import { Toast } from "@/components/ui/Toast";
 import type { FriendProfileData, WorkoutFeedEntry } from "@/types";
 
@@ -140,98 +140,70 @@ function FeedCard({
   );
 }
 
-// ─── Friend stat card ────────────────────────────────────────────────────────
+// ─── Friend expandable card ──────────────────────────────────────────────────
 
-function FriendStatCard({ data }: { data: FriendStat }) {
-  const href = `/social/${data.username ?? data.userId}`;
+function FriendExpandableCard({
+  data,
+  globalPrivacy,
+}: {
+  data: FriendStat;
+  globalPrivacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
+}) {
+  const [expanded, setExpanded] = useState(false);
   const displayName = data.name ?? data.username ?? "Unknown";
   const topMilestone = [...data.milestonesUnlocked].sort((a, b) => b - a)[0];
 
   return (
-    <Link href={href} className="block rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
-      <div className="flex items-center gap-3 mb-3">
-        {data.image ? (
-          <img src={data.image} alt={displayName} className="h-10 w-10 rounded-full object-cover flex-shrink-0" />
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex-shrink-0">
-            {(data.username?.[0] ?? data.name?.[0] ?? "?").toUpperCase()}
+    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full p-4 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+      >
+        <div className="flex items-center gap-3 mb-3">
+          {data.image ? (
+            <img src={data.image} alt={displayName} className="h-10 w-10 rounded-full object-cover flex-shrink-0" />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex-shrink-0">
+              {(data.username?.[0] ?? data.name?.[0] ?? "?").toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{displayName}</p>
+            {data.username && data.name && (
+              <p className="text-xs text-zinc-400 truncate">@{data.username}</p>
+            )}
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{displayName}</p>
-          {data.username && data.name && (
-            <p className="text-xs text-zinc-400 truncate">@{data.username}</p>
-          )}
-        </div>
-        {topMilestone != null && (
-          <span className="text-xl flex-shrink-0">{MILESTONE_EMOJI[topMilestone]}</span>
-        )}
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <div className="flex items-center justify-center gap-1">
-            <Flame className="h-3.5 w-3.5 text-orange-500" />
-            <p className="text-base font-bold text-zinc-900 dark:text-white">{data.generalStreak}</p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {topMilestone != null && <span className="text-xl">{MILESTONE_EMOJI[topMilestone]}</span>}
+            {expanded ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
           </div>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Streak</p>
         </div>
-        <div>
-          <p className="text-base font-bold text-zinc-900 dark:text-white">{data.bestStreak}</p>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Best</p>
-        </div>
-        <div>
-          <p className="text-base font-bold text-zinc-900 dark:text-white">{data.totalWorkoutsThisMonth}</p>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">This month</p>
-        </div>
-      </div>
 
-      {(data.heightCm != null || data.weight != null || data.bodyFatPct != null) && (
-        <div className="flex gap-3 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-          {data.heightCm != null && (
-            <div className="flex-1 text-center">
-              <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                {data.heightCm}<span className="text-xs font-normal text-zinc-400 ml-0.5">cm</span>
-              </p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">Height</p>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div className="flex items-center justify-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
+              <p className="text-base font-bold text-zinc-900 dark:text-white">{data.generalStreak}</p>
             </div>
-          )}
-          {data.weight != null && (
-            <div className="flex-1 text-center">
-              <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                {data.weight.toFixed(1)}<span className="text-xs font-normal text-zinc-400 ml-0.5">kg</span>
-              </p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">Weight</p>
-            </div>
-          )}
-          {data.bodyFatPct != null && (
-            <div className="flex-1 text-center">
-              <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-                {data.bodyFatPct.toFixed(1)}<span className="text-xs font-normal text-zinc-400">%</span>
-              </p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">Body Fat</p>
-            </div>
-          )}
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Streak</p>
+          </div>
+          <div>
+            <p className="text-base font-bold text-zinc-900 dark:text-white">{data.bestStreak}</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Best</p>
+          </div>
+          <div>
+            <p className="text-base font-bold text-zinc-900 dark:text-white">{data.totalWorkoutsThisMonth}</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">This month</p>
+          </div>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-zinc-100 dark:border-zinc-800 p-4">
+          <FriendProfileView data={data} friendId={data.userId} globalPrivacy={globalPrivacy} showHeader={false} />
         </div>
       )}
-
-      {data.prs.length > 0 && (() => {
-        const top = data.prs[0];
-        return (
-          <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-1">Top PR</p>
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">{top.exerciseName}</p>
-              <p className="text-xs font-semibold text-zinc-900 dark:text-white ml-2 flex-shrink-0">
-                {top.maxWeightKg != null
-                  ? `${top.maxWeightKg} kg${top.repsAtMaxWeight != null ? ` × ${top.repsAtMaxWeight}` : ""}`
-                  : top.maxReps != null ? `${top.maxReps} reps` : ""}
-              </p>
-            </div>
-          </div>
-        );
-      })()}
-    </Link>
+    </div>
   );
 }
 
@@ -598,9 +570,9 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             </p>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-3">
             {friends.map((f) => (
-              <FriendStatCard key={f.userId} data={f} />
+              <FriendExpandableCard key={f.userId} data={f} globalPrivacy={privacy} />
             ))}
           </div>
         )
