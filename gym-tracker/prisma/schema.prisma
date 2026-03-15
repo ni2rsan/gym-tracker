@@ -50,14 +50,17 @@ model VerificationToken {
 // ─── Application tables ────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  role          String    @default("USER")  // "USER" | "ADMIN"
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  name               String?
+  username           String?   @unique
+  email              String?   @unique
+  emailVerified      DateTime?
+  image              String?
+  profileImageBase64 String?   @db.Text
+  heightCm           Int?
+  role               String    @default("USER")  // "USER" | "ADMIN"
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   accounts              Account[]
   sessions              Session[]

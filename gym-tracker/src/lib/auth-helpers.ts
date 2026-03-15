@@ -59,14 +59,18 @@ export async function getSessionContext() {
     });
   }
 
-  const isAdmin = await prisma.user
-    .findUnique({ where: { id: session.user.id as string }, select: { role: true } })
-    .then((u) => u?.role === "ADMIN");
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id as string },
+    select: { role: true, username: true, profileImageBase64: true },
+  });
+
+  const isAdmin = dbUser?.role === "ADMIN";
 
   return {
     realUserId: session.user.id as string,
-    realUserName: session.user.name ?? null,
-    realUserImage: session.user.image ?? null,
+    realUserName: dbUser?.username ?? session.user.name ?? null,
+    realUserImage: dbUser?.profileImageBase64 ?? session.user.image ?? null,
+    needsProfileSetup: !dbUser?.username,
     isAdmin,
     isImpersonating,
     impersonatedUser,
