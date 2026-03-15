@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
 import type { MuscleGroup } from "@/types";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
+import { setSorryTokenMax } from "@/actions/planner";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const SORRY_MAX = 3;
+const SORRY_MAX_LIMIT = 5; // absolute ceiling
 const MILESTONES = [10, 30, 50, 75, 100];
 const MILESTONE_EMOJIS: Record<number, string> = {
   10: "🥉", 30: "🥈", 50: "🥇", 75: "💎", 100: "👑",
@@ -399,12 +400,12 @@ function PRPanel({ prs }: { prs: PRRecord[] }) {
   );
 }
 
-function SorryTokens({ used }: { used: number }) {
-  const remaining = SORRY_MAX - used;
+function SorryTokens({ used, sorryMax }: { used: number; sorryMax: number }) {
+  const remaining = Math.max(0, sorryMax - used);
   return (
     <div className="flex items-center gap-3">
       <div className="flex gap-1.5">
-        {Array.from({ length: SORRY_MAX }, (_, i) => {
+        {Array.from({ length: sorryMax }, (_, i) => {
           const isUsed = i < used;
           return (
             <div
@@ -423,20 +424,97 @@ function SorryTokens({ used }: { used: number }) {
         })}
       </div>
       <span className="text-xs text-amber-700/70 dark:text-amber-300/50 font-medium">
-        {remaining} of {SORRY_MAX} SORRY tokens left this month
+        {remaining} of {sorryMax} SORRY tokens left this month
       </span>
     </div>
   );
 }
 
-function FooterCard({ generalStreak, sorryUsed }: { generalStreak: number; sorryUsed: number }) {
+function FooterCard({
+  generalStreak,
+  sorryUsed,
+  sorryMax,
+  canEditSorryMax,
+}: {
+  generalStreak: number;
+  sorryUsed: number;
+  sorryMax: number;
+  canEditSorryMax: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [localMax, setLocalMax] = useState(sorryMax);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSave = () => {
+    setErrorMsg(null);
+    startTransition(async () => {
+      const result = await setSorryTokenMax(localMax);
+      if (result.success) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        setErrorMsg(result.error ?? "Failed to save.");
+        setLocalMax(sorryMax);
+      }
+    });
+  };
+
   return (
-    <div className="bg-amber-50 dark:bg-zinc-900/80 rounded-2xl border border-amber-200 dark:border-amber-900/40 py-3 px-5 space-y-2">
+    <div className="bg-amber-50 dark:bg-zinc-900/80 rounded-2xl border border-amber-200 dark:border-amber-900/40 py-3 px-5 space-y-3">
       <p className="text-xs font-semibold text-amber-800/70 dark:text-amber-300/60 text-center">
         {getFooterText(generalStreak)}
       </p>
       <div className="flex justify-center">
-        <SorryTokens used={sorryUsed} />
+        <SorryTokens used={sorryUsed} sorryMax={localMax} />
+      </div>
+
+      {/* SORRY token limit setter */}
+      <div className="border-t border-amber-200 dark:border-amber-900/40 pt-3 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium text-amber-800/80 dark:text-amber-300/70">
+            Monthly SORRY token limit
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLocalMax((v) => Math.max(1, v - 1))}
+              disabled={!canEditSorryMax || localMax <= 1 || pending}
+              className="w-6 h-6 rounded-md flex items-center justify-center text-sm font-bold border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 disabled:opacity-30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            >
+              −
+            </button>
+            <span className="w-5 text-center text-sm font-black text-amber-900 dark:text-amber-200 tabular-nums">
+              {localMax}
+            </span>
+            <button
+              onClick={() => setLocalMax((v) => Math.min(SORRY_MAX_LIMIT, v + 1))}
+              disabled={!canEditSorryMax || localMax >= SORRY_MAX_LIMIT || pending}
+              className="w-6 h-6 rounded-md flex items-center justify-center text-sm font-bold border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 disabled:opacity-30 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            >
+              +
+            </button>
+            {canEditSorryMax && localMax !== sorryMax && (
+              <button
+                onClick={handleSave}
+                disabled={pending}
+                className="text-[10px] font-semibold px-2 py-1 rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors"
+              >
+                {pending ? "…" : "Save"}
+              </button>
+            )}
+            {saved && (
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Saved ✓</span>
+            )}
+          </div>
+        </div>
+        {errorMsg && (
+          <p className="text-[10px] text-red-500 dark:text-red-400">{errorMsg}</p>
+        )}
+        <p className="text-[10px] text-amber-700/60 dark:text-amber-400/50 leading-relaxed">
+          {canEditSorryMax
+            ? "Max 5 tokens per month. You can only change this once per calendar month."
+            : "You've already changed your SORRY token limit this month. Come back next month to adjust it again."}
+        </p>
       </div>
     </div>
   );
@@ -455,6 +533,8 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
     bestStreak,
     totalWorkoutsThisMonth,
     sorryUsed,
+    sorryMax,
+    canEditSorryMax,
     last30DaysWorkouts,
     thisWeekWorkouts,
   } = streakData;
@@ -472,7 +552,7 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
       </div>
       <MilestonesCard generalStreak={generalStreak} bestStreak={bestStreak} />
       <PRPanel prs={prs} />
-      <FooterCard generalStreak={generalStreak} sorryUsed={sorryUsed} />
+      <FooterCard generalStreak={generalStreak} sorryUsed={sorryUsed} sorryMax={sorryMax} canEditSorryMax={canEditSorryMax} />
     </div>
   );
 }
