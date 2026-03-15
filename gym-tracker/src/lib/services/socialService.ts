@@ -273,6 +273,77 @@ export async function getFriendProfileData(
   };
 }
 
+// ─── Fist bumps ──────────────────────────────────────────────────────────────
+
+export async function toggleFistBump(
+  userId: string,
+  sessionId: string
+): Promise<{ fistBumped: boolean }> {
+  const existing = await prisma.workoutFistBump.findUnique({
+    where: { userId_sessionId: { userId, sessionId } },
+  });
+  if (existing) {
+    await prisma.workoutFistBump.delete({ where: { id: existing.id } });
+    return { fistBumped: false };
+  } else {
+    await prisma.workoutFistBump.create({ data: { userId, sessionId } });
+    return { fistBumped: true };
+  }
+}
+
+// ─── Notification seen tracking ──────────────────────────────────────────────
+
+export async function getSocialBadgeCounts(
+  userId: string
+): Promise<{ requests: number; feed: number }> {
+  const seenRow = await prisma.socialNotificationSeen.findUnique({ where: { userId } });
+  const lastSeenRequests = seenRow?.lastSeenRequests ?? new Date(0);
+  const lastSeenFeed = seenRow?.lastSeenFeed ?? new Date(0);
+
+  const requests = await prisma.friendship.count({
+    where: { receiverId: userId, status: "PENDING", createdAt: { gt: lastSeenRequests } },
+  });
+
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      OR: [{ senderId: userId }, { receiverId: userId }],
+      status: "ACCEPTED",
+    },
+    select: { senderId: true, receiverId: true },
+  });
+  const friendIds = friendships.map((f) =>
+    f.senderId === userId ? f.receiverId : f.senderId
+  );
+
+  let feed = 0;
+  if (friendIds.length > 0) {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const cutoff = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    feed = await prisma.workoutSession.count({
+      where: {
+        userId: { in: friendIds },
+        date: { gte: cutoff, lt: today },
+        createdAt: { gt: lastSeenFeed },
+      },
+    });
+  }
+
+  return { requests, feed };
+}
+
+export async function markSocialSeen(
+  userId: string,
+  section: "requests" | "feed"
+): Promise<void> {
+  const now = new Date();
+  await prisma.socialNotificationSeen.upsert({
+    where: { userId },
+    create: { userId, lastSeenRequests: now, lastSeenFeed: now },
+    update: section === "requests" ? { lastSeenRequests: now } : { lastSeenFeed: now },
+  });
+}
+
 // ─── Friends feed ────────────────────────────────────────────────────────────
 
 const WORKOUT_TYPE_LABELS: Record<string, string> = {
@@ -383,7 +454,24 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
     }
   }
 
-  // 7. Build feed entries
+  // 7. Fetch fist bumps for all sessions
+  const allSessionIds = sessions.map((s) => s.id);
+  const allFistBumps = await prisma.workoutFistBump.findMany({
+    where: { sessionId: { in: allSessionIds } },
+    select: {
+      sessionId: true,
+      userId: true,
+      user: { select: { name: true, username: true } },
+    },
+  });
+  const fistBumpMap = new Map<string, { userId: string; name: string | null; username: string | null }[]>();
+  for (const bump of allFistBumps) {
+    const arr = fistBumpMap.get(bump.sessionId) ?? [];
+    arr.push({ userId: bump.userId, name: bump.user.name, username: bump.user.username });
+    fistBumpMap.set(bump.sessionId, arr);
+  }
+
+  // 8. Build feed entries
   return sessions.map((session) => {
     const dateStr = session.date instanceof Date
       ? session.date.toISOString().split("T")[0]
@@ -421,6 +509,8 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
       totalSets,
       prCount: canSeePRs ? rawPrCount : 0,
       isOwnWorkout: session.userId === viewerId,
+      fistBumps: fistBumpMap.get(session.id) ?? [],
+      myFistBump: (fistBumpMap.get(session.id) ?? []).some((b) => b.userId === viewerId),
     };
   });
 }
