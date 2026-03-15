@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <MasterGuide />
       <ProfileSetupModal needsSetup={ctx.needsProfileSetup} />
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-6 pb-24 sm:pb-6">{children}</main>
     </div>
   );
 }
