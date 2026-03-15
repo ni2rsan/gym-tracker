@@ -27,9 +27,11 @@ function PRCard({ pr }: { pr: PRRecord }) {
         {pr.exerciseName}
       </span>
       <span className="text-xs font-black text-zinc-900 dark:text-white leading-tight tabular-nums">
-        {pr.maxWeightKg != null ? `${Number(pr.maxWeightKg).toFixed(1)}kg` : `${pr.maxReps}r`}
+        {pr.muscleGroup === "BODYWEIGHT" || pr.maxWeightKg == null
+          ? `${pr.maxReps ?? pr.repsAtMaxWeight}r`
+          : `${Number(pr.maxWeightKg).toFixed(1)}kg`}
       </span>
-      {pr.maxWeightKg != null && (
+      {pr.muscleGroup !== "BODYWEIGHT" && pr.maxWeightKg != null && (
         <span className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
           ×{pr.repsAtMaxWeight} reps
         </span>
@@ -108,6 +110,34 @@ const MILESTONES = [
   { days: 75,  emoji: "💎", label: "75 days" },
   { days: 100, emoji: "👑", label: "100 days" },
 ];
+
+function MilestoneBadge({ days, emoji, label, unlocked }: { days: number; emoji: string; label: string; unlocked: boolean }) {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <div
+      className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 border transition-all ${
+        unlocked
+          ? "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20"
+          : "border-zinc-200 dark:border-zinc-800 opacity-40"
+      }`}
+    >
+      <div className="w-10 h-10 flex items-center justify-center">
+        {imgError ? (
+          <span className="text-2xl">{emoji}</span>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/milestones/${days}.png`}
+            alt={`${days}d milestone`}
+            className="w-full h-full object-contain"
+            onError={() => setImgError(true)}
+          />
+        )}
+      </div>
+      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{label}</span>
+    </div>
+  );
+}
 
 type ToastState = { message: string; type: "success" | "error" } | null;
 
@@ -230,22 +260,15 @@ export function FriendProfileView({
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Achievements</h3>
           </div>
           <div className="flex gap-3 flex-wrap">
-            {MILESTONES.map((m) => {
-              const unlocked = data.milestonesUnlocked.includes(m.days);
-              return (
-                <div
-                  key={m.days}
-                  className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 border transition-all ${
-                    unlocked
-                      ? "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20"
-                      : "border-zinc-200 dark:border-zinc-800 opacity-40"
-                  }`}
-                >
-                  <span className="text-2xl">{m.emoji}</span>
-                  <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{m.label}</span>
-                </div>
-              );
-            })}
+            {MILESTONES.map((m) => (
+              <MilestoneBadge
+                key={m.days}
+                days={m.days}
+                emoji={m.emoji}
+                label={m.label}
+                unlocked={data.milestonesUnlocked.includes(m.days)}
+              />
+            ))}
           </div>
         </div>
 
