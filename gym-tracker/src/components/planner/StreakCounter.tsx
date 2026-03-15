@@ -218,8 +218,8 @@ function HeroCard({
   );
 }
 
-function ConsistencyCard({ last30DaysWorkouts }: { last30DaysWorkouts: string[] }) {
-  const pct = Math.round((last30DaysWorkouts.length / 30) * 100);
+function ConsistencyCard({ plannedLast30, completedLast30 }: { plannedLast30: number; completedLast30: number }) {
+  const pct = plannedLast30 > 0 ? Math.round((completedLast30 / plannedLast30) * 100) : 0;
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 flex flex-col gap-1">
       <div className="text-3xl font-black text-amber-500 tabular-nums leading-none">
@@ -229,7 +229,7 @@ function ConsistencyCard({ last30DaysWorkouts }: { last30DaysWorkouts: string[] 
         Consistency
       </div>
       <div className="text-[11px] text-zinc-400 dark:text-zinc-500">
-        {last30DaysWorkouts.length} of 30 days
+        {completedLast30} of {plannedLast30} planned workouts
       </div>
     </div>
   );
@@ -537,6 +537,8 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
     canEditSorryMax,
     last30DaysWorkouts,
     thisWeekWorkouts,
+    plannedLast30,
+    completedLast30,
   } = streakData;
 
   return (
@@ -547,7 +549,7 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
         totalWorkoutsThisMonth={totalWorkoutsThisMonth}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <ConsistencyCard last30DaysWorkouts={last30DaysWorkouts} />
+        <ConsistencyCard plannedLast30={plannedLast30} completedLast30={completedLast30} />
         <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} />
       </div>
       <MilestonesCard generalStreak={generalStreak} bestStreak={bestStreak} />
