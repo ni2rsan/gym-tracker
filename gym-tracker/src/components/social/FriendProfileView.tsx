@@ -213,7 +213,7 @@ export function FriendProfileView({
   };
 
   const avatar = data.image;
-  const displayName = data.name ?? data.username;
+  const displayName = data.username ?? data.name;
 
   return (
     <>
@@ -230,7 +230,7 @@ export function FriendProfileView({
             )}
             <div>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{displayName}</h2>
-              {data.name && <p className="text-sm text-zinc-500 dark:text-zinc-400">@{data.username}</p>}
+              {data.name && data.username && <p className="text-sm text-zinc-500 dark:text-zinc-400">{data.name}</p>}
             </div>
           </div>
         )}
