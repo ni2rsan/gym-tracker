@@ -92,13 +92,13 @@ export function WorkoutDayView({ exercises, workoutData, onTrack }: WorkoutDayVi
                   <div key={ex.id} className="flex items-center gap-3 px-4 py-3">
                     <div
                       className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                        "w-16 h-16 rounded-full flex items-center justify-center shrink-0",
                         hasData
                           ? "bg-amber-100 dark:bg-amber-900/40"
                           : "bg-zinc-100 dark:bg-zinc-800"
                       )}
                     >
-                      <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-4 w-4" />
+                      <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-8 w-8" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p

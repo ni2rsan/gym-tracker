@@ -360,13 +360,13 @@ export function TrackingMode({
               >
                 <div
                   className={cn(
-                    "relative w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+                    "relative w-32 h-32 rounded-full flex items-center justify-center transition-colors",
                     done
                       ? "bg-amber-100 dark:bg-amber-900/50"
                       : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
                   )}
                 >
-                  <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-7 w-7 sm:h-8 sm:w-8" />
+                  <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-14 w-14 sm:h-16 sm:w-16" />
                   {done && (
                     <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
                       <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
@@ -424,7 +424,7 @@ export function TrackingMode({
                 {/* Overlay header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
-                    <ExerciseIcon name={summaryOverlay.name} muscleGroup={summaryOverlay.muscleGroup} className="h-5 w-5" />
+                    <ExerciseIcon name={summaryOverlay.name} muscleGroup={summaryOverlay.muscleGroup} className="h-10 w-10" />
                     <span className="text-sm font-semibold text-zinc-900 dark:text-white">
                       {summaryOverlay.name.charAt(0) + summaryOverlay.name.slice(1).toLowerCase()}
                     </span>
@@ -596,8 +596,8 @@ export function TrackingMode({
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-6">
         {/* Large icon */}
         <div className="flex flex-col items-center gap-1">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700">
-            <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-12 w-12" />
+          <div className="w-48 h-48 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700">
+            <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-24 w-24" />
           </div>
           <p className="mt-1 text-base font-bold text-zinc-900 dark:text-white text-center">{ex.name}</p>
           <span className={cn("text-xs font-semibold uppercase tracking-wide", GROUP_COLORS[ex.muscleGroup])}>
