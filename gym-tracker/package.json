@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "[ \"$VERCEL\" = \"1\" ] && prisma migrate deploy || true",
+    "postbuild": "[ \"$VERCEL\" = \"1\" ] && PRISMA_ADVISORY_LOCK_TIMEOUT_MS=30000 DATABASE_URL=${DIRECT_URL:-$DATABASE_URL} prisma migrate deploy || true",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",

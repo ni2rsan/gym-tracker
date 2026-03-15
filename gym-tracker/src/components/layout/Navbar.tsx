@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays, Shield, Inbox } from "lucide-react";
+import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays, Shield, Inbox, Users } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/logs", label: "Logs", icon: ScrollText },
   { href: "/requests", label: "Requests", icon: Inbox },
+  { href: "/social", label: "Social", icon: Users },
 ];
 
 interface NavbarProps {
