@@ -485,8 +485,8 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
     fistBumpMap.set(bump.sessionId, arr);
   }
 
-  // 8. Build feed entries
-  return sessions.map((session) => {
+  // 8. Build feed entries (skip empty sessions)
+  return sessions.filter((s) => s.sets.length > 0).map((session) => {
     const dateStr = session.date instanceof Date
       ? session.date.toISOString().split("T")[0]
       : String(session.date).split("T")[0];
