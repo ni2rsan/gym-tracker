@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy } from "lucide-react";
+import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings";
@@ -45,6 +45,7 @@ interface Props {
   pendingReceived: PendingRequest[];
   pendingSent: PendingSent[];
   privacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
+  inviteToken: string;
 }
 
 type FeedFilter = "all" | "me" | "friends";
@@ -354,11 +355,12 @@ function FriendManageRow({
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy }: Props) {
+export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken }: Props) {
   const [view, setView] = useState<"main" | "manage">("main");
   const [tab, setTab] = useState<"feed" | "friends">("feed");
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
   const [friends, setFriends] = useState(friendsWithStats);
+  const [copied, setCopied] = useState(false);
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
   const router = useRouter();
 
@@ -417,8 +419,44 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <h1 className="text-xl font-bold text-zinc-900 dark:text-white">Manage Friends</h1>
         </div>
 
+        {/* Invite link */}
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Add a Friend</h2>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white mb-1">Invite via link</h2>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-3">
+            Anyone who opens this link will be added as your friend automatically.
+          </p>
+          <div className="flex gap-2">
+            <div className="flex-1 min-w-0 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400 truncate font-mono">
+              {typeof window !== "undefined"
+                ? `${window.location.origin}/invite/${inviteToken}`
+                : `/invite/${inviteToken}`}
+            </div>
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/invite/${inviteToken}`;
+                navigator.clipboard.writeText(url).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                });
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex-shrink-0"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Link2 className="h-3.5 w-3.5" />}
+              {copied ? "Copied!" : "Copy"}
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`Hey! Join me on Gym Tracker 💪 ${typeof window !== "undefined" ? window.location.origin : ""}/invite/${inviteToken}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex-shrink-0"
+            >
+              WhatsApp
+            </a>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-white mb-3">Add by username</h2>
           <AddFriendForm />
         </div>
 
