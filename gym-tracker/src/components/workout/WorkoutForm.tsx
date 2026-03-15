@@ -574,6 +574,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
             {formatLastSaved(lastSavedTime)}
           </span>
         )}
+        <button
+          onClick={() => setShowEditExercises(true)}
+          className="flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+        >
+          <SlidersHorizontal className="h-3 w-3" />
+          Edit
+        </button>
         {/* Delete workout */}
         {hasWorkoutForDate && !isDeleteConfirming && (
           <button
