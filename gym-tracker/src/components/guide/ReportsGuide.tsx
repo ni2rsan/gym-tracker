@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Scale, RefreshCw } from "lucide-react";
 import { GuideModal, type GuideStep } from "./GuideModal";
 
 const STORAGE_KEY = "gymtracker_guide_seen_reports";
@@ -18,15 +19,23 @@ function WeightTrendIllustration() {
 
   return (
     <div className="w-full max-w-[260px] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
-        <div className="flex items-center rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden text-[9px] font-medium">
-          {["30d","60d","90d"].map((v, i) => (
-            <div key={v} className={`px-2 py-1 ${i === 0 ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "text-zinc-500"}`}>{v}</div>
+      {/* Top bar: time range (matches ReportFilters) + metric toggles (matches WeightTrendChart controls) */}
+      <div className="flex items-start justify-between gap-2 px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 flex-wrap">
+        {/* ReportFilters — "7 Days / 30 Days / 1 Year" */}
+        <div className="flex rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden text-[9px] font-medium w-fit">
+          {[["7 Days", true], ["30 Days", false], ["1 Year", false]].map(([label, active]) => (
+            <div
+              key={label as string}
+              className={`px-2 py-1 ${active ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900" : "text-zinc-500 dark:text-zinc-400"}`}
+            >
+              {label as string}
+            </div>
           ))}
         </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="rounded-lg border border-zinc-300 dark:border-zinc-600 px-2 py-1 text-[9px] font-medium text-zinc-700 dark:text-zinc-200">Weight</div>
-          <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[9px] text-zinc-400">Body Fat</div>
+        {/* WeightTrendChart secondary metric selector */}
+        <div className="flex rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden text-[9px] font-medium w-fit">
+          <div className="px-2 py-1 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">Body Fat %</div>
+          <div className="px-2 py-1 text-zinc-500 dark:text-zinc-400">Composition</div>
         </div>
       </div>
       <div className="px-2 py-2">
@@ -59,20 +68,41 @@ function ExerciseProgressIllustration() {
   const maxBar = Math.max(...bars);
   return (
     <div className="w-full max-w-[260px] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
-        <div className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 px-2 py-1 text-[10px] text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
-          <span>Bench Press</span>
-          <span className="text-zinc-400">▾</span>
+      {/* ExerciseFilter — category row (matches CATEGORY_ACTIVE colors) */}
+      <div className="px-3 pt-2.5 pb-1.5 border-b border-zinc-100 dark:border-zinc-800 space-y-1.5">
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { label: "Upper Body", active: true, cls: "bg-blue-600 text-white border-blue-600" },
+            { label: "Lower Body", active: false, cls: "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400" },
+            { label: "Bodyweight", active: false, cls: "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400" },
+          ].map(({ label, cls }) => (
+            <span key={label} className={`rounded-lg px-2 py-1 text-[9px] font-semibold border ${cls}`}>{label}</span>
+          ))}
         </div>
-        <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[9px] text-zinc-400">90d</div>
+        {/* Exercise chips */}
+        <div className="flex flex-wrap gap-1">
+          {[
+            { label: "BENCH PRESS", active: true },
+            { label: "LAT PULLDOWN", active: false },
+            { label: "OHP", active: false },
+          ].map(({ label, active }) => (
+            <span
+              key={label}
+              className={`rounded-md px-1.5 py-0.5 text-[8px] font-medium border ${active ? "bg-blue-50 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300" : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400"}`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
+      {/* Chart */}
       <div className="px-3 py-2">
-        <div className="flex items-end gap-1.5 h-16">
+        <div className="flex items-end gap-1.5 h-14">
           {bars.map((v, i) => (
             <div key={i} className="flex-1 flex flex-col items-center justify-end">
               <div
                 className={`w-full rounded-t-sm ${i === bars.length - 1 ? "bg-blue-500 animate-pulse" : "bg-blue-200 dark:bg-blue-900/40"}`}
-                style={{ height: `${(v / maxBar) * 56}px` }}
+                style={{ height: `${(v / maxBar) * 48}px` }}
               />
             </div>
           ))}
@@ -100,14 +130,17 @@ function WithingsIllustration() {
       </div>
       <div className="px-4 py-3 flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <div className="text-2xl">⚖️</div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+            <Scale className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+          </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-medium text-zinc-700 dark:text-zinc-300">Not connected</span>
             <span className="text-[9px] text-zinc-400">Connect to auto-import readings</span>
           </div>
         </div>
-        <div className="w-full rounded-xl bg-emerald-500 py-2 text-center text-[11px] font-bold text-white animate-pulse">
-          Connect Withings →
+        <div className="w-full rounded-xl bg-emerald-500 py-2 text-center text-[11px] font-bold text-white flex items-center justify-center gap-1.5 animate-pulse">
+          <RefreshCw className="h-3 w-3" />
+          Connect Withings
         </div>
         <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800 px-3 py-2 flex items-center gap-2 border border-zinc-100 dark:border-zinc-700">
           <span className="text-[8px] text-zinc-400">After connecting:</span>
