@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import { X, ArrowLeft, Plus, Minus, SlidersHorizontal } from "lucide-react";
+import { X, ArrowLeft, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
 import { saveWorkout, deleteExerciseTracking } from "@/actions/workout";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
-import { EditExercisesOverlay } from "./EditExercisesOverlay";
 import type { ExerciseWithSettings, SetData, MuscleGroup } from "@/types";
 import { GuideModal } from "@/components/guide/GuideModal";
 import { trackingIconSteps, trackingExerciseSteps } from "@/components/guide/trackingSteps";
@@ -22,7 +21,6 @@ type TrackingView =
 
 interface TrackingModeProps {
   exercises: ExerciseWithSettings[];
-  allExercises: ExerciseWithSettings[];
   date: string;
   initialCompletedIds: Set<string>;
   scopeLabel: string;
@@ -32,7 +30,6 @@ interface TrackingModeProps {
   onExit: () => void;
   onBack: () => void;
   onExerciseSaved: (exerciseId: string, sets: SetData[]) => void;
-  onExercisesChanged?: () => void;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -78,7 +75,6 @@ function makeEmptySets(ex: ExerciseWithSettings, count?: number): SetData[] {
 
 export function TrackingMode({
   exercises,
-  allExercises,
   date,
   initialCompletedIds,
   scopeLabel,
@@ -88,7 +84,6 @@ export function TrackingMode({
   onExit,
   onBack,
   onExerciseSaved,
-  onExercisesChanged,
 }: TrackingModeProps) {
   const [view, setView] = useState<TrackingView>({ kind: "icons" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(initialCompletedIds);
@@ -118,7 +113,8 @@ export function TrackingMode({
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
 
-  const [showEditOverlay, setShowEditOverlay] = useState(false);
+  // Context menu for skip gesture
+  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   // Guide modals (shown once ever per context)
   const [showIconGuide, setShowIconGuide] = useState(false);
@@ -134,8 +130,7 @@ export function TrackingMode({
   }, []);
 
   const hasNonCardio = exercises.some((ex) => ex.muscleGroup !== "CARDIO");
-  // Only show non-skipped exercises in the icon grid
-  const visibleExercises = exercises.filter((ex) => !skippedIds.has(ex.id));
+  const nonSkippedExercises = exercises.filter((ex) => !skippedIds.has(ex.id));
 
   // Long-press timer ref for skip gesture
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -342,7 +337,7 @@ export function TrackingMode({
 
   // ── Icons view ─────────────────────────────────────────────────────────
   if (view.kind === "icons") {
-    const allDone = visibleExercises.length > 0 && visibleExercises.every((ex) => completedIds.has(ex.id));
+    const allDone = nonSkippedExercises.length > 0 && nonSkippedExercises.every((ex) => completedIds.has(ex.id));
 
     return (
       <div className="fixed inset-0 z-[60] bg-white dark:bg-zinc-950 overflow-y-auto flex flex-col">
@@ -421,42 +416,54 @@ export function TrackingMode({
         )}
 
         {/* Icon grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5">
-          {visibleExercises.map((ex) => {
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5" onClick={() => setContextMenu(null)}>
+          {exercises.map((ex) => {
             const done = completedIds.has(ex.id);
-            const handleSkip = () => onSkipChange?.(ex.id, true);
+            const skipped = skippedIds.has(ex.id);
             return (
               <button
                 key={ex.id}
-                onClick={() => handleIconClick(ex)}
-                onContextMenu={(e) => { e.preventDefault(); handleSkip(); }}
-                onTouchStart={() => {
-                  longPressTimerRef.current = setTimeout(handleSkip, 500);
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (contextMenu?.id === ex.id) { setContextMenu(null); return; }
+                  if (skipped) { onSkipChange?.(ex.id, false); return; }
+                  handleIconClick(ex);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  if (!skipped) setContextMenu({ id: ex.id, x: e.clientX, y: e.clientY });
+                }}
+                onTouchStart={(e) => {
+                  if (skipped) return;
+                  const touch = e.touches[0];
+                  longPressTimerRef.current = setTimeout(() => {
+                    setContextMenu({ id: ex.id, x: touch.clientX, y: touch.clientY });
+                  }, 500);
                 }}
                 onTouchEnd={() => {
-                  if (longPressTimerRef.current) {
-                    clearTimeout(longPressTimerRef.current);
-                    longPressTimerRef.current = null;
-                  }
+                  if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
                 }}
                 onTouchMove={() => {
-                  if (longPressTimerRef.current) {
-                    clearTimeout(longPressTimerRef.current);
-                    longPressTimerRef.current = null;
-                  }
+                  if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
                 }}
-                className="flex flex-col items-center gap-2 text-center active:scale-95 transition-transform"
+                className={cn(
+                  "flex flex-col items-center gap-2 text-center transition-transform",
+                  !skipped && "active:scale-95",
+                  skipped && "opacity-40"
+                )}
               >
                 <div
                   className={cn(
                     "relative w-20 h-20 rounded-full flex items-center justify-center transition-colors",
-                    done
-                      ? "bg-amber-100 dark:bg-amber-900/50"
-                      : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
+                    skipped
+                      ? "bg-zinc-100 dark:bg-zinc-800"
+                      : done
+                        ? "bg-amber-100 dark:bg-amber-900/50"
+                        : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
                   )}
                 >
                   <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
-                  {done && (
+                  {done && !skipped && (
                     <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
                       <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
                     </span>
@@ -465,12 +472,16 @@ export function TrackingMode({
                 <span
                   className={cn(
                     "text-[11px] font-medium leading-tight line-clamp-2 w-full",
-                    done ? "text-amber-700 dark:text-amber-400" : "text-zinc-600 dark:text-zinc-400"
+                    skipped
+                      ? "text-zinc-400 dark:text-zinc-500"
+                      : done
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-zinc-600 dark:text-zinc-400"
                   )}
                 >
-                  {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                  {skipped ? "Skipped" : ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
                 </span>
-                {ex.isCompound && (
+                {ex.isCompound && !skipped && (
                   <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
                     Compound
                   </span>
@@ -480,33 +491,40 @@ export function TrackingMode({
           })}
         </div>
 
-        {/* Finish / Edit buttons */}
-        <div className="px-5 pb-8 flex items-center gap-3">
-          <button
-            onClick={() => setShowEditOverlay(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-sm font-medium text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            Edit
-          </button>
+        {/* Skip context menu */}
+        {contextMenu && (() => {
+          const ex = exercises.find((e) => e.id === contextMenu.id);
+          if (!ex) return null;
+          // Position: try to keep within viewport
+          const menuW = 140;
+          const menuH = 48;
+          const x = Math.min(contextMenu.x, window.innerWidth - menuW - 8);
+          const y = Math.min(contextMenu.y, window.innerHeight - menuH - 8);
+          return (
+            <div
+              className="fixed z-[65] rounded-xl bg-white dark:bg-zinc-900 shadow-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden"
+              style={{ left: x, top: y, minWidth: menuW }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => { onSkipChange?.(ex.id, true); setContextMenu(null); }}
+                className="w-full px-4 py-3 text-sm font-medium text-left text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Skip today
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* Finish button */}
+        <div className="px-5 pb-8">
           <button
             onClick={onExit}
-            className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
+            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
           >
             Finish
           </button>
         </div>
-
-        {/* Edit exercises overlay */}
-        {showEditOverlay && (
-          <EditExercisesOverlay
-            allExercises={allExercises}
-            onClose={(changed) => {
-              setShowEditOverlay(false);
-              if (changed) onExercisesChanged?.();
-            }}
-          />
-        )}
 
         {/* Icon grid guide — shown once on first visit */}
         <GuideModal
