@@ -71,7 +71,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     if (section && (MUSCLE_GROUP_ORDER as readonly string[]).includes(section)) return section as MuscleGroup;
     return null;
   });
-  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
+  const [skippedByDate, setSkippedByDate] = useState<Record<string, Set<string>>>({});
+  const skippedIds = skippedByDate[selectedDate] ?? new Set<string>();
   const [savingGroups, setSavingGroups] = useState<Set<MuscleGroup>>(new Set());
   const [lastSavedByGroup, setLastSavedByGroup] = useState<Partial<Record<MuscleGroup, Date>>>({});
   const [lastSavedAll, setLastSavedAll] = useState<Date | null>(null);
@@ -125,7 +126,6 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     setLastSavedByGroup({});
     setIsDeleteConfirming(false);
     setSorryConfirm(false);
-    setSkippedIds(new Set());
     Promise.all([getWorkoutForDate(selectedDate), getLastKnownSets()]).then(
       ([dateResult, lastResult]) => {
         const existing = dateResult.success && dateResult.data ? dateResult.data : {};
@@ -225,10 +225,10 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   };
 
   const handleSkipChange = (id: string, skipped: boolean) => {
-    setSkippedIds((prev) => {
-      const next = new Set(prev);
-      if (skipped) next.add(id); else next.delete(id);
-      return next;
+    setSkippedByDate((prev) => {
+      const current = new Set(prev[selectedDate] ?? []);
+      if (skipped) current.add(id); else current.delete(id);
+      return { ...prev, [selectedDate]: current };
     });
   };
 

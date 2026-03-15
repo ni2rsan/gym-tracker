@@ -8,12 +8,12 @@ import type { GuideStep } from "./GuideModal";
 function IconGridIllustration() {
   // Real exercise data matching what the app renders
   const exercises: { name: string; muscleGroup: "UPPER_BODY" | "LOWER_BODY" | "BODYWEIGHT" | "CARDIO"; done: boolean }[] = [
-    { name: "BENCH PRESS", muscleGroup: "UPPER_BODY", done: true },
-    { name: "LAT PULLDOWN", muscleGroup: "UPPER_BODY", done: false },
-    { name: "SHOULDER PRESS", muscleGroup: "UPPER_BODY", done: false },
-    { name: "TRICEP PUSHDOWN", muscleGroup: "UPPER_BODY", done: false },
-    { name: "BICEP CURL", muscleGroup: "UPPER_BODY", done: false },
-    { name: "CABLE ROW", muscleGroup: "UPPER_BODY", done: false },
+    { name: "BENCH PRESS",            muscleGroup: "UPPER_BODY", done: true },
+    { name: "LAT PULLDOWN",           muscleGroup: "UPPER_BODY", done: false },
+    { name: "SHOULDER PRESS",         muscleGroup: "UPPER_BODY", done: false },
+    { name: "TRICEPS PUSHDOWN",       muscleGroup: "UPPER_BODY", done: false },
+    { name: "BICEPS CURL (MACHINE)",  muscleGroup: "UPPER_BODY", done: false },
+    { name: "CABLE ROW",              muscleGroup: "UPPER_BODY", done: false },
   ];
 
   return (
