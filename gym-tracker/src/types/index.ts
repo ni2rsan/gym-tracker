@@ -77,6 +77,38 @@ export interface ActionResult<T = void> {
   error?: string;
 }
 
+export interface FriendSummary {
+  friendshipId: string;
+  userId: string;
+  username: string | null;
+  name: string | null;
+  image: string | null;
+  profileImageBase64: string | null;
+}
+
+export interface FriendProfileData {
+  username: string;
+  name: string | null;
+  image: string | null;
+  generalStreak: number;
+  bestStreak: number;
+  milestonesUnlocked: number[];
+  totalWorkoutsThisMonth: number;
+  weight: number | null;
+  bodyFatPct: number | null;
+  prs: PRRecord[];
+  visibility: {
+    canSeeWeight: boolean;
+    canSeeBodyFat: boolean;
+    canSeePRs: boolean;
+  };
+  myOverride: {
+    shareWeight: boolean | null;
+    shareBodyFat: boolean | null;
+    sharePRs: boolean | null;
+  };
+}
+
 export interface UserRequestItem {
   id: string;
   type: "BUG" | "FEATURE";
