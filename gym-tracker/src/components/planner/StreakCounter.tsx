@@ -361,8 +361,8 @@ function PRPanel({ prs }: { prs: PRRecord[] }) {
                       key={pr.exerciseId}
                       className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-2 flex flex-col gap-0.5 min-w-0"
                     >
-                      <div className="w-7 h-7 mb-0.5 shrink-0">
-                        <ExerciseIcon name={pr.exerciseName} muscleGroup={pr.muscleGroup as MuscleGroup} className="w-7 h-7" />
+                      <div className="w-14 h-14 mb-0.5 shrink-0">
+                        <ExerciseIcon name={pr.exerciseName} muscleGroup={pr.muscleGroup as MuscleGroup} className="w-14 h-14" />
                       </div>
                       <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight line-clamp-2">
                         {pr.exerciseName}
