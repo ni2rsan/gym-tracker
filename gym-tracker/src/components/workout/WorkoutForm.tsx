@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, SlidersHorizontal } from "lucide-react";
 import { Toast } from "@/components/ui/Toast";
 import { ExerciseGroup } from "./ExerciseGroup";
 import { TrackingMode } from "./TrackingMode";
 import { AddCustomExercise } from "./AddCustomExercise";
 import { DeleteExerciseModal } from "./DeleteExerciseModal";
+import { EditExercisesOverlay } from "./EditExercisesOverlay";
 import { WorkoutWeekView, getWeekDates } from "./WorkoutWeekView";
 import { WorkoutMonthView, getMonthRange } from "./WorkoutMonthView";
 import {
@@ -80,6 +81,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [addTargetGroup, setAddTargetGroup] = useState<MuscleGroup | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
+  const [showEditExercises, setShowEditExercises] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // If we already opened tracking from the URL param, mark as done so the effect doesn't re-fire
@@ -789,6 +791,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               {selectedDateLabel()}
               {lastSavedTime ? ` · ${formatLastSaved(lastSavedTime)}` : ""}
             </div>
+            <button
+              onClick={() => setShowEditExercises(true)}
+              className="flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+            >
+              <SlidersHorizontal className="h-3 w-3" />
+              Edit
+            </button>
           </div>
         </div>
       )}
@@ -808,6 +817,17 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         onClose={() => setRemoveTarget(null)}
         onRemoved={handleExerciseRemoved}
       />
+
+      {/* Edit exercises overlay */}
+      {showEditExercises && (
+        <EditExercisesOverlay
+          allExercises={sortedExercises}
+          onClose={(changed) => {
+            setShowEditExercises(false);
+            if (changed) handleExercisesChanged();
+          }}
+        />
+      )}
 
       {/* Toast */}
       {toast && (
@@ -832,7 +852,6 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           return (
             <TrackingMode
               exercises={trackingExercises}
-              allExercises={sortedExercises}
               date={selectedDate}
               initialCompletedIds={new Set(savedTodayIds)}
               scopeLabel={scopeLabel}
@@ -840,7 +859,6 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               skippedIds={skippedIds}
               onSkipChange={handleSkipChange}
               onBack={handleTrackingBack}
-              onExercisesChanged={handleExercisesChanged}
               onExit={() => {
                 setTrackingScope(null);
                 if (fromPlannerRef.current) {
