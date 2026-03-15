@@ -360,11 +360,11 @@ export function DayContextMenu({
                   Use SORRY Token ({sorryRemaining} left) — Keep Streak
                 </button>
                 <button
-                  onClick={() => handleDeleteBlock(activeBlock.id)}
+                  onClick={() => handleDeleteBlockWithReset(activeBlock.id)}
                   disabled={isPending}
                   className="w-full rounded-lg px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border border-red-200 dark:border-red-900/40"
                 >
-                  Delete without sorry token
+                  Delete &amp; Reset Streak
                 </button>
                 <button
                   onClick={() => setConfirmDelete(null)}
