@@ -110,6 +110,18 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
+            <Link
+              href="/requests"
+              className={cn(
+                "sm:hidden flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
+                pathname.startsWith("/requests")
+                  ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+              )}
+              aria-label="Requests"
+            >
+              <Inbox className="h-4 w-4" />
+            </Link>
             <GuideButton />
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

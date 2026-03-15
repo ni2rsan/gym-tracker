@@ -43,7 +43,7 @@ export function ExerciseFilter({
     } else {
       params.delete("exIds");
     }
-    startTransition(() => router.push(`/reports?${params.toString()}`));
+    startTransition(() => router.push(`/reports?${params.toString()}`, { scroll: false }));
   };
 
   const switchCategory = (cat: MuscleGroup) => {
