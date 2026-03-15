@@ -18,7 +18,7 @@ import {
   deleteWorkoutSessionByDate,
   deleteExerciseTracking,
 } from "@/actions/workout";
-import { togglePin } from "@/actions/exercise";
+import { togglePin, getExercises } from "@/actions/exercise";
 import {
   getBlocksForRange,
   excuseMissedDay,
@@ -221,6 +221,12 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     ]).then(([workoutResult, plannerResult]) => {
       if (workoutResult.success && workoutResult.data) setRangeData(workoutResult.data);
       if (plannerResult.success && plannerResult.data) setPlannerData(plannerResult.data);
+    });
+  };
+
+  const handleExercisesChanged = () => {
+    getExercises().then((result) => {
+      if (result.success && result.data) setExercises(result.data);
     });
   };
 
@@ -826,11 +832,15 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           return (
             <TrackingMode
               exercises={trackingExercises}
+              allExercises={sortedExercises}
               date={selectedDate}
               initialCompletedIds={new Set(savedTodayIds)}
               scopeLabel={scopeLabel}
               workoutData={workoutData}
+              skippedIds={skippedIds}
+              onSkipChange={handleSkipChange}
               onBack={handleTrackingBack}
+              onExercisesChanged={handleExercisesChanged}
               onExit={() => {
                 setTrackingScope(null);
                 if (fromPlannerRef.current) {

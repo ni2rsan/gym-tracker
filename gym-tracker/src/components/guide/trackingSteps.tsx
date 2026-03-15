@@ -33,7 +33,7 @@ function IconGridIllustration() {
       </div>
       {/* Automated tracking bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
-        <span className="text-[9px] font-medium text-zinc-600 dark:text-zinc-400">Automated Tracking</span>
+        <span className="text-[9px] font-medium text-zinc-600 dark:text-zinc-400">Live Track</span>
         <div className="relative inline-flex h-4 w-7 items-center rounded-full bg-zinc-300 dark:bg-zinc-600">
           <div className="inline-block h-3 w-3 translate-x-0.5 rounded-full bg-white shadow" />
         </div>
@@ -160,7 +160,7 @@ function AutoTrackDetailIllustration() {
     <div className="w-full max-w-[240px] flex flex-col gap-2">
       {/* Auto toggle bar */}
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
-        <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400">Automated</span>
+        <span className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400">Live Track</span>
         <div className="relative inline-flex h-5 w-9 items-center rounded-full bg-emerald-500">
           <div className="inline-block h-4 w-4 translate-x-4 rounded-full bg-white shadow" />
         </div>
@@ -211,7 +211,7 @@ export const trackingIconSteps: GuideStep[] = [
   {
     title: "Exercise Icon Grid",
     description:
-      "Each circle is an exercise in your session. The 'Automated Tracking' toggle (top bar) starts a rest timer automatically after each set. Tap an exercise to start logging.",
+      "Each circle is an exercise in your session. The 'Live Track' toggle (top bar) starts a rest timer automatically after each set. Tap an exercise to start logging.",
     illustration: <IconGridIllustration />,
   },
   {
@@ -230,9 +230,9 @@ export const trackingExerciseSteps: GuideStep[] = [
     illustration: <ExerciseDetailIllustration />,
   },
   {
-    title: "Automated Rest Timer",
+    title: "Live Track Rest Timer",
     description:
-      "Toggle 'Automated' on to auto-start a rest timer after each set. Tap 'Done' when the set is complete — the timer counts down, then advances to the next set automatically.",
+      "Toggle 'Live Track' on to auto-start a rest timer after each set. Tap 'Done' when the set is complete — the timer counts down, then advances to the next set automatically.",
     illustration: <AutoTrackDetailIllustration />,
   },
 ];
