@@ -16,6 +16,8 @@ import {
   getPendingSent,
   getPrivacySettings,
   getFriendPrivacyOverride,
+  toggleFistBump as svcToggleFistBump,
+  markSocialSeen as svcMarkSocialSeen,
 } from "@/lib/services/socialService";
 import { prisma } from "@/lib/prisma";
 import type { ActionResult, FriendProfileData } from "@/types";
@@ -171,5 +173,31 @@ export async function getFriendOverride(friendId: string): Promise<ActionResult<
     return { success: true, data: override };
   } catch {
     return { success: false, error: "Failed to load override." };
+  }
+}
+
+// ─── Fist bump ───────────────────────────────────────────────────────────────
+
+export async function toggleFistBump(
+  sessionId: string
+): Promise<ActionResult<{ fistBumped: boolean }>> {
+  try {
+    const userId = await getCurrentUserId();
+    const result = await svcToggleFistBump(userId, sessionId);
+    return { success: true, data: result };
+  } catch {
+    return { success: false, error: "Failed to update fist bump." };
+  }
+}
+
+// ─── Notification tracking ───────────────────────────────────────────────────
+
+export async function markSocialSeen(section: "requests" | "feed"): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await svcMarkSocialSeen(userId, section);
+    return { success: true };
+  } catch {
+    return { success: false, error: "Failed to mark as seen." };
   }
 }

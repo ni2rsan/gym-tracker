@@ -79,6 +79,8 @@ model User {
   privacySettings        UserPrivacySettings?
   friendPrivacyOverrides FriendPrivacyOverride[] @relation("PrivacyOverrideOwner")
   friendOverridesAboutMe FriendPrivacyOverride[] @relation("PrivacyOverrideFriend")
+  fistBumps              WorkoutFistBump[]
+  socialNotificationSeen SocialNotificationSeen?
 }
 
 enum MuscleGroup {
@@ -129,8 +131,9 @@ model WorkoutSession {
   notes     String?
   createdAt DateTime @default(now())
 
-  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sets ExerciseSet[]
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets      ExerciseSet[]
+  fistBumps WorkoutFistBump[]
 
   @@index([userId, date])
 }
@@ -266,6 +269,29 @@ enum FriendshipStatus {
   PENDING
   ACCEPTED
   DECLINED
+}
+
+model WorkoutFistBump {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  createdAt DateTime @default(now())
+
+  user    User           @relation(fields: [userId],    references: [id], onDelete: Cascade)
+  session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model SocialNotificationSeen {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  lastSeenRequests DateTime @default(now())
+  lastSeenFeed     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Friendship {

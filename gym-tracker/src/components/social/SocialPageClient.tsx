@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings";
-import { removeFriend, upsertFriendPrivacyOverride } from "@/actions/social";
+import { removeFriend, upsertFriendPrivacyOverride, toggleFistBump, markSocialSeen } from "@/actions/social";
 import { Toast } from "@/components/ui/Toast";
 import type { FriendProfileData, WorkoutFeedEntry } from "@/types";
 
@@ -47,6 +47,8 @@ interface Props {
   privacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
 }
 
+type FeedFilter = "all" | "me" | "friends";
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatDateAgo(dateStr: string): string {
@@ -64,12 +66,18 @@ function formatDateAgo(dateStr: string): string {
 
 // ─── Feed card ───────────────────────────────────────────────────────────────
 
-function FeedCard({ entry }: { entry: WorkoutFeedEntry }) {
+function FeedCard({
+  entry,
+  onFistBump,
+}: {
+  entry: WorkoutFeedEntry;
+  onFistBump: (sessionId: string) => void;
+}) {
   const displayName = entry.isOwnWorkout
     ? "You"
     : entry.name ?? entry.username ?? "Someone";
-  const verb = entry.isOwnWorkout ? "logged" : "logged";
   const dateLabel = formatDateAgo(entry.date);
+  const bumpCount = entry.fistBumps.length;
 
   return (
     <div className="flex gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
@@ -88,18 +96,42 @@ function FeedCard({ entry }: { entry: WorkoutFeedEntry }) {
           <span className="text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">{dateLabel}</span>
         </div>
         <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-0.5">
-          {verb} a{" "}
+          logged a{" "}
           <span className="font-medium text-zinc-900 dark:text-white">{entry.workoutType}</span>{" "}
           workout
         </p>
-        <div className="flex items-center gap-3 mt-1.5">
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
-            {entry.exerciseCount} exercise{entry.exerciseCount !== 1 ? "s" : ""} · {entry.totalSets} sets
-          </span>
-          {entry.prCount > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-              <Trophy className="h-3 w-3" />
-              {entry.prCount} PR{entry.prCount !== 1 ? "s" : ""}!
+        <div className="flex items-center justify-between mt-1.5">
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {entry.exerciseCount} exercise{entry.exerciseCount !== 1 ? "s" : ""} · {entry.totalSets} sets
+            </span>
+            {entry.prCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                <Trophy className="h-3 w-3" />
+                {entry.prCount} PR{entry.prCount !== 1 ? "s" : ""}!
+              </span>
+            )}
+          </div>
+          {/* Fist bump — only on friends' entries */}
+          {!entry.isOwnWorkout && (
+            <button
+              onClick={() => onFistBump(entry.sessionId)}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${
+                entry.myFistBump
+                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                  : "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
+              }`}
+              title={entry.myFistBump ? "Remove fist bump" : "Fist bump!"}
+            >
+              <span>👊</span>
+              {bumpCount > 0 && <span>{bumpCount}</span>}
+            </button>
+          )}
+          {/* Own entry: show bump count passively */}
+          {entry.isOwnWorkout && bumpCount > 0 && (
+            <span className="flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
+              <span>👊</span>
+              <span>{bumpCount}</span>
             </span>
           )}
         </div>
@@ -353,13 +385,53 @@ function FriendManageRow({
 export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy }: Props) {
   const [view, setView] = useState<"main" | "manage">("main");
   const [tab, setTab] = useState<"feed" | "friends">("feed");
+  const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
   const [friends, setFriends] = useState(friendsWithStats);
+  const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
   const router = useRouter();
+
+  // Mark feed as seen when page loads
+  useEffect(() => {
+    markSocialSeen("feed");
+  }, []);
 
   const handleFriendRemoved = (userId: string) => {
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
     router.refresh();
   };
+
+  const handleOpenManage = useCallback(() => {
+    setView("manage");
+    markSocialSeen("requests");
+  }, []);
+
+  const handleFistBump = useCallback((sessionId: string) => {
+    // Optimistic update
+    setFeedState((prev) =>
+      prev.map((entry) => {
+        if (entry.sessionId !== sessionId) return entry;
+        const wasBumped = entry.myFistBump;
+        return {
+          ...entry,
+          myFistBump: !wasBumped,
+          fistBumps: wasBumped
+            ? entry.fistBumps.slice(0, -1) // remove one bump count
+            : [...entry.fistBumps, { userId: "__me__", name: null, username: null }],
+        };
+      })
+    );
+    toggleFistBump(sessionId).then((result) => {
+      if (!result.success) {
+        setFeedState(feed); // revert on error
+      }
+    });
+  }, [feed]);
+
+  const filteredFeed = feedState.filter((entry) => {
+    if (feedFilter === "me") return entry.isOwnWorkout;
+    if (feedFilter === "friends") return !entry.isOwnWorkout;
+    return true;
+  });
 
   if (view === "manage") {
     return (
@@ -460,13 +532,13 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           </div>
           {/* Manage icon */}
           <button
-            onClick={() => setView("manage")}
+            onClick={handleOpenManage}
             className="relative flex items-center justify-center h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white transition-colors"
             title="Add friends / manage"
           >
             <UserPlus className="h-4 w-4" />
             {pendingReceived.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold">
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
                 {pendingReceived.length}
               </span>
             )}
@@ -476,18 +548,39 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
 
       {/* Feed tab */}
       {tab === "feed" && (
-        feed.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-10 text-center">
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">No recent workouts</p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">Completed workouts from you and your friends appear here.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {feed.map((entry) => (
-              <FeedCard key={entry.sessionId} entry={entry} />
+        <div className="space-y-3">
+          {/* Filter pills */}
+          <div className="flex items-center gap-2">
+            {(["all", "me", "friends"] as FeedFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFeedFilter(f)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  feedFilter === f
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                }`}
+              >
+                {f === "all" ? "All" : f === "me" ? "Me" : "Friends"}
+              </button>
             ))}
           </div>
-        )
+
+          {filteredFeed.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-10 text-center">
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">No workouts here</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                {feedFilter === "friends"
+                  ? "No friend workouts in the last 14 days."
+                  : "Completed workouts appear here."}
+              </p>
+            </div>
+          ) : (
+            filteredFeed.map((entry) => (
+              <FeedCard key={entry.sessionId} entry={entry} onFistBump={handleFistBump} />
+            ))
+          )}
+        </div>
       )}
 
       {/* Friends tab */}
@@ -498,7 +591,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">No friends yet</p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
               Tap the{" "}
-              <button onClick={() => setView("manage")} className="underline underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300">icon above</button>
+              <button onClick={handleOpenManage} className="underline underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300">icon above</button>
               {" "}to add friends.
             </p>
           </div>

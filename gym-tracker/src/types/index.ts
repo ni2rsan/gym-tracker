@@ -122,6 +122,8 @@ export interface WorkoutFeedEntry {
   totalSets: number;
   prCount: number; // 0 if PRs not visible to viewer
   isOwnWorkout: boolean;
+  fistBumps: { userId: string; name: string | null; username: string | null }[];
+  myFistBump: boolean;
 }
 
 export interface UserRequestItem {

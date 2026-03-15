@@ -21,9 +21,10 @@ interface NavbarProps {
   userName?: string | null;
   userImage?: string | null;
   isAdmin?: boolean;
+  socialBadges?: { requests: number; feed: number };
 }
 
-export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
+export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarProps) {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
@@ -40,21 +41,38 @@ export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
 
         {/* Tab navigation */}
         <nav className="flex items-center gap-1">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+            const isSocial = href === "/social";
+            const requestBadge = isSocial ? (socialBadges?.requests ?? 0) : 0;
+            const feedBadge = isSocial ? (socialBadges?.feed ?? 0) : 0;
+            return (
             <Link
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+                "relative flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                 pathname.startsWith(href)
                   ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
                   : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <span className="relative">
+                <Icon className="h-4 w-4" />
+                {requestBadge > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold leading-none">
+                    {requestBadge > 9 ? "9+" : requestBadge}
+                  </span>
+                )}
+                {feedBadge > 0 && (
+                  <span className="absolute -bottom-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[8px] font-bold leading-none">
+                    {feedBadge > 9 ? "9+" : feedBadge}
+                  </span>
+                )}
+              </span>
               <span className="hidden sm:inline">{label}</span>
             </Link>
-          ))}
+            );
+          })}
           {isAdmin && (
             <Link
               href="/admin"
