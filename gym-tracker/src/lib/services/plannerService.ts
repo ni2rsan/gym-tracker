@@ -294,6 +294,8 @@ export interface StreakData {
   totalWorkoutsThisMonth: number;
   last30DaysWorkouts: string[]; // ISO dates with workouts in last 30 calendar days (oldest→newest)
   thisWeekWorkouts: string[];   // ISO dates with workouts Mon–Sun of current week
+  plannedLast30: number;   // planned blocks in last 30 days
+  completedLast30: number; // of those, worked out or sorry-excused
 }
 
 async function incrementSorryToken(userId: string, month: string): Promise<void> {
@@ -380,6 +382,25 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     if (allRecentWorkouts.has(iso)) last30DaysWorkouts.push(iso);
   }
 
+  // Consistency: planned blocks in last 30 days vs completed/excused
+  const thirtyDaysAgoDate = new Date(d);
+  thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 29);
+  const allPlannedLast30 = await prisma.plannedWorkout.findMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(dbDateToISO(thirtyDaysAgoDate) + "T00:00:00"),
+        lte: new Date(todayISO + "T23:59:59"),
+      },
+    },
+    select: { date: true, sorryExcused: true },
+  });
+  const plannedLast30 = allPlannedLast30.length;
+  const completedLast30 = allPlannedLast30.filter((pw) => {
+    const iso = dbDateToISO(pw.date);
+    return pw.sorryExcused || allRecentWorkouts.has(iso);
+  }).length;
+
   // thisWeekWorkouts: ISO dates that had workouts Mon–Sun of current week
   const thisWeekWorkouts: string[] = [];
   const dow = d.getDay(); // 0=Sun
@@ -402,7 +423,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   });
 
   if (allSeries.length === 0) {
-    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts };
+    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30 };
   }
 
   // Fetch worked-out dates covering all series
@@ -457,7 +478,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     streaks.push({ seriesId: series.id, blockType: series.blockType, count: streak });
   }
 
-  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts };
+  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30 };
 }
 
 // ─── SORRY token operations ────────────────────────────────────────────────
