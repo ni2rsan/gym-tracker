@@ -286,6 +286,8 @@ export interface StreakData {
   streaks: StreakEntry[];
   sorryUsed: number;
   sorryRemaining: number;
+  sorryMax: number;         // user's configured max (1–5)
+  canEditSorryMax: boolean; // false if already edited this calendar month
   month: string; // "YYYY-MM"
   generalStreak: number; // consecutive days worked out (today exempt — counts from yesterday back)
   bestStreak: number;    // longest consecutive run in the past year
@@ -316,11 +318,14 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const todayISO = localTodayISO();
   const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-  // SORRY tokens
-  const sorryToken = await prisma.userSorryToken.findUnique({
-    where: { userId_month: { userId, month } },
-  });
+  // SORRY tokens + user-configured max
+  const [sorryToken, userPrefs] = await Promise.all([
+    prisma.userSorryToken.findUnique({ where: { userId_month: { userId, month } } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { sorryTokenMax: true, sorryTokenMaxEditedMonth: true } }),
+  ]);
   const sorryUsed = sorryToken?.usedCount ?? 0;
+  const sorryMax = userPrefs?.sorryTokenMax ?? 3;
+  const canEditSorryMax = userPrefs?.sorryTokenMaxEditedMonth !== month;
 
   // Fetch all workout dates for the past year (for general streak + this month count)
   const oneYearAgo = new Date(d);
@@ -397,7 +402,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   });
 
   if (allSeries.length === 0) {
-    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, 3 - sorryUsed), month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts };
+    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts };
   }
 
   // Fetch worked-out dates covering all series
@@ -452,7 +457,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     streaks.push({ seriesId: series.id, blockType: series.blockType, count: streak });
   }
 
-  return { streaks, sorryUsed, sorryRemaining: Math.max(0, 3 - sorryUsed), month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts };
+  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts };
 }
 
 // ─── SORRY token operations ────────────────────────────────────────────────
@@ -544,6 +549,27 @@ export async function revokeSorryExcuse(userId: string, date: string): Promise<v
       data: { usedCount: token.usedCount - 1 },
     });
   }
+}
+
+/** Set the user's monthly SORRY token max (1–5). Once per calendar month. */
+export async function setSorryTokenMax(userId: string, newMax: number): Promise<{ ok: boolean; error?: string }> {
+  if (newMax < 1 || newMax > 5 || !Number.isInteger(newMax)) {
+    return { ok: false, error: "Max must be between 1 and 5." };
+  }
+  const d = new Date();
+  const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sorryTokenMaxEditedMonth: true },
+  });
+  if (user?.sorryTokenMaxEditedMonth === month) {
+    return { ok: false, error: "You can only change your SORRY token limit once per month." };
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: { sorryTokenMax: newMax, sorryTokenMaxEditedMonth: month },
+  });
+  return { ok: true };
 }
 
 /** Update series config + reset its streak */

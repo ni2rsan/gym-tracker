@@ -249,3 +249,17 @@ export async function updateSeriesResetStreak(
     return { success: false, error: "Failed to update series." };
   }
 }
+
+/** Set the user's preferred SORRY token max (1–5, once per month) */
+export async function setSorryTokenMax(newMax: number): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    const result = await plannerService.setSorryTokenMax(userId, newMax);
+    if (!result.ok) return { success: false, error: result.error };
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("setSorryTokenMax error:", e);
+    return { success: false, error: "Failed to update SORRY token limit." };
+  }
+}

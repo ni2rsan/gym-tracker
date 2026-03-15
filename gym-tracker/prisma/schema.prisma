@@ -59,6 +59,8 @@ model User {
   profileImageBase64 String?   @db.Text
   heightCm           Int?
   role               String    @default("USER")  // "USER" | "ADMIN"
+  sorryTokenMax      Int       @default(3)       // user-configured max (1–5), persists across months
+  sorryTokenMaxEditedMonth String?               // "YYYY-MM" of last edit — enforces once-per-month
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
