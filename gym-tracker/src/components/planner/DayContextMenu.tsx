@@ -344,7 +344,7 @@ export function DayContextMenu({
 
         {/* Delete block */}
         {confirmDelete === "block" ? (
-          activeBlock.seriesId && hasStreak ? (
+          isMissedDay && hasStreak ? (
             /* Series block with streak: SORRY dialog */
             <div className="px-4 py-3 space-y-2 border-t border-zinc-100 dark:border-zinc-800">
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
