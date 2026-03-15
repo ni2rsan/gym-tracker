@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { GuideModal, type GuideStep } from "./GuideModal";
 
-const STORAGE_KEY = "gymtracker_guide_seen_planner";
+const STORAGE_KEY = "gymtracker_guide_seen";
 
 /* ── Illustrations ── */
 

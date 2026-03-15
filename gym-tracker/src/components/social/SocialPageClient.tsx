@@ -357,7 +357,7 @@ function FriendManageRow({
 
 export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken }: Props) {
   const [view, setView] = useState<"main" | "manage">("main");
-  const [tab, setTab] = useState<"feed" | "friends">("feed");
+  const [tab, setTab] = useState<"feed" | "friends">("friends");
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
   const [friends, setFriends] = useState(friendsWithStats);
   const [copied, setCopied] = useState(false);
@@ -598,14 +598,21 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
       {/* Friends tab */}
       {tab === "friends" && (
         friends.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-10 text-center">
-            <UserPlus className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">No friends yet</p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-              Tap the{" "}
-              <button onClick={handleOpenManage} className="underline underline-offset-2 hover:text-zinc-600 dark:hover:text-zinc-300">icon above</button>
-              {" "}to add friends.
-            </p>
+          <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-10 text-center space-y-4">
+            <UserPlus className="h-8 w-8 text-zinc-300 dark:text-zinc-600 mx-auto" />
+            <div>
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">No friends yet</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
+                Add friends to see their workouts and share yours.
+              </p>
+            </div>
+            <button
+              onClick={handleOpenManage}
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-4 py-2 transition-colors"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add Friends
+            </button>
           </div>
         ) : (
           <div className="space-y-3">
