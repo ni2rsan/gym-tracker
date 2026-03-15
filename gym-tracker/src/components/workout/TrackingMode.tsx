@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import { X, ArrowLeft, Plus, Minus } from "lucide-react";
+import { X, ArrowLeft, Plus, Minus, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
@@ -112,9 +112,6 @@ export function TrackingMode({
 
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
-
-  // Context menu for skip gesture
-  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   // Guide modals (shown once ever per context)
   const [showIconGuide, setShowIconGuide] = useState(false);
@@ -416,58 +413,47 @@ export function TrackingMode({
         )}
 
         {/* Icon grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5" onClick={() => setContextMenu(null)}>
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5">
           {exercises.map((ex) => {
             const done = completedIds.has(ex.id);
             const skipped = skippedIds.has(ex.id);
             return (
-              <button
-                key={ex.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (contextMenu?.id === ex.id) { setContextMenu(null); return; }
-                  if (skipped) { onSkipChange?.(ex.id, false); return; }
-                  handleIconClick(ex);
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  if (!skipped) setContextMenu({ id: ex.id, x: e.clientX, y: e.clientY });
-                }}
-                onTouchStart={(e) => {
-                  if (skipped) return;
-                  const touch = e.touches[0];
-                  longPressTimerRef.current = setTimeout(() => {
-                    setContextMenu({ id: ex.id, x: touch.clientX, y: touch.clientY });
-                  }, 500);
-                }}
-                onTouchEnd={() => {
-                  if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-                }}
-                onTouchMove={() => {
-                  if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-                }}
-                className={cn(
-                  "flex flex-col items-center gap-2 text-center transition-transform",
-                  !skipped && "active:scale-95",
-                  skipped && "opacity-40"
-                )}
-              >
-                <div
-                  className={cn(
-                    "relative w-20 h-20 rounded-full flex items-center justify-center transition-colors",
-                    skipped
-                      ? "bg-zinc-100 dark:bg-zinc-800"
-                      : done
-                        ? "bg-amber-100 dark:bg-amber-900/50"
-                        : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
-                  )}
-                >
-                  <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
-                  {done && !skipped && (
-                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
-                      <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
-                    </span>
-                  )}
+              <div key={ex.id} className="flex flex-col items-center gap-2 text-center">
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      if (skipped) { onSkipChange?.(ex.id, false); return; }
+                      handleIconClick(ex);
+                    }}
+                    className={cn(
+                      "w-20 h-20 rounded-full flex items-center justify-center transition-colors active:scale-95",
+                      skipped
+                        ? "bg-zinc-100 dark:bg-zinc-800 opacity-40"
+                        : done
+                          ? "bg-amber-100 dark:bg-amber-900/50"
+                          : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
+                    )}
+                  >
+                    <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
+                    {done && !skipped && (
+                      <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
+                        <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
+                      </span>
+                    )}
+                  </button>
+                  {/* Skip / un-skip eye button */}
+                  <button
+                    onClick={() => onSkipChange?.(ex.id, !skipped)}
+                    className={cn(
+                      "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 transition-colors",
+                      skipped
+                        ? "bg-zinc-400 dark:bg-zinc-500 text-white"
+                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                    )}
+                    title={skipped ? "Un-skip" : "Skip today"}
+                  >
+                    {skipped ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </button>
                 </div>
                 <span
                   className={cn(
@@ -479,42 +465,17 @@ export function TrackingMode({
                         : "text-zinc-600 dark:text-zinc-400"
                   )}
                 >
-                  {skipped ? "Skipped" : ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                  {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
                 </span>
                 {ex.isCompound && !skipped && (
                   <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
                     Compound
                   </span>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
-
-        {/* Skip context menu */}
-        {contextMenu && (() => {
-          const ex = exercises.find((e) => e.id === contextMenu.id);
-          if (!ex) return null;
-          // Position: try to keep within viewport
-          const menuW = 140;
-          const menuH = 48;
-          const x = Math.min(contextMenu.x, window.innerWidth - menuW - 8);
-          const y = Math.min(contextMenu.y, window.innerHeight - menuH - 8);
-          return (
-            <div
-              className="fixed z-[65] rounded-xl bg-white dark:bg-zinc-900 shadow-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden"
-              style={{ left: x, top: y, minWidth: menuW }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => { onSkipChange?.(ex.id, true); setContextMenu(null); }}
-                className="w-full px-4 py-3 text-sm font-medium text-left text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                Skip today
-              </button>
-            </div>
-          );
-        })()}
 
         {/* Finish button */}
         <div className="px-5 pb-8">
