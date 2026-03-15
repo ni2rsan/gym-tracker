@@ -390,10 +390,12 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
   const router = useRouter();
 
-  // Mark feed as seen when page loads
+  // Mark feed as seen only when the feed tab is actually visible
   useEffect(() => {
-    markSocialSeen("feed");
-  }, []);
+    if (view === "main" && tab === "feed") {
+      markSocialSeen("feed");
+    }
+  }, [view, tab]);
 
   const handleFriendRemoved = (userId: string) => {
     setFriends((prev) => prev.filter((f) => f.userId !== userId));

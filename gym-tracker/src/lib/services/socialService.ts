@@ -295,22 +295,33 @@ export async function toggleFistBump(
 
 export async function getSocialBadgeCounts(
   userId: string
-): Promise<{ requests: number; feed: number }> {
+): Promise<{ requests: number; feed: number; fistBumps: number }> {
   const seenRow = await prisma.socialNotificationSeen.findUnique({ where: { userId } });
   const lastSeenRequests = seenRow?.lastSeenRequests ?? new Date(0);
   const lastSeenFeed = seenRow?.lastSeenFeed ?? new Date(0);
+  const lastSeenFistBumps = seenRow?.lastSeenFistBumps ?? new Date(0);
 
-  const requests = await prisma.friendship.count({
-    where: { receiverId: userId, status: "PENDING", createdAt: { gt: lastSeenRequests } },
-  });
+  const [requests, friendships, fistBumps] = await Promise.all([
+    prisma.friendship.count({
+      where: { receiverId: userId, status: "PENDING", createdAt: { gt: lastSeenRequests } },
+    }),
+    prisma.friendship.findMany({
+      where: {
+        OR: [{ senderId: userId }, { receiverId: userId }],
+        status: "ACCEPTED",
+      },
+      select: { senderId: true, receiverId: true },
+    }),
+    // Fist bumps received on the current user's own sessions
+    prisma.workoutFistBump.count({
+      where: {
+        session: { userId },
+        userId: { not: userId }, // exclude self-bumps
+        createdAt: { gt: lastSeenFistBumps },
+      },
+    }),
+  ]);
 
-  const friendships = await prisma.friendship.findMany({
-    where: {
-      OR: [{ senderId: userId }, { receiverId: userId }],
-      status: "ACCEPTED",
-    },
-    select: { senderId: true, receiverId: true },
-  });
   const friendIds = friendships.map((f) =>
     f.senderId === userId ? f.receiverId : f.senderId
   );
@@ -329,7 +340,7 @@ export async function getSocialBadgeCounts(
     });
   }
 
-  return { requests, feed };
+  return { requests, feed, fistBumps };
 }
 
 export async function markSocialSeen(
@@ -339,8 +350,11 @@ export async function markSocialSeen(
   const now = new Date();
   await prisma.socialNotificationSeen.upsert({
     where: { userId },
-    create: { userId, lastSeenRequests: now, lastSeenFeed: now },
-    update: section === "requests" ? { lastSeenRequests: now } : { lastSeenFeed: now },
+    create: { userId, lastSeenRequests: now, lastSeenFeed: now, lastSeenFistBumps: now },
+    update:
+      section === "requests"
+        ? { lastSeenRequests: now }
+        : { lastSeenFeed: now, lastSeenFistBumps: now }, // viewing feed clears both
   });
 }
 
