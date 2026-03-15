@@ -189,10 +189,12 @@ export function FriendProfileView({
   data,
   friendId,
   globalPrivacy,
+  showHeader = true,
 }: {
   data: FriendProfileData;
   friendId: string;
   globalPrivacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
+  showHeader?: boolean;
 }) {
   const [showOverrides, setShowOverrides] = useState(false);
   const [overrides, setOverrides] = useState(data.myOverride);
@@ -217,19 +219,21 @@ export function FriendProfileView({
     <>
       <div className="space-y-5">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          {avatar ? (
-            <img src={avatar} alt={displayName} className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700" />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xl font-bold ring-2 ring-zinc-200 dark:ring-zinc-700">
-              {(data.username[0] ?? "?").toUpperCase()}
+        {showHeader && (
+          <div className="flex items-center gap-4">
+            {avatar ? (
+              <img src={avatar} alt={displayName} className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700" />
+            ) : (
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xl font-bold ring-2 ring-zinc-200 dark:ring-zinc-700">
+                {(data.username[0] ?? "?").toUpperCase()}
+              </div>
+            )}
+            <div>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{displayName}</h2>
+              {data.name && <p className="text-sm text-zinc-500 dark:text-zinc-400">@{data.username}</p>}
             </div>
-          )}
-          <div>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{displayName}</h2>
-            {data.name && <p className="text-sm text-zinc-500 dark:text-zinc-400">@{data.username}</p>}
           </div>
-        </div>
+        )}
 
         {/* Streaks — always visible */}
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
