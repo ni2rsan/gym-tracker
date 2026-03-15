@@ -73,6 +73,12 @@ model User {
   plannedWorkoutSeries  PlannedWorkoutSeries[]
   sorryTokens           UserSorryToken[]
   requests              UserRequest[]
+
+  sentFriendRequests     Friendship[]           @relation("FriendshipSender")
+  receivedFriendRequests Friendship[]           @relation("FriendshipReceiver")
+  privacySettings        UserPrivacySettings?
+  friendPrivacyOverrides FriendPrivacyOverride[] @relation("PrivacyOverrideOwner")
+  friendOverridesAboutMe FriendPrivacyOverride[] @relation("PrivacyOverrideFriend")
 }
 
 enum MuscleGroup {
@@ -252,6 +258,55 @@ model UserRequest {
 
   @@index([userId])
   @@index([status])
+}
+
+// ─── Social ────────────────────────────────────────────────────────────────
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  sender   User @relation("FriendshipSender",   fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model UserPrivacySettings {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  shareWeight  Boolean @default(true)
+  shareBodyFat Boolean @default(true)
+  sharePRs     Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FriendPrivacyOverride {
+  id           String   @id @default(cuid())
+  userId       String
+  friendId     String
+  shareWeight  Boolean?
+  shareBodyFat Boolean?
+  sharePRs     Boolean?
+
+  user   User @relation("PrivacyOverrideOwner",  fields: [userId],   references: [id], onDelete: Cascade)
+  friend User @relation("PrivacyOverrideFriend", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId])
 }
 
 // ─── Withings integration ──────────────────────────────────────────────────
