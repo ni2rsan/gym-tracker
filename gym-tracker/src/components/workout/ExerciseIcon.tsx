@@ -29,6 +29,15 @@ const EXERCISE_IMAGES = new Set([
   "SQUAT",
   "STANDING CALF EXTENSION",
   "TRICEPS PUSHDOWN",
+  // Cardio
+  "BIKING (MACHINE)",
+  "BIKING (OUTDOOR)",
+  "RUNNING (MACHINE)",
+  "RUNNING (OUTDOOR)",
+  "SWIMMING",
+  "PADEL",
+  "PICKLEBALL",
+  "BADMINTON",
 ]);
 
 const FALLBACK_ICONS: Record<MuscleGroup, React.ElementType> = {
