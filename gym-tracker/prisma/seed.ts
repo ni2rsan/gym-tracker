@@ -61,7 +61,6 @@ const DEFAULT_EXERCISES: {
   { id: "default-padel",           name: "PADEL",             muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, isCompound: false, sortOrder: 6 },
   { id: "default-pickleball",      name: "PICKLEBALL",        muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, isCompound: false, sortOrder: 7 },
   { id: "default-badminton",       name: "BADMINTON",         muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, isCompound: false, sortOrder: 8 },
-  { id: "default-basketball",      name: "BASKETBALL",        muscleGroup: MuscleGroup.CARDIO, isBodyweight: true, isCompound: false, sortOrder: 9 },
 ];
 
 async function main() {
