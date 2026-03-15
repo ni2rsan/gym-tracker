@@ -155,37 +155,51 @@ export function FriendProfileView({
         </div>
 
         {/* Body metrics */}
-        {(data.visibility.canSeeWeight || data.visibility.canSeeBodyFat) && (
+        {(data.heightCm != null || data.visibility.canSeeWeight || data.visibility.canSeeBodyFat) && (
           <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
             <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Body Metrics</h3>
             </div>
-            <div className={`grid divide-x divide-zinc-100 dark:divide-zinc-800 ${data.visibility.canSeeWeight && data.visibility.canSeeBodyFat ? "grid-cols-2" : "grid-cols-1"}`}>
-              {data.visibility.canSeeWeight && (
-                <div className="px-5 py-4">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Weight</p>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {data.weight != null ? (
-                      <>{data.weight.toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-1">kg</span></>
-                    ) : (
-                      <span className="text-zinc-400 text-lg">—</span>
-                    )}
-                  </p>
+            {(() => {
+              const visibleCount = [data.heightCm != null, data.visibility.canSeeWeight, data.visibility.canSeeBodyFat].filter(Boolean).length;
+              const colsClass = visibleCount >= 3 ? "grid-cols-3" : visibleCount === 2 ? "grid-cols-2" : "grid-cols-1";
+              return (
+                <div className={`grid divide-x divide-zinc-100 dark:divide-zinc-800 ${colsClass}`}>
+                  {data.heightCm != null && (
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Height</p>
+                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        {data.heightCm}<span className="text-sm font-normal text-zinc-400 ml-1">cm</span>
+                      </p>
+                    </div>
+                  )}
+                  {data.visibility.canSeeWeight && (
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Weight</p>
+                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        {data.weight != null ? (
+                          <>{data.weight.toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-1">kg</span></>
+                        ) : (
+                          <span className="text-zinc-400 text-lg">—</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {data.visibility.canSeeBodyFat && (
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Body Fat</p>
+                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
+                        {data.bodyFatPct != null ? (
+                          <>{data.bodyFatPct.toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-0.5">%</span></>
+                        ) : (
+                          <span className="text-zinc-400 text-lg">—</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {data.visibility.canSeeBodyFat && (
-                <div className="px-5 py-4">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Body Fat</p>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                    {data.bodyFatPct != null ? (
-                      <>{data.bodyFatPct.toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-0.5">%</span></>
-                    ) : (
-                      <span className="text-zinc-400 text-lg">—</span>
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         )}
 

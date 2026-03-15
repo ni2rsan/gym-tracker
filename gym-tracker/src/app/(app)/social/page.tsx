@@ -1,6 +1,7 @@
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import {
   getFriendsWithStats,
+  getFriendsFeed,
   getPendingReceived,
   getPendingSent,
   getPrivacySettings,
@@ -13,8 +14,9 @@ export const dynamic = "force-dynamic";
 export default async function SocialPage() {
   const userId = await getCurrentUserId();
 
-  const [friendsWithStats, pendingReceived, pendingSent, privacy] = await Promise.all([
+  const [friendsWithStats, feed, pendingReceived, pendingSent, privacy] = await Promise.all([
     getFriendsWithStats(userId),
+    getFriendsFeed(userId),
     getPendingReceived(userId),
     getPendingSent(userId),
     getPrivacySettings(userId),
@@ -23,6 +25,7 @@ export default async function SocialPage() {
   return (
     <SocialPageClient
       friendsWithStats={friendsWithStats}
+      feed={feed}
       pendingReceived={pendingReceived}
       pendingSent={pendingSent}
       privacy={privacy}
