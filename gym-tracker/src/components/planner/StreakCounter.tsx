@@ -375,11 +375,11 @@ function PRPanel({ prs }: { prs: PRRecord[] }) {
                         {pr.exerciseName}
                       </span>
                       <span className="text-xs font-black text-zinc-900 dark:text-white leading-tight tabular-nums">
-                        {pr.maxWeightKg != null
-                          ? `${Number(pr.maxWeightKg).toFixed(1)}kg`
-                          : `${pr.maxReps}r`}
+                        {pr.muscleGroup === "BODYWEIGHT" || pr.maxWeightKg == null
+                          ? `${pr.maxReps ?? pr.repsAtMaxWeight}r`
+                          : `${Number(pr.maxWeightKg).toFixed(1)}kg`}
                       </span>
-                      {pr.maxWeightKg != null && (
+                      {pr.muscleGroup !== "BODYWEIGHT" && pr.maxWeightKg != null && (
                         <span className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
                           ×{pr.repsAtMaxWeight} reps
                         </span>
