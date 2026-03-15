@@ -344,31 +344,27 @@ export function DayContextMenu({
 
         {/* Delete block */}
         {confirmDelete === "block" ? (
-          isMissedDay && hasStreak ? (
-            /* Series block with streak: SORRY dialog */
+          isMissedDay && hasStreak && sorryRemaining > 0 ? (
+            /* Missed day with streak + tokens available: offer SORRY or plain delete */
             <div className="px-4 py-3 space-y-2 border-t border-zinc-100 dark:border-zinc-800">
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-snug">
-                This will reset your <span className="font-bold text-amber-500">{seriesStreak}-day streak</span>.
+                You missed this day. Use a SORRY token to keep your <span className="font-bold text-amber-500">{seriesStreak}-day streak</span>.
               </p>
               <div className="flex flex-col gap-1.5">
-                {sorryRemaining > 0 ? (
-                  <button
-                    onClick={() => handleDeleteBlockWithSorry(activeBlock.id)}
-                    disabled={isPending}
-                    className="w-full rounded-lg px-3 py-1.5 text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
-                  >
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-[8px] leading-none shrink-0 mr-1.5">S</span>
-                    Use SORRY Token ({sorryRemaining} left) — Keep Streak
-                  </button>
-                ) : (
-                  <p className="text-xs text-zinc-400 italic text-center">No SORRY tokens left this month</p>
-                )}
                 <button
-                  onClick={() => handleDeleteBlockWithReset(activeBlock.id)}
+                  onClick={() => handleDeleteBlockWithSorry(activeBlock.id)}
+                  disabled={isPending}
+                  className="w-full rounded-lg px-3 py-1.5 text-xs font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                >
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border-2 border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-[8px] leading-none shrink-0 mr-1.5">S</span>
+                  Use SORRY Token ({sorryRemaining} left) — Keep Streak
+                </button>
+                <button
+                  onClick={() => handleDeleteBlock(activeBlock.id)}
                   disabled={isPending}
                   className="w-full rounded-lg px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border border-red-200 dark:border-red-900/40"
                 >
-                  Delete &amp; Reset Streak
+                  Delete without sorry token
                 </button>
                 <button
                   onClick={() => setConfirmDelete(null)}
