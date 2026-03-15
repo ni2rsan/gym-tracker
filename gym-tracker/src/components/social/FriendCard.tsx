@@ -12,7 +12,7 @@ export function FriendCard({ friend }: { friend: FriendSummary }) {
 
   const displayName = friend.username ? `@${friend.username}` : (friend.name ?? "Unknown");
   const avatar = friend.profileImageBase64 ?? friend.image;
-  const profileHref = friend.username ? `/social/${friend.username}` : null;
+  const profileHref = `/social/${friend.username ?? friend.userId}`;
 
   const handleRemove = () => {
     startTransition(async () => {
@@ -23,20 +23,21 @@ export function FriendCard({ friend }: { friend: FriendSummary }) {
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
-      {avatar ? (
-        <img src={avatar} alt={displayName} className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex-shrink-0">
-          {(friend.username?.[0] ?? friend.name?.[0] ?? "?").toUpperCase()}
-        </div>
-      )}
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{displayName}</p>
-        {friend.username && friend.name && (
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{friend.name}</p>
+      <Link href={profileHref} className="flex items-center gap-3 flex-1 min-w-0 group">
+        {avatar ? (
+          <img src={avatar} alt={displayName} className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex-shrink-0">
+            {(friend.username?.[0] ?? friend.name?.[0] ?? "?").toUpperCase()}
+          </div>
         )}
-      </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-zinc-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate transition-colors">{displayName}</p>
+          {friend.username && friend.name && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{friend.name}</p>
+          )}
+        </div>
+      </Link>
 
       <div className="flex items-center gap-2 flex-shrink-0">
         {confirming ? (
@@ -65,15 +66,13 @@ export function FriendCard({ friend }: { friend: FriendSummary }) {
           </button>
         )}
 
-        {profileHref && (
-          <Link
-            href={profileHref}
-            className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
-            title="View profile"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        )}
+        <Link
+          href={profileHref}
+          className="flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
+          title="View profile"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Link>
       </div>
     </div>
   );

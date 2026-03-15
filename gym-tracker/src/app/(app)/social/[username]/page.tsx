@@ -19,8 +19,9 @@ export default async function FriendProfilePage({ params }: Props) {
   const { username } = await params;
   const viewerId = await getCurrentUserId();
 
-  const friend = await prisma.user.findUnique({
-    where: { username },
+  // Support both username and userId in the URL param
+  const friend = await prisma.user.findFirst({
+    where: { OR: [{ username }, { id: username }] },
     select: { id: true },
   });
 
