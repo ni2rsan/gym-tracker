@@ -21,7 +21,7 @@ interface NavbarProps {
   userName?: string | null;
   userImage?: string | null;
   isAdmin?: boolean;
-  socialBadges?: { requests: number; feed: number };
+  socialBadges?: { requests: number; feed: number; fistBumps: number };
 }
 
 export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarProps) {
@@ -44,7 +44,8 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const isSocial = href === "/social";
             const requestBadge = isSocial ? (socialBadges?.requests ?? 0) : 0;
-            const feedBadge = isSocial ? (socialBadges?.feed ?? 0) : 0;
+            const fistBumpBadge = isSocial ? (socialBadges?.fistBumps ?? 0) : 0;
+            const feedBadge = isSocial && fistBumpBadge === 0 ? (socialBadges?.feed ?? 0) : 0;
             return (
             <Link
               key={href}
@@ -61,6 +62,11 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
                 {requestBadge > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold leading-none">
                     {requestBadge > 9 ? "9+" : requestBadge}
+                  </span>
+                )}
+                {fistBumpBadge > 0 && (
+                  <span className="absolute -bottom-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-zinc-900 text-[8px] font-bold leading-none">
+                    {fistBumpBadge > 9 ? "9+" : fistBumpBadge}
                   </span>
                 )}
                 {feedBadge > 0 && (

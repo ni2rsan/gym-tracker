@@ -286,10 +286,11 @@ model WorkoutFistBump {
 }
 
 model SocialNotificationSeen {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  lastSeenRequests DateTime @default(now())
-  lastSeenFeed     DateTime @default(now())
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  lastSeenRequests  DateTime @default(now())
+  lastSeenFeed      DateTime @default(now())
+  lastSeenFistBumps DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
