@@ -11,8 +11,11 @@ export async function listUsers() {
     select: {
       id: true,
       name: true,
+      username: true,
       email: true,
       image: true,
+      profileImageBase64: true,
+      heightCm: true,
       role: true,
       createdAt: true,
     },

@@ -60,21 +60,26 @@ export default async function AdminPage() {
                 <tr key={user.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      {user.image ? (
+                      {(user.profileImageBase64 ?? user.image) ? (
                         <img
-                          src={user.image}
-                          alt={user.name ?? ""}
+                          src={user.profileImageBase64 ?? user.image!}
+                          alt={user.username ?? user.name ?? ""}
                           referrerPolicy="no-referrer"
-                          className="h-8 w-8 rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
+                          className="h-8 w-8 rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-700 shrink-0"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold dark:bg-emerald-900/30 dark:text-emerald-400">
-                          {user.name?.[0]?.toUpperCase() ?? "?"}
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold dark:bg-emerald-900/30 dark:text-emerald-400 shrink-0">
+                          {(user.username ?? user.name)?.[0]?.toUpperCase() ?? "?"}
                         </div>
                       )}
-                      <span className="font-medium text-zinc-900 dark:text-white">
-                        {user.name ?? "—"}
-                      </span>
+                      <div>
+                        <p className="font-medium text-zinc-900 dark:text-white leading-tight">
+                          {user.username ? `@${user.username}` : (user.name ?? "—")}
+                        </p>
+                        {user.username && user.name && (
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-tight">{user.name}</p>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 hidden sm:table-cell">

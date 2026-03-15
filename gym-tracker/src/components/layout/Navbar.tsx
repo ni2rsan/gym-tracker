@@ -82,18 +82,20 @@ export function Navbar({ userName, userImage, isAdmin }: NavbarProps) {
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </button>
 
-          {userImage ? (
-            <img
-              src={userImage}
-              alt={userName ?? "User"}
-              referrerPolicy="no-referrer"
-              className="h-8 w-8 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700"
-            />
-          ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold dark:bg-emerald-900/30 dark:text-emerald-400">
-              {userName?.[0]?.toUpperCase() ?? "U"}
-            </div>
-          )}
+          <Link href="/profile" title="My profile" className="shrink-0">
+            {userImage ? (
+              <img
+                src={userImage}
+                alt={userName ?? "User"}
+                referrerPolicy="no-referrer"
+                className="h-8 w-8 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-700 hover:ring-emerald-400 dark:hover:ring-emerald-500 transition-all"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold dark:bg-emerald-900/30 dark:text-emerald-400 ring-2 ring-zinc-200 dark:ring-zinc-700 hover:ring-emerald-400 dark:hover:ring-emerald-500 transition-all">
+                {userName?.[0]?.toUpperCase() ?? "U"}
+              </div>
+            )}
+          </Link>
 
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
