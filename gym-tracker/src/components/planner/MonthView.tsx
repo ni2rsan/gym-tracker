@@ -10,6 +10,7 @@ interface MonthViewProps {
   blocksByDate: Record<string, PlannedBlock[]>;
   trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
+  selectedDate?: string;
 }
 
 function toISO(date: Date) {
@@ -26,7 +27,7 @@ function isBlockTracked(groups: Set<string> | undefined, blockType: string): boo
   return groups.has(blockType);
 }
 
-export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDayClick }: MonthViewProps) {
+export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDayClick, selectedDate }: MonthViewProps) {
   const today = toISO(new Date());
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -71,6 +72,7 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
           const iso = toISO(date);
           const blocks = blocksByDate[iso] ?? [];
           const isToday = iso === today;
+          const isSelected = iso === selectedDate;
           const groups = trackedGroupsByDate[iso];
           const isAnyTracked = blocks.some((b) => isBlockTracked(groups, b.blockType));
           const isAnySorryExcused = blocks.some((b) => b.sorryExcused);
@@ -81,10 +83,12 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "relative h-12 p-0.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-col items-center justify-center gap-px",
-                isToday
-                  ? "border border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10"
-                  : "border-r border-b border-zinc-100 dark:border-zinc-800/50"
+                "relative h-12 p-0.5 transition-colors flex flex-col items-center justify-center gap-px",
+                isSelected
+                  ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-500/15 dark:border-amber-400/50"
+                  : isToday
+                    ? "border border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
+                    : "border-r border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
               )}
             >
               {showSorryBadge && (
@@ -92,9 +96,11 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
               )}
               <span className={cn(
                 "text-[10px] font-medium flex items-center justify-center shrink-0",
-                isToday
-                  ? "text-emerald-600 dark:text-emerald-400 font-bold"
-                  : "text-zinc-700 dark:text-zinc-300"
+                isSelected
+                  ? "text-amber-600 dark:text-amber-400 font-bold"
+                  : isToday
+                    ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                    : "text-zinc-700 dark:text-zinc-300"
               )}>
                 {date.getDate()}
               </span>
