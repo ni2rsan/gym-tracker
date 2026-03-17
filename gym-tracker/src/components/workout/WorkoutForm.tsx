@@ -19,7 +19,7 @@ import {
   deleteWorkoutSessionByDate,
   deleteExerciseTracking,
 } from "@/actions/workout";
-import { togglePin, getExercises } from "@/actions/exercise";
+import { togglePin, getExercises, hideExercise } from "@/actions/exercise";
 import {
   getBlocksForRange,
   excuseMissedDay,
@@ -205,6 +205,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       const next = { ...prev };
       delete next[exerciseId];
       return next;
+    });
+  };
+
+  const handleHideClick = (exerciseId: string) => {
+    startTransition(async () => {
+      await hideExercise(exerciseId);
+      handleExerciseRemoved(exerciseId);
     });
   };
 
@@ -584,7 +591,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           className="flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
         >
           <SlidersHorizontal className="h-3 w-3" />
-          Edit
+          Edit Exercises
         </button>
         {/* Delete workout */}
         {hasWorkoutForDate && !isDeleteConfirming && (
@@ -731,6 +738,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onSetsChange={handleSetsChange}
                   onTogglePin={handleTogglePin}
                   onRemove={handleRemoveClick}
+                  onHide={handleHideClick}
                   defaultOpen={true}
                   onSave={exercisesByGroup["UPPER_BODY"].length > 0 ? () => handleSaveGroup("UPPER_BODY") : undefined}
                   isSaving={savingGroups.has("UPPER_BODY")}
@@ -750,6 +758,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onSetsChange={handleSetsChange}
                   onTogglePin={handleTogglePin}
                   onRemove={handleRemoveClick}
+                  onHide={handleHideClick}
                   defaultOpen={true}
                   onSave={exercisesByGroup["LOWER_BODY"].length > 0 ? () => handleSaveGroup("LOWER_BODY") : undefined}
                   isSaving={savingGroups.has("LOWER_BODY")}
@@ -776,6 +785,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onSetsChange={handleSetsChange}
                 onTogglePin={handleTogglePin}
                 onRemove={handleRemoveClick}
+                onHide={handleHideClick}
                 defaultOpen={isGroupEditable(mg)}
                 onSave={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 ? () => handleSaveGroup(mg) : undefined}
                 isSaving={savingGroups.has(mg)}

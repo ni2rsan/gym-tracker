@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pin, PinOff, Trash2, Plus, Minus, EyeOff, Eye } from "lucide-react";
+import { Pin, PinOff, Trash2, Plus, Minus, EyeOff, SkipForward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SetRow } from "./SetRow";
 import { ExerciseIcon } from "./ExerciseIcon";
@@ -14,6 +14,7 @@ interface ExerciseCardProps {
   onSetsChange: (sets: SetData[]) => void;
   onTogglePin: (id: string) => void;
   onRemove: (id: string) => void;
+  onHide?: (id: string) => void;
   isReadOnly?: boolean;
   isTracked?: boolean;
   onDeleteTracking?: () => void;
@@ -27,6 +28,7 @@ export function ExerciseCard({
   onSetsChange,
   onTogglePin,
   onRemove,
+  onHide,
   isReadOnly = false,
   isTracked = false,
   onDeleteTracking,
@@ -75,13 +77,28 @@ export function ExerciseCard({
       >
         {exercise.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
       </button>
-      <button
-        onClick={() => onRemove(exercise.id)}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-colors"
-        aria-label="Remove exercise"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {/* Eye: remove from layout (always visible) */}
+      {onHide && (
+        <button
+          onClick={() => onHide(exercise.id)}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+          aria-label="Remove from layout"
+          title="Remove from layout"
+        >
+          <EyeOff className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {/* Trash: only shown if exercise is owned by user and not used by others */}
+      {exercise.isOwnedAndDeletable && (
+        <button
+          onClick={() => onRemove(exercise.id)}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-colors"
+          aria-label="Delete exercise"
+          title="Delete exercise"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 
@@ -151,7 +168,7 @@ export function ExerciseCard({
           onClick={() => onSkipChange?.(exercise.id, false)}
           className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
         >
-          <Eye className="h-3 w-3" /> Un-skip
+          <EyeOff className="h-3 w-3" /> Un-skip
         </button>
       </div>
     );
@@ -194,7 +211,7 @@ export function ExerciseCard({
               onClick={() => onSkipChange?.(exercise.id, true)}
               className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
             >
-              <EyeOff className="h-3 w-3" />
+              <SkipForward className="h-3 w-3" />
               Skip today
             </button>
           </div>
@@ -270,7 +287,7 @@ export function ExerciseCard({
             onClick={() => onSkipChange?.(exercise.id, true)}
             className="ml-auto flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
           >
-            <EyeOff className="h-3 w-3" />
+            <SkipForward className="h-3 w-3" />
             Skip today
           </button>
         </div>
