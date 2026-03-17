@@ -25,6 +25,7 @@ interface ExerciseGroupProps {
   onDeleteTracking?: (exerciseId: string) => void;
   skippedIds?: Set<string>;
   onSkipChange?: (id: string, skipped: boolean) => void;
+  onHide?: (exerciseId: string) => void;
   /** When true, removes outer border/rounding (for use inside a parent container) */
   isNested?: boolean;
 }
@@ -47,6 +48,7 @@ export function ExerciseGroup({
   onDeleteTracking,
   skippedIds,
   onSkipChange,
+  onHide,
   isNested = false,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -134,6 +136,7 @@ export function ExerciseGroup({
                   onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
                   onTogglePin={onTogglePin}
                   onRemove={onRemove}
+                  onHide={onHide}
                   isReadOnly={readOnlyIds?.has(exercise.id)}
                   isTracked={trackedIds?.has(exercise.id)}
                   onDeleteTracking={() => onDeleteTracking?.(exercise.id)}

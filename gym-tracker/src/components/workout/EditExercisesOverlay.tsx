@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { X, ChevronUp, ChevronDown, EyeOff, Plus, Minus, RotateCcw } from "lucide-react";
+import { X, ChevronUp, ChevronDown, Eye, EyeOff, Plus, Minus, RotateCcw, Trash2 } from "lucide-react";
 import {
   hideExercise,
   unhideExercise,
@@ -12,11 +12,13 @@ import {
 import { MUSCLE_GROUP_ORDER, MUSCLE_GROUP_LABELS } from "@/constants/exercises";
 import type { ExerciseWithSettings, MuscleGroup } from "@/types";
 import { AddCustomExercise } from "./AddCustomExercise";
+import { DeleteExerciseModal } from "./DeleteExerciseModal";
 
 interface HiddenExercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
+  isOwnedAndDeletable: boolean;
 }
 
 interface EditExercisesOverlayProps {
@@ -29,21 +31,42 @@ const MAX_SETS = 6;
 
 export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOverlayProps) {
   const [localExercises, setLocalExercises] = useState(allExercises);
+  // hiddenIds: set of exercise IDs currently hidden (shown dimmed in list)
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+  // hiddenExercises: hidden exercises with their metadata (initially loaded from server)
   const [hiddenExercises, setHiddenExercises] = useState<HiddenExercise[]>([]);
   const [changed, setChanged] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     getHiddenExercises().then((result) => {
       if (result.success && result.data) {
-        setHiddenExercises(
-          result.data.map((ex) => ({
-            id: ex.id,
-            name: ex.name,
-            muscleGroup: ex.muscleGroup as MuscleGroup,
-          }))
-        );
+        const hidden = result.data as HiddenExercise[];
+        setHiddenExercises(hidden);
+        setHiddenIds(new Set(hidden.map(h => h.id)));
+        // Merge hidden exercises into localExercises so they appear in group (dimmed)
+        setLocalExercises(prev => {
+          const existingIds = new Set(prev.map(e => e.id));
+          const toAdd = hidden
+            .filter(h => !existingIds.has(h.id))
+            .map(h => ({
+              id: h.id,
+              name: h.name,
+              muscleGroup: h.muscleGroup,
+              isDefault: false,
+              isBodyweight: false,
+              isCompound: false,
+              sortOrder: 999,
+              isPinned: false,
+              userSortOrder: 999,
+              preferredSets: null,
+              createdByUserId: null,
+              isOwnedAndDeletable: h.isOwnedAndDeletable,
+            } as ExerciseWithSettings));
+          return [...prev, ...toAdd];
+        });
       }
     });
   }, []);
@@ -54,15 +77,19 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
   }, {} as Record<MuscleGroup, ExerciseWithSettings[]>);
 
   const handleMove = (mg: MuscleGroup, idx: number, direction: -1 | 1) => {
-    const group = [...exercisesByGroup[mg]];
+    // Only reorder visible (non-hidden) exercises
+    const groupVisible = exercisesByGroup[mg].filter(e => !hiddenIds.has(e.id));
     const newIdx = idx + direction;
-    if (newIdx < 0 || newIdx >= group.length) return;
-    [group[idx], group[newIdx]] = [group[newIdx], group[idx]];
-    const newList = MUSCLE_GROUP_ORDER.flatMap((g) => (g === mg ? group : exercisesByGroup[g]));
+    if (newIdx < 0 || newIdx >= groupVisible.length) return;
+    [groupVisible[idx], groupVisible[newIdx]] = [groupVisible[newIdx], groupVisible[idx]];
+    // Rebuild full list maintaining hidden exercises at their positions
+    const groupHidden = exercisesByGroup[mg].filter(e => hiddenIds.has(e.id));
+    const newGroup = [...groupVisible, ...groupHidden];
+    const newList = MUSCLE_GROUP_ORDER.flatMap((g) => (g === mg ? newGroup : exercisesByGroup[g]));
     setLocalExercises(newList);
     setChanged(true);
     startTransition(async () => {
-      await reorderExercises(newList.map((e) => e.id));
+      await reorderExercises(newList.filter(e => !hiddenIds.has(e.id)).map((e) => e.id));
     });
   };
 
@@ -79,24 +106,25 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
     });
   };
 
-  const handleHide = (ex: ExerciseWithSettings) => {
-    setLocalExercises((prev) => prev.filter((e) => e.id !== ex.id));
-    setHiddenExercises((prev) => [
-      ...prev,
-      { id: ex.id, name: ex.name, muscleGroup: ex.muscleGroup },
-    ]);
-    setChanged(true);
-    startTransition(async () => {
-      await hideExercise(ex.id);
-    });
+  const handleToggleHide = (ex: ExerciseWithSettings) => {
+    const isCurrentlyHidden = hiddenIds.has(ex.id);
+    if (isCurrentlyHidden) {
+      // Restore
+      setHiddenIds(prev => { const next = new Set(prev); next.delete(ex.id); return next; });
+      setChanged(true);
+      startTransition(async () => { await unhideExercise(ex.id); });
+    } else {
+      // Hide
+      setHiddenIds(prev => new Set(prev).add(ex.id));
+      setChanged(true);
+      startTransition(async () => { await hideExercise(ex.id); });
+    }
   };
 
-  const handleRestore = (ex: HiddenExercise) => {
-    setHiddenExercises((prev) => prev.filter((e) => e.id !== ex.id));
+  const handleDeleted = (exerciseId: string) => {
+    setLocalExercises(prev => prev.filter(e => e.id !== exerciseId));
+    setHiddenIds(prev => { const next = new Set(prev); next.delete(exerciseId); return next; });
     setChanged(true);
-    startTransition(async () => {
-      await unhideExercise(ex.id);
-    });
   };
 
   return (
@@ -118,13 +146,16 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
         {MUSCLE_GROUP_ORDER.map((mg) => {
           const groupExercises = exercisesByGroup[mg];
           if (groupExercises.length === 0) return null;
+          const visibleExercises = groupExercises.filter(e => !hiddenIds.has(e.id));
+          const hiddenGroupExercises = groupExercises.filter(e => hiddenIds.has(e.id));
           return (
             <div key={mg}>
               <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">
                 {MUSCLE_GROUP_LABELS[mg]}
               </p>
               <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800">
-                {groupExercises.map((ex, idx) => {
+                {/* Visible exercises */}
+                {visibleExercises.map((ex, idx) => {
                   const setCount = ex.preferredSets ?? (ex.isBodyweight ? 1 : 3);
                   return (
                     <div key={ex.id} className="flex items-center gap-2 px-3 py-2.5">
@@ -139,7 +170,7 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
                         </button>
                         <button
                           onClick={() => handleMove(mg, idx, 1)}
-                          disabled={idx === groupExercises.length - 1 || isPending}
+                          disabled={idx === visibleExercises.length - 1 || isPending}
                           className="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 disabled:opacity-20 transition-colors"
                         >
                           <ChevronDown className="h-3.5 w-3.5" />
@@ -172,51 +203,71 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
                         </button>
                       </div>
 
-                      {/* Hide */}
+                      {/* Eye: remove from layout */}
                       <button
-                        onClick={() => handleHide(ex)}
+                        onClick={() => handleToggleHide(ex)}
                         disabled={isPending}
-                        className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30 transition-colors shrink-0"
+                        className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 disabled:opacity-30 transition-colors shrink-0"
                         title="Remove from layout"
                       >
-                        <EyeOff className="h-4 w-4" />
+                        <Eye className="h-4 w-4" />
                       </button>
+
+                      {/* Trash: only for owned+deletable */}
+                      {ex.isOwnedAndDeletable && (
+                        <button
+                          onClick={() => setDeleteTarget({ id: ex.id, name: ex.name })}
+                          disabled={isPending}
+                          className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30 transition-colors shrink-0"
+                          title="Delete exercise"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   );
                 })}
+
+                {/* Hidden exercises (dimmed, with restore eye icon) */}
+                {hiddenGroupExercises.map((ex) => (
+                  <div key={ex.id} className="flex items-center gap-2 px-3 py-2.5 opacity-40">
+                    {/* Spacer for reorder buttons */}
+                    <div className="w-5 shrink-0" />
+
+                    {/* Name */}
+                    <span className="flex-1 text-sm text-zinc-500 dark:text-zinc-400 truncate line-through">
+                      {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                    </span>
+
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">hidden</span>
+
+                    {/* Eye-off: restore to layout */}
+                    <button
+                      onClick={() => handleToggleHide(ex)}
+                      disabled={isPending}
+                      className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 disabled:opacity-30 transition-colors shrink-0 opacity-100"
+                      title="Restore to layout"
+                    >
+                      <EyeOff className="h-4 w-4" />
+                    </button>
+
+                    {/* Trash: only for owned+deletable */}
+                    {ex.isOwnedAndDeletable && (
+                      <button
+                        onClick={() => setDeleteTarget({ id: ex.id, name: ex.name })}
+                        disabled={isPending}
+                        className="w-7 h-7 flex items-center justify-center rounded text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30 transition-colors shrink-0 opacity-100"
+                        title="Delete exercise"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           );
         })}
-
-        {/* Hidden exercises */}
-        {hiddenExercises.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">
-              Hidden
-            </p>
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800">
-              {hiddenExercises.map((ex) => (
-                <div key={ex.id} className="flex items-center gap-2 px-3 py-2.5">
-                  <span className="flex-1 text-sm text-zinc-500 dark:text-zinc-400 truncate">
-                    {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
-                  </span>
-                  <span className="text-xs text-zinc-400 dark:text-zinc-500 shrink-0">
-                    {MUSCLE_GROUP_LABELS[ex.muscleGroup]}
-                  </span>
-                  <button
-                    onClick={() => handleRestore(ex)}
-                    disabled={isPending}
-                    className="flex items-center gap-1 rounded-lg border border-emerald-200 dark:border-emerald-800 px-2 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 disabled:opacity-40 transition-colors shrink-0"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    Add back
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Add new exercise */}
         <button
@@ -235,6 +286,13 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
           setAddOpen(false);
           setChanged(true);
         }}
+      />
+
+      <DeleteExerciseModal
+        open={deleteTarget !== null}
+        exercise={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onRemoved={handleDeleted}
       />
     </div>
   );

@@ -12,6 +12,8 @@ export interface ExerciseWithSettings {
   isPinned: boolean;
   userSortOrder: number;
   preferredSets?: number | null;
+  createdByUserId: string | null;
+  isOwnedAndDeletable: boolean;
 }
 
 export interface SetData {

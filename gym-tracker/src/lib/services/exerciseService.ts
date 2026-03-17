@@ -20,26 +20,43 @@ export async function getExercisesForUser(userId: string): Promise<ExerciseWithS
     orderBy: [{ muscleGroup: "asc" }, { sortOrder: "asc" }],
   });
 
-  return exercises
-    .filter((e) => {
-      const setting = e.userSettings[0];
-      return !setting?.isHidden;
-    })
-    .map((e) => {
-      const setting = e.userSettings[0];
-      return {
-        id: e.id,
-        name: e.name,
-        muscleGroup: e.muscleGroup,
-        isDefault: e.isDefault,
-        isBodyweight: e.isBodyweight,
-        isCompound: e.isCompound,
-        sortOrder: e.sortOrder,
-        isPinned: setting?.isPinned ?? false,
-        userSortOrder: setting?.sortOrder ?? e.sortOrder,
-        preferredSets: setting?.preferredSets ?? null,
-      };
+  const visible = exercises.filter((e) => {
+    const setting = e.userSettings[0];
+    return !setting?.isHidden;
+  });
+
+  // For exercises owned by this user, check if any OTHER user has sets (prevents deletion)
+  const ownedIds = visible.filter(e => e.createdByUserId === userId).map(e => e.id);
+  const usedByOthers = new Set<string>();
+  if (ownedIds.length > 0) {
+    const otherSets = await prisma.exerciseSet.findMany({
+      where: {
+        exerciseId: { in: ownedIds },
+        session: { userId: { not: userId } },
+      },
+      select: { exerciseId: true },
+      distinct: ["exerciseId"],
     });
+    otherSets.forEach(s => usedByOthers.add(s.exerciseId));
+  }
+
+  return visible.map((e) => {
+    const setting = e.userSettings[0];
+    return {
+      id: e.id,
+      name: e.name,
+      muscleGroup: e.muscleGroup,
+      isDefault: e.isDefault,
+      isBodyweight: e.isBodyweight,
+      isCompound: e.isCompound,
+      sortOrder: e.sortOrder,
+      isPinned: setting?.isPinned ?? false,
+      userSortOrder: setting?.sortOrder ?? e.sortOrder,
+      preferredSets: setting?.preferredSets ?? null,
+      createdByUserId: e.createdByUserId,
+      isOwnedAndDeletable: e.createdByUserId === userId && !usedByOthers.has(e.id),
+    };
+  });
 }
 
 export async function hideExercise(userId: string, exerciseId: string) {
@@ -61,12 +78,30 @@ export async function unhideExercise(userId: string, exerciseId: string) {
 export async function getHiddenExercisesForUser(userId: string) {
   const settings = await prisma.userExerciseSetting.findMany({
     where: { userId, isHidden: true },
-    include: { exercise: { select: { id: true, name: true, muscleGroup: true } } },
+    include: { exercise: { select: { id: true, name: true, muscleGroup: true, createdByUserId: true } } },
   });
+
+  const ownedIds = settings
+    .filter(s => s.exercise.createdByUserId === userId)
+    .map(s => s.exercise.id);
+  const usedByOthers = new Set<string>();
+  if (ownedIds.length > 0) {
+    const otherSets = await prisma.exerciseSet.findMany({
+      where: {
+        exerciseId: { in: ownedIds },
+        session: { userId: { not: userId } },
+      },
+      select: { exerciseId: true },
+      distinct: ["exerciseId"],
+    });
+    otherSets.forEach(s => usedByOthers.add(s.exerciseId));
+  }
+
   return settings.map((s) => ({
     id: s.exercise.id,
     name: s.exercise.name,
     muscleGroup: s.exercise.muscleGroup as MuscleGroup,
+    isOwnedAndDeletable: s.exercise.createdByUserId === userId && !usedByOthers.has(s.exercise.id),
   }));
 }
 
