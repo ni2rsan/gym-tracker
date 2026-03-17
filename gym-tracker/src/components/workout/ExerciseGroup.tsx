@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Save, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, Plus, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
@@ -26,6 +26,8 @@ interface ExerciseGroupProps {
   skippedIds?: Set<string>;
   onSkipChange?: (id: string, skipped: boolean) => void;
   onHide?: (exerciseId: string) => void;
+  removedFromLayout?: ExerciseWithSettings[];
+  onRestoreFromLayout?: (exerciseId: string) => void;
   /** When true, removes outer border/rounding (for use inside a parent container) */
   isNested?: boolean;
 }
@@ -49,11 +51,14 @@ export function ExerciseGroup({
   skippedIds,
   onSkipChange,
   onHide,
+  removedFromLayout = [],
+  onRestoreFromLayout,
   isNested = false,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [removedOpen, setRemovedOpen] = useState(false);
 
-  if (exercises.length === 0 && !onAdd) return null;
+  if (exercises.length === 0 && !onAdd && removedFromLayout.length === 0) return null;
 
   const GROUP_COLORS: Record<MuscleGroup, string> = {
     UPPER_BODY: "text-blue-500 dark:text-blue-400 border-blue-200 dark:border-blue-800/50",
@@ -163,6 +168,38 @@ export function ExerciseGroup({
                 <Save className="h-3 w-3" />
                 Save {MUSCLE_GROUP_LABELS[muscleGroup]}
               </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Removed from layout collapsed section */}
+      {removedFromLayout.length > 0 && (
+        <div className="border-t border-zinc-100 dark:border-zinc-800">
+          <button
+            onClick={() => setRemovedOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-2 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+          >
+            <span>Removed from layout ({removedFromLayout.length})</span>
+            {removedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          </button>
+          {removedOpen && (
+            <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
+              {removedFromLayout.map((ex) => (
+                <div key={ex.id} className="flex items-center gap-2 px-4 py-2 opacity-50">
+                  <span className="flex-1 text-xs text-zinc-500 dark:text-zinc-400 truncate line-through">
+                    {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                  </span>
+                  <button
+                    onClick={() => onRestoreFromLayout?.(ex.id)}
+                    className="flex items-center gap-1 rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400 hover:text-emerald-600 hover:border-emerald-300 dark:hover:text-emerald-400 dark:hover:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors opacity-100 shrink-0"
+                    title="Restore to layout"
+                  >
+                    <Eye className="h-3 w-3" />
+                    Restore
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
