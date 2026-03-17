@@ -174,7 +174,7 @@ export function DayContextMenu({
 
   const handleTrackFull = () => {
     onClose();
-    router.push(`/workout?date=${date}&section=${activeBlock.blockType}`);
+    router.push(`/workout?date=${date}`);
   };
 
   const handleDeleteTrackedWorkout = () => {
