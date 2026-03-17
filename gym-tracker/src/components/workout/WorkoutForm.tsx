@@ -66,12 +66,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [plannerData, setPlannerData] = useState<{ blocksByDate: Record<string, PlannerBlockInfo[]>; sorryRemaining: number } | null>(null);
   const [sorryConfirm, setSorryConfirm] = useState(false);
 
-  const [trackingScope, setTrackingScope] = useState<"all" | "FULL_BODY" | MuscleGroup | null>(() => {
-    const section = searchParams.get("section");
-    if (section === "FULL_BODY") return "FULL_BODY";
-    if (section && (MUSCLE_GROUP_ORDER as readonly string[]).includes(section)) return section as MuscleGroup;
-    return null;
-  });
+  const [trackingScope, setTrackingScope] = useState<"all" | "FULL_BODY" | MuscleGroup | null>(null);
   const [skippedByDate, setSkippedByDate] = useState<Record<string, Set<string>>>({});
   const skippedIds = skippedByDate[selectedDate] ?? new Set<string>();
   const [savingGroups, setSavingGroups] = useState<Set<MuscleGroup>>(new Set());
@@ -85,7 +80,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [isPending, startTransition] = useTransition();
 
   // If we already opened tracking from the URL param, mark as done so the effect doesn't re-fire
-  const didScrollRef = useRef(!!searchParams.get("section"));
+  const didScrollRef = useRef(false);
   const fromPlannerRef = useRef(!!searchParams.get("section") || searchParams.get("from") === "planner");
 
   // Derive range dates from selectedDate + viewMode
@@ -137,6 +132,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         setSavedTodayIds(
           new Set(Object.keys(existing).filter((id) => existing[id]?.length > 0))
         );
+        // Restore skipped state from localStorage
+        try {
+          const stored = localStorage.getItem(`gymtracker_skipped_${selectedDate}`);
+          if (stored) {
+            setSkippedByDate((prev) => ({ ...prev, [selectedDate]: new Set(JSON.parse(stored)) }));
+          }
+        } catch {}
         setIsLoading(false);
       }
     );
@@ -236,6 +238,9 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     setSkippedByDate((prev) => {
       const current = new Set(prev[selectedDate] ?? []);
       if (skipped) current.add(id); else current.delete(id);
+      try {
+        localStorage.setItem(`gymtracker_skipped_${selectedDate}`, JSON.stringify([...current]));
+      } catch {}
       return { ...prev, [selectedDate]: current };
     });
   };

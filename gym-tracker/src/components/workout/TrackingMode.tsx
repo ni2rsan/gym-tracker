@@ -457,7 +457,7 @@ export function TrackingMode({
                 </div>
                 <span
                   className={cn(
-                    "text-[11px] font-medium leading-tight line-clamp-2 w-full",
+                    "text-[11px] font-semibold leading-tight line-clamp-2 w-full uppercase tracking-wide",
                     skipped
                       ? "text-zinc-400 dark:text-zinc-500"
                       : done
@@ -465,7 +465,7 @@ export function TrackingMode({
                         : "text-zinc-600 dark:text-zinc-400"
                   )}
                 >
-                  {ex.name.charAt(0) + ex.name.slice(1).toLowerCase()}
+                  {ex.name}
                 </span>
                 {ex.isCompound && !skipped && (
                   <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">

@@ -92,7 +92,7 @@ export async function getLatestSetsPerExercise(userId: string) {
   const sessions = await prisma.workoutSession.findMany({
     where: { userId },
     orderBy: { date: "desc" },
-    take: 10,
+    take: 50,
     include: { sets: { orderBy: { recordedAt: "desc" } } },
   });
 
