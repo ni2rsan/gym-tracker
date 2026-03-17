@@ -236,9 +236,37 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   };
 
   const handleExercisesChanged = () => {
-    getExercises().then((result) => {
-      if (result.success && result.data) setExercises(result.data);
-    });
+    Promise.all([getExercises(), getWorkoutForDate(selectedDate), getLastKnownSets()]).then(
+      ([exResult, dateResult, lastResult]) => {
+        if (!exResult.success || !exResult.data) return;
+        const newExercises = exResult.data;
+        const existing = dateResult.success && dateResult.data ? dateResult.data : {};
+        const lastKnown = lastResult.success && lastResult.data ? lastResult.data : {};
+        setExercises(newExercises);
+        // Initialize sets for any exercises that don't have data yet (e.g. newly restored)
+        setWorkoutData((prev) => {
+          const merged = { ...prev };
+          for (const ex of newExercises) {
+            if (!merged[ex.id]) {
+              const fill = initializeSets([ex], {
+                ...lastKnown,
+                ...(existing[ex.id] ? { [ex.id]: existing[ex.id] } : {}),
+              });
+              merged[ex.id] = fill[ex.id] ?? [];
+            }
+          }
+          return merged;
+        });
+        // Update savedTodayIds for any newly visible exercises that have data
+        setSavedTodayIds((prev) => {
+          const next = new Set(prev);
+          for (const ex of newExercises) {
+            if (existing[ex.id]?.length) next.add(ex.id);
+          }
+          return next;
+        });
+      }
+    );
   };
 
   const handleSkipChange = (id: string, skipped: boolean) => {
