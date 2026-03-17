@@ -19,7 +19,7 @@ import {
   deleteWorkoutSessionByDate,
   deleteExerciseTracking,
 } from "@/actions/workout";
-import { togglePin, getExercises, hideExercise, unhideExercise } from "@/actions/exercise";
+import { togglePin, getExercises, getHiddenExercises, hideExercise, unhideExercise } from "@/actions/exercise";
 import {
   getBlocksForRange,
   excuseMissedDay,
@@ -276,13 +276,35 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   };
 
   const handleExercisesChanged = () => {
-    Promise.all([getExercises(), getWorkoutForDate(selectedDate), getLastKnownSets()]).then(
-      ([exResult, dateResult, lastResult]) => {
+    Promise.all([getExercises(), getHiddenExercises(), getWorkoutForDate(selectedDate), getLastKnownSets()]).then(
+      ([exResult, hiddenResult, dateResult, lastResult]) => {
         if (!exResult.success || !exResult.data) return;
         const newExercises = exResult.data;
         const existing = dateResult.success && dateResult.data ? dateResult.data : {};
         const lastKnown = lastResult.success && lastResult.data ? lastResult.data : {};
         setExercises(newExercises);
+        // Sync hiddenByGroup from server (authoritative state)
+        if (hiddenResult.success && hiddenResult.data) {
+          const newHidden: Partial<Record<MuscleGroup, ExerciseWithSettings[]>> = {};
+          for (const h of hiddenResult.data as { id: string; name: string; muscleGroup: MuscleGroup; isOwnedAndDeletable: boolean }[]) {
+            const mg = h.muscleGroup;
+            newHidden[mg] = [...(newHidden[mg] ?? []), {
+              id: h.id,
+              name: h.name,
+              muscleGroup: h.muscleGroup,
+              isDefault: false,
+              isBodyweight: false,
+              isCompound: false,
+              sortOrder: 999,
+              isPinned: false,
+              userSortOrder: 999,
+              preferredSets: null,
+              createdByUserId: null,
+              isOwnedAndDeletable: h.isOwnedAndDeletable,
+            } as ExerciseWithSettings];
+          }
+          setHiddenByGroup(newHidden);
+        }
         // Initialize sets for any exercises that don't have data yet (e.g. newly restored)
         setWorkoutData((prev) => {
           const merged = { ...prev };

@@ -8,6 +8,7 @@ import {
   setPreferredSets,
   reorderExercises,
   getHiddenExercises,
+  getExercises,
 } from "@/actions/exercise";
 import { MUSCLE_GROUP_ORDER, MUSCLE_GROUP_LABELS } from "@/constants/exercises";
 import type { ExerciseWithSettings, MuscleGroup } from "@/types";
@@ -40,36 +41,36 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    getHiddenExercises().then((result) => {
-      if (result.success && result.data) {
-        const hidden = result.data as HiddenExercise[];
-        setHiddenExercises(hidden);
-        setHiddenIds(new Set(hidden.map(h => h.id)));
-        // Merge hidden exercises into localExercises so they appear in group (dimmed)
-        setLocalExercises(prev => {
-          const existingIds = new Set(prev.map(e => e.id));
-          const toAdd = hidden
-            .filter(h => !existingIds.has(h.id))
-            .map(h => ({
-              id: h.id,
-              name: h.name,
-              muscleGroup: h.muscleGroup,
-              isDefault: false,
-              isBodyweight: false,
-              isCompound: false,
-              sortOrder: 999,
-              isPinned: false,
-              userSortOrder: 999,
-              preferredSets: null,
-              createdByUserId: null,
-              isOwnedAndDeletable: h.isOwnedAndDeletable,
-            } as ExerciseWithSettings));
-          return [...prev, ...toAdd];
-        });
-      }
+  const refreshExercises = () => {
+    Promise.all([getExercises(), getHiddenExercises()]).then(([exResult, hiddenResult]) => {
+      const visible = (exResult.success && exResult.data ? exResult.data : []) as ExerciseWithSettings[];
+      const hidden = (hiddenResult.success && hiddenResult.data ? hiddenResult.data : []) as HiddenExercise[];
+      setHiddenExercises(hidden);
+      setHiddenIds(new Set(hidden.map(h => h.id)));
+      const visibleIds = new Set(visible.map(e => e.id));
+      const hiddenAsEx = hidden
+        .filter(h => !visibleIds.has(h.id))
+        .map(h => ({
+          id: h.id,
+          name: h.name,
+          muscleGroup: h.muscleGroup,
+          isDefault: false,
+          isBodyweight: false,
+          isCompound: false,
+          sortOrder: 999,
+          isPinned: false,
+          userSortOrder: 999,
+          preferredSets: null,
+          createdByUserId: null,
+          isOwnedAndDeletable: h.isOwnedAndDeletable,
+        } as ExerciseWithSettings));
+      setLocalExercises([...visible, ...hiddenAsEx]);
     });
-  }, []);
+  };
+
+  useEffect(() => {
+    refreshExercises();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const exercisesByGroup = MUSCLE_GROUP_ORDER.reduce((acc, mg) => {
     acc[mg] = localExercises.filter((e) => e.muscleGroup === mg);
@@ -285,6 +286,7 @@ export function EditExercisesOverlay({ allExercises, onClose }: EditExercisesOve
         onCreated={() => {
           setAddOpen(false);
           setChanged(true);
+          refreshExercises();
         }}
       />
 
