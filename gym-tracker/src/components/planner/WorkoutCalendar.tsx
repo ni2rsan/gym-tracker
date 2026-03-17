@@ -272,6 +272,7 @@ export function WorkoutCalendar({
           blocksByDate={blocksByDate}
           trackedGroupsByDate={trackedGroups}
           onDayClick={handleDayClick}
+          selectedDate={contextMenu?.date ?? addModalDate ?? undefined}
         />
       )}
       {view === "week" && (
@@ -282,6 +283,7 @@ export function WorkoutCalendar({
           blocksByDate={blocksByDate}
           trackedGroupsByDate={trackedGroups}
           onDayClick={handleDayClick}
+          selectedDate={contextMenu?.date ?? addModalDate ?? undefined}
         />
       )}
       {view === "year" && (

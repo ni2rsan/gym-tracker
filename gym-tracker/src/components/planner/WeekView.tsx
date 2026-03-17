@@ -11,6 +11,7 @@ interface WeekViewProps {
   blocksByDate: Record<string, PlannedBlock[]>;
   trackedGroupsByDate: Record<string, Set<string>>;
   onDayClick: (date: string, e: React.MouseEvent) => void;
+  selectedDate?: string;
 }
 
 function toISO(date: Date) {
@@ -39,7 +40,7 @@ function getWeekDays(year: number, month: number, offset: number): Date[] {
   });
 }
 
-export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsByDate, onDayClick }: WeekViewProps) {
+export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsByDate, onDayClick, selectedDate }: WeekViewProps) {
   const today = toISO(new Date());
   const days = getWeekDays(year, month, weekOffset);
 
@@ -49,12 +50,20 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
         {days.map((d, i) => {
           const iso = toISO(d);
           const isToday = iso === today;
+          const isSelected = iso === selectedDate;
           return (
             <div key={iso} className="py-2 text-center">
-              <div className="text-xs text-zinc-500 dark:text-zinc-400">{WEEKDAY_NAMES[i]}</div>
+              <div className={cn(
+                "text-xs",
+                isSelected ? "text-amber-500 dark:text-amber-400 font-semibold" : "text-zinc-500 dark:text-zinc-400"
+              )}>{WEEKDAY_NAMES[i]}</div>
               <div className={cn(
                 "mx-auto mt-0.5 flex items-center justify-center text-sm font-medium",
-                isToday ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-zinc-700 dark:text-zinc-300"
+                isSelected
+                  ? "text-amber-600 dark:text-amber-300 font-bold"
+                  : isToday
+                    ? "text-emerald-600 dark:text-emerald-400 font-bold"
+                    : "text-zinc-700 dark:text-zinc-300"
               )}>
                 {d.getDate()}
               </div>
@@ -69,6 +78,7 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
           const blocks = blocksByDate[iso] ?? [];
           const groups = trackedGroupsByDate[iso];
           const isToday = iso === today;
+          const isSelected = iso === selectedDate;
 
           const isAnyTracked = blocks.some((b) => isBlockTracked(groups, b.blockType));
           const isAnySorryExcused = blocks.some((b) => b.sorryExcused);
@@ -79,10 +89,12 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
               key={iso}
               onClick={(e) => onDayClick(iso, e)}
               className={cn(
-                "relative p-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors flex flex-wrap gap-1 items-center justify-center min-h-[48px]",
-                isToday
-                  ? "border border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10"
-                  : "border-r border-zinc-100 dark:border-zinc-800/50"
+                "relative p-1.5 transition-colors flex flex-wrap gap-1 items-center justify-center min-h-[48px]",
+                isSelected
+                  ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-500/15 dark:border-amber-400/50"
+                  : isToday
+                    ? "border border-emerald-300 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
+                    : "border-r border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
               )}
             >
               {showSorryBadge && (
