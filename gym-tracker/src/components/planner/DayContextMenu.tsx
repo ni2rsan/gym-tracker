@@ -71,7 +71,7 @@ export function DayContextMenu({
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
-  const [activeBlock, setActiveBlock] = useState<PlannedBlock>(blocks[0]);
+  const [activeBlock, setActiveBlock] = useState<PlannedBlock>(blocks.find((b) => !b.seriesId) ?? blocks[0]);
   const [editMode, setEditMode] = useState<"block" | "series" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<"block" | "series" | "workout" | null>(null);
   const [confirmSorryToken, setConfirmSorryToken] = useState(false);
@@ -174,7 +174,7 @@ export function DayContextMenu({
 
   const handleTrackFull = () => {
     onClose();
-    router.push(`/workout?date=${date}&from=planner`);
+    router.push(`/workout?date=${date}&section=${activeBlock.blockType}`);
   };
 
   const handleDeleteTrackedWorkout = () => {
