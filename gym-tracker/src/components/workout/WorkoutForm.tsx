@@ -19,7 +19,7 @@ import {
   deleteWorkoutSessionByDate,
   deleteExerciseTracking,
 } from "@/actions/workout";
-import { togglePin, getExercises, hideExercise } from "@/actions/exercise";
+import { togglePin, getExercises, hideExercise, unhideExercise } from "@/actions/exercise";
 import {
   getBlocksForRange,
   excuseMissedDay,
@@ -73,6 +73,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [lastSavedByGroup, setLastSavedByGroup] = useState<Partial<Record<MuscleGroup, Date>>>({});
   const [lastSavedAll, setLastSavedAll] = useState<Date | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
+  const [hiddenByGroup, setHiddenByGroup] = useState<Partial<Record<MuscleGroup, ExerciseWithSettings[]>>>({});
   const [addTargetGroup, setAddTargetGroup] = useState<MuscleGroup | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
@@ -209,9 +210,48 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   };
 
   const handleHideClick = (exerciseId: string) => {
+    const ex = exercises.find((e) => e.id === exerciseId);
+    if (!ex) return;
+    // Optimistically move to hidden group
+    handleExerciseRemoved(exerciseId);
+    setHiddenByGroup((prev) => ({
+      ...prev,
+      [ex.muscleGroup]: [...(prev[ex.muscleGroup] ?? []), ex],
+    }));
+    startTransition(async () => { await hideExercise(exerciseId); });
+  };
+
+  const handleRestoreFromGroup = (exerciseId: string) => {
+    // Find exercise in hidden state
+    let restoredEx: ExerciseWithSettings | undefined;
+    for (const mg of Object.keys(hiddenByGroup) as MuscleGroup[]) {
+      restoredEx = hiddenByGroup[mg]?.find((e) => e.id === exerciseId);
+      if (restoredEx) break;
+    }
+    if (!restoredEx) return;
+    const ex = restoredEx;
+    // Optimistically restore to visible
+    setHiddenByGroup((prev) => {
+      const next = { ...prev };
+      for (const mg of Object.keys(next) as MuscleGroup[]) {
+        next[mg] = (next[mg] ?? []).filter((e) => e.id !== exerciseId);
+      }
+      return next;
+    });
+    setExercises((prev) => [...prev, ex]);
     startTransition(async () => {
-      await hideExercise(exerciseId);
-      handleExerciseRemoved(exerciseId);
+      await unhideExercise(exerciseId);
+      const [dateResult, lastResult] = await Promise.all([
+        getWorkoutForDate(selectedDate),
+        getLastKnownSets(),
+      ]);
+      const existing = dateResult.success && dateResult.data ? dateResult.data : {};
+      const lastKnown = lastResult.success && lastResult.data ? lastResult.data : {};
+      const fill = initializeSets([ex], { ...lastKnown, ...(existing[ex.id] ? { [ex.id]: existing[ex.id] } : {}) });
+      setWorkoutData((prev) => ({ ...prev, [ex.id]: fill[ex.id] ?? [] }));
+      if ((existing[ex.id] ?? []).length > 0) {
+        setSavedTodayIds((prev) => new Set(prev).add(ex.id));
+      }
     });
   };
 
@@ -777,6 +817,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onDeleteTracking={handleDeleteExerciseTracking}
                   skippedIds={skippedIds}
                   onSkipChange={handleSkipChange}
+                  removedFromLayout={hiddenByGroup["UPPER_BODY"] ?? []}
+                  onRestoreFromLayout={handleRestoreFromGroup}
                   isNested
                 />
                 <ExerciseGroup
@@ -797,6 +839,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onDeleteTracking={handleDeleteExerciseTracking}
                   skippedIds={skippedIds}
                   onSkipChange={handleSkipChange}
+                  removedFromLayout={hiddenByGroup["LOWER_BODY"] ?? []}
+                  onRestoreFromLayout={handleRestoreFromGroup}
                   isNested
                 />
               </div>
@@ -825,6 +869,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onDeleteTracking={handleDeleteExerciseTracking}
                 skippedIds={skippedIds}
                 onSkipChange={handleSkipChange}
+                removedFromLayout={hiddenByGroup[mg] ?? []}
+                onRestoreFromLayout={handleRestoreFromGroup}
               />
             </div>
           ))}
