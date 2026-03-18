@@ -292,8 +292,8 @@ export function DayContextMenu({
         );
       })()}
 
-      {/* Block selector if multiple blocks */}
-      {blocks.length > 1 && (
+      {/* Block selector if multiple blocks — hidden when a one-off exists (auto-selected) */}
+      {blocks.length > 1 && !blocks.some(b => !b.seriesId) && (
         <div className="px-4 py-2 flex gap-2 flex-wrap border-b border-zinc-100 dark:border-zinc-800">
           {blocks.map(b => (
             <button
