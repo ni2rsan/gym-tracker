@@ -573,7 +573,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             <div
               className="relative w-full max-w-xs rounded-3xl bg-white dark:bg-zinc-900 p-8 text-center shadow-2xl border border-zinc-100 dark:border-zinc-800"
               style={{ animation: "fb-slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={() => setShowFistBumpOverlay(false)}
             >
               <button
                 onClick={() => setShowFistBumpOverlay(false)}
