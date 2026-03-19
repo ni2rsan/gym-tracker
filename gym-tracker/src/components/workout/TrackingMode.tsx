@@ -214,7 +214,7 @@ export function TrackingMode({
     setTimerSetIdx(null);
     timerEndAtRef.current = null;
     setTimerLeft(0);
-    setIsManualEditMode(false);
+    setIsManualEditMode(true);
     setView({ kind: "exercise", exercise: ex });
     // Show exercise guide once ever
     if (!localStorage.getItem("gymtracker_guide_seen_tracking_exercise")) {
