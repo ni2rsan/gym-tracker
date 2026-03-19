@@ -11,9 +11,21 @@ import { FriendProfileView } from "@/components/social/FriendProfileView";
 import { Toast } from "@/components/ui/Toast";
 import type { FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification, SocialStats } from "@/types";
 
-const MILESTONE_EMOJI: Record<number, string> = {
-  10: "🥉", 30: "🥈", 50: "🥇", 75: "💎", 100: "👑",
-};
+
+const CONFETTI_COLORS = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6", "#ec4899", "#f97316", "#14b8a6"];
+const CONFETTI_PARTICLES = Array.from({ length: 28 }, (_, i) => {
+  const angle = (i / 28) * 2 * Math.PI;
+  const dist = 85 + (i % 4) * 22;
+  return {
+    id: i,
+    dx: Math.round(Math.cos(angle) * dist),
+    dy: Math.round(Math.sin(angle) * dist),
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    size: 6 + (i % 3) * 2,
+    round: i % 3 === 0,
+    delay: (i % 7) * 18,
+  };
+});
 
 type FriendStat = FriendProfileData & { userId: string };
 
@@ -163,7 +175,6 @@ function FriendExpandableCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const displayName = data.username ?? data.name ?? "Unknown";
-  const topMilestone = [...data.milestonesUnlocked].sort((a, b) => b - a)[0];
 
   return (
     <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
@@ -374,6 +385,8 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [copied, setCopied] = useState(false);
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
   const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(false);
+  const [overlayBumpers, setOverlayBumpers] = useState<string[]>([]);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
   const [feedBadge, setFeedBadge] = useState(newFistBumps.length);
   const hasVisitedFeedRef = useRef(false);
@@ -385,7 +398,12 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     if (view === "main" && tab === "feed") {
       hasVisitedFeedRef.current = true;
       markSocialSeen("feed");
-      if (feedBadge > 0) setShowFistBumpOverlay(true);
+      if (feedBadge > 0) {
+        const names = [...new Set(newFistBumps.map((b) => b.bumperUsername ?? b.bumperName ?? "Someone"))];
+        setOverlayBumpers(names);
+        setShowConfetti(false);
+        setShowFistBumpOverlay(true);
+      }
       setFeedBadge(0);
       router.refresh();
     } else if (hasVisitedFeedRef.current) {
@@ -436,14 +454,11 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     return true;
   });
 
-  const bumperText = (() => {
-    if (newFistBumps.length === 0) return "";
-    const names = newFistBumps.map((b) => b.bumperUsername ?? b.bumperName ?? "Someone");
-    const unique = [...new Set(names)];
-    if (unique.length === 1) return unique[0];
-    if (unique.length === 2) return `${unique[0]} and ${unique[1]}`;
-    return `${unique[0]}, ${unique[1]} and ${unique.length - 2} more`;
-  })();
+  const overlayText =
+    overlayBumpers.length === 0 ? ""
+    : overlayBumpers.length === 1 ? overlayBumpers[0]
+    : overlayBumpers.length === 2 ? `${overlayBumpers[0]} & ${overlayBumpers[1]}`
+    : `${overlayBumpers[0]} +${overlayBumpers.length - 1}`;
 
   if (view === "manage") {
     return (
@@ -565,7 +580,8 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <style>{`
             @keyframes fb-fade-in { from { opacity: 0 } to { opacity: 1 } }
             @keyframes fb-slide-up { from { transform: translateY(48px) scale(0.92); opacity: 0 } to { transform: translateY(0) scale(1); opacity: 1 } }
-            @keyframes fb-bump { 0%,100% { transform: scale(1) rotate(-8deg) } 50% { transform: scale(1.25) rotate(8deg) } }
+            @keyframes fb-bump { 0%,100% { transform: scale(1) rotate(-8deg) } 50% { transform: scale(1.3) rotate(10deg) } }
+            @keyframes confetti-fly { 0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1 } 70% { opacity: 1 } 100% { transform: translate(var(--cx),var(--cy)) rotate(540deg) scale(0.2); opacity: 0 } }
           `}</style>
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-6"
@@ -578,23 +594,43 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
               onClick={() => setShowFistBumpOverlay(false)}
             >
               <button
-                onClick={() => setShowFistBumpOverlay(false)}
+                onClick={(e) => { e.stopPropagation(); setShowFistBumpOverlay(false); }}
                 className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="h-4 w-4" />
               </button>
+              {/* Confetti particles */}
+              {showConfetti && CONFETTI_PARTICLES.map((p) => (
+                <div
+                  key={p.id}
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "38%",
+                    width: p.size,
+                    height: p.size,
+                    backgroundColor: p.color,
+                    borderRadius: p.round ? "50%" : "2px",
+                    animation: `confetti-fly 0.9s ease-out ${p.delay}ms both`,
+                    "--cx": `${p.dx}px`,
+                    "--cy": `${p.dy}px`,
+                    pointerEvents: "none",
+                  } as React.CSSProperties}
+                />
+              ))}
               <div
                 className="text-7xl mb-5 select-none"
-                style={{ animation: "fb-bump 0.7s ease-in-out infinite", display: "inline-block" }}
+                style={{ animation: "fb-bump 0.55s ease-in-out 3 forwards", display: "inline-block" }}
+                onAnimationEnd={() => setShowConfetti(true)}
               >
                 👊
               </div>
               <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug">
-                {bumperText}
+                {overlayText}
               </p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                {newFistBumps.length === 1 ? "gave you a fistbump!" : "gave you fistbumps!"}
+                {overlayBumpers.length === 1 ? "gave you a fistbump!" : "gave you fistbumps!"}
               </p>
             </div>
           </div>
