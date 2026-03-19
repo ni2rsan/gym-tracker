@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check, Users, Dumbbell, X } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
@@ -376,17 +376,19 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(false);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
   const [feedBadge, setFeedBadge] = useState(newFistBumps.length);
+  const hasVisitedFeedRef = useRef(false);
   const router = useRouter();
 
   // Mark feed as seen when feed tab is clicked — trigger overlay, refresh navbar badge
-  // Clear highlights when leaving feed view
+  // Clear highlights only after user has visited feed and then leaves
   useEffect(() => {
     if (view === "main" && tab === "feed") {
+      hasVisitedFeedRef.current = true;
       markSocialSeen("feed");
       if (feedBadge > 0) setShowFistBumpOverlay(true);
       setFeedBadge(0);
       router.refresh();
-    } else {
+    } else if (hasVisitedFeedRef.current) {
       setNewBumpSessionIds(new Set());
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
