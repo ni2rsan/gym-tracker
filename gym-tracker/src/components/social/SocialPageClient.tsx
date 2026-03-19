@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check, Users, Dumbbell } from "lucide-react";
+import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check, Users, Dumbbell, X } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings";
@@ -378,21 +378,16 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [feedBadge, setFeedBadge] = useState(newFistBumps.length);
   const router = useRouter();
 
-  // Auto-dismiss overlay after 4s whenever it opens
-  useEffect(() => {
-    if (!showFistBumpOverlay) return;
-    const timer = setTimeout(() => setShowFistBumpOverlay(false), 4000);
-    return () => clearTimeout(timer);
-  }, [showFistBumpOverlay]);
-
-  // Mark feed as seen when feed tab is visible — trigger overlay, clear highlights + refresh navbar badge
+  // Mark feed as seen when feed tab is clicked — trigger overlay, refresh navbar badge
+  // Clear highlights when leaving feed view
   useEffect(() => {
     if (view === "main" && tab === "feed") {
       markSocialSeen("feed");
-      setNewBumpSessionIds(new Set());
       if (feedBadge > 0) setShowFistBumpOverlay(true);
       setFeedBadge(0);
       router.refresh();
+    } else {
+      setNewBumpSessionIds(new Set());
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -576,10 +571,17 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             onClick={() => setShowFistBumpOverlay(false)}
           >
             <div
-              className="w-full max-w-xs rounded-3xl bg-white dark:bg-zinc-900 p-8 text-center shadow-2xl border border-zinc-100 dark:border-zinc-800"
+              className="relative w-full max-w-xs rounded-3xl bg-white dark:bg-zinc-900 p-8 text-center shadow-2xl border border-zinc-100 dark:border-zinc-800"
               style={{ animation: "fb-slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
               onClick={(e) => e.stopPropagation()}
             >
+              <button
+                onClick={() => setShowFistBumpOverlay(false)}
+                className="absolute top-4 right-4 flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
               <div
                 className="text-7xl mb-5 select-none"
                 style={{ animation: "fb-bump 0.7s ease-in-out infinite", display: "inline-block" }}
@@ -592,12 +594,6 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                 {newFistBumps.length === 1 ? "gave you a fistbump!" : "gave you fistbumps!"}
               </p>
-              <button
-                onClick={() => setShowFistBumpOverlay(false)}
-                className="mt-6 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
-              >
-                Tap to dismiss
-              </button>
             </div>
           </div>
         </>
