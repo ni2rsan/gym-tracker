@@ -9,7 +9,7 @@ import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings
 import { removeFriend, upsertFriendPrivacyOverride, toggleFistBump, markSocialSeen } from "@/actions/social";
 import { FriendProfileView } from "@/components/social/FriendProfileView";
 import { Toast } from "@/components/ui/Toast";
-import type { FriendProfileData, WorkoutFeedEntry } from "@/types";
+import type { FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification } from "@/types";
 
 const MILESTONE_EMOJI: Record<number, string> = {
   10: "🥉", 30: "🥈", 50: "🥇", 75: "💎", 100: "👑",
@@ -46,6 +46,7 @@ interface Props {
   pendingSent: PendingSent[];
   privacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
   inviteToken: string;
+  newFistBumps: NewFistBumpNotification[];
 }
 
 type FeedFilter = "all" | "me" | "friends";
@@ -128,11 +129,18 @@ function FeedCard({
               {bumpCount > 0 && <span>{bumpCount}</span>}
             </button>
           )}
-          {/* Own entry: show bump count passively */}
+          {/* Own entry: show bumper names */}
           {entry.isOwnWorkout && bumpCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
-              <span>👊</span>
-              <span>{bumpCount}</span>
+            <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-[160px]">
+              <span className="flex-shrink-0">👊</span>
+              <span className="truncate">
+                {(() => {
+                  const names = entry.fistBumps.map((b) => b.username ?? b.name ?? "Someone");
+                  if (names.length === 1) return names[0];
+                  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+                  return `${names[0]} +${names.length - 1}`;
+                })()}
+              </span>
             </span>
           )}
         </div>
@@ -355,14 +363,22 @@ function FriendManageRow({
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken }: Props) {
+export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps }: Props) {
   const [view, setView] = useState<"main" | "manage">("main");
   const [tab, setTab] = useState<"feed" | "friends">("friends");
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
   const [friends, setFriends] = useState(friendsWithStats);
   const [copied, setCopied] = useState(false);
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
+  const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(newFistBumps.length > 0);
   const router = useRouter();
+
+  useEffect(() => {
+    if (newFistBumps.length > 0) {
+      const timer = setTimeout(() => setShowFistBumpOverlay(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mark feed as seen only when the feed tab is actually visible
   useEffect(() => {
@@ -408,6 +424,15 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     if (feedFilter === "friends") return !entry.isOwnWorkout;
     return true;
   });
+
+  const bumperText = (() => {
+    if (newFistBumps.length === 0) return "";
+    const names = newFistBumps.map((b) => b.bumperUsername ?? b.bumperName ?? "Someone");
+    const unique = [...new Set(names)];
+    if (unique.length === 1) return unique[0];
+    if (unique.length === 2) return `${unique[0]} and ${unique[1]}`;
+    return `${unique[0]}, ${unique[1]} and ${unique.length - 2} more`;
+  })();
 
   if (view === "manage") {
     return (
@@ -523,6 +548,46 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   // Main view (Feed / Friends tabs)
   return (
     <div className="space-y-5">
+      {/* Fist bump notification overlay */}
+      {showFistBumpOverlay && (
+        <>
+          <style>{`
+            @keyframes fb-fade-in { from { opacity: 0 } to { opacity: 1 } }
+            @keyframes fb-slide-up { from { transform: translateY(48px) scale(0.92); opacity: 0 } to { transform: translateY(0) scale(1); opacity: 1 } }
+            @keyframes fb-bump { 0%,100% { transform: scale(1) rotate(-8deg) } 50% { transform: scale(1.25) rotate(8deg) } }
+          `}</style>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-6"
+            style={{ animation: "fb-fade-in 0.25s ease both" }}
+            onClick={() => setShowFistBumpOverlay(false)}
+          >
+            <div
+              className="w-full max-w-xs rounded-3xl bg-white dark:bg-zinc-900 p-8 text-center shadow-2xl border border-zinc-100 dark:border-zinc-800"
+              style={{ animation: "fb-slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="text-7xl mb-5 select-none"
+                style={{ animation: "fb-bump 0.7s ease-in-out infinite", display: "inline-block" }}
+              >
+                👊
+              </div>
+              <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug">
+                {bumperText}
+              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                {newFistBumps.length === 1 ? "gave you a fistbump!" : "gave you fistbumps!"}
+              </p>
+              <button
+                onClick={() => setShowFistBumpOverlay(false)}
+                className="mt-6 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                Tap to dismiss
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Social</h1>
