@@ -3,7 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getStreakData } from "@/lib/services/plannerService";
 import { getPersonalRecords } from "@/lib/services/reportService";
 import { getLatestBodyMetric } from "@/lib/services/metricsService";
-import type { FriendSummary, FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification } from "@/types";
+import type { FriendSummary, FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification, SocialStats } from "@/types";
 
 const MILESTONES = [10, 30, 50, 75, 100];
 
@@ -376,10 +376,21 @@ export async function getNewFistBumpsForUser(userId: string): Promise<NewFistBum
   });
 
   return bumps.map((b) => ({
+    sessionId: b.sessionId,
     bumperName: b.user.name,
     bumperUsername: b.user.username,
     bumperImage: b.user.profileImageBase64 ?? b.user.image ?? null,
   }));
+}
+
+export async function getSocialStats(userId: string): Promise<SocialStats> {
+  const [totalFistBumpsReceived, totalWorkoutsTracked] = await Promise.all([
+    prisma.workoutFistBump.count({
+      where: { session: { userId }, userId: { not: userId } },
+    }),
+    prisma.workoutSession.count({ where: { userId } }),
+  ]);
+  return { totalFistBumpsReceived, totalWorkoutsTracked };
 }
 
 // ─── Friends feed ────────────────────────────────────────────────────────────

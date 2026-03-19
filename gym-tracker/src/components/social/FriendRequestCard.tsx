@@ -13,9 +13,11 @@ interface Props {
     image: string | null;
     profileImageBase64: string | null;
   };
+  onAccepted?: () => void;
+  onDeclined?: () => void;
 }
 
-export function FriendRequestCard({ friendshipId, sender }: Props) {
+export function FriendRequestCard({ friendshipId, sender, onAccepted, onDeclined }: Props) {
   const [isPending, startTransition] = useTransition();
 
   const displayName = sender.username ? `@${sender.username}` : (sender.name ?? "Unknown");
@@ -23,8 +25,13 @@ export function FriendRequestCard({ friendshipId, sender }: Props) {
 
   const handle = (action: "accept" | "decline") => {
     startTransition(async () => {
-      if (action === "accept") await acceptFriendRequest(friendshipId);
-      else await declineFriendRequest(friendshipId);
+      if (action === "accept") {
+        await acceptFriendRequest(friendshipId);
+        onAccepted?.();
+      } else {
+        await declineFriendRequest(friendshipId);
+        onDeclined?.();
+      }
     });
   };
 
