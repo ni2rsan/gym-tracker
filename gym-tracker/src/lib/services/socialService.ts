@@ -282,13 +282,45 @@ export async function toggleFistBump(
   const existing = await prisma.workoutFistBump.findUnique({
     where: { userId_sessionId: { userId, sessionId } },
   });
-  if (existing) {
-    await prisma.workoutFistBump.delete({ where: { id: existing.id } });
+
+  if (existing?.active) {
+    // Remove: soft-delete
+    await prisma.workoutFistBump.update({
+      where: { id: existing.id },
+      data: { active: false },
+    });
     return { fistBumped: false };
-  } else {
-    await prisma.workoutFistBump.create({ data: { userId, sessionId } });
+  }
+
+  if (existing && !existing.active) {
+    // Re-bump: only re-notify if 24h have passed since owner last saw notification
+    const session = await prisma.workoutSession.findUnique({
+      where: { id: sessionId },
+      select: { userId: true },
+    });
+    const ownerSeen = session
+      ? await prisma.socialNotificationSeen.findUnique({
+          where: { userId: session.userId },
+          select: { lastSeenFistBumps: true },
+        })
+      : null;
+    const lastSeen = ownerSeen?.lastSeenFistBumps ?? new Date(0);
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // Bump was seen by owner AND 24h haven't passed → restore without updating createdAt (no new notification)
+    // Otherwise → reset createdAt to now (triggers new notification)
+    const bumpWasSeen = existing.createdAt <= lastSeen;
+    const within24h = lastSeen > twentyFourHoursAgo;
+    const shouldReNotify = !bumpWasSeen || !within24h;
+    await prisma.workoutFistBump.update({
+      where: { id: existing.id },
+      data: { active: true, ...(shouldReNotify ? { createdAt: new Date() } : {}) },
+    });
     return { fistBumped: true };
   }
+
+  // No existing record: create fresh
+  await prisma.workoutFistBump.create({ data: { userId, sessionId } });
+  return { fistBumped: true };
 }
 
 // ─── Notification seen tracking ──────────────────────────────────────────────
@@ -317,6 +349,7 @@ export async function getSocialBadgeCounts(
       where: {
         session: { userId },
         userId: { not: userId }, // exclude self-bumps
+        active: true,
         createdAt: { gt: lastSeenFistBumps },
       },
     }),
@@ -366,6 +399,7 @@ export async function getNewFistBumpsForUser(userId: string): Promise<NewFistBum
     where: {
       session: { userId },   // on the user's own sessions
       userId: { not: userId }, // exclude self-bumps
+      active: true,
       createdAt: { gt: lastSeen },
     },
     include: {
@@ -386,7 +420,7 @@ export async function getNewFistBumpsForUser(userId: string): Promise<NewFistBum
 export async function getSocialStats(userId: string): Promise<SocialStats> {
   const [totalFistBumpsReceived, totalWorkoutsTracked] = await Promise.all([
     prisma.workoutFistBump.count({
-      where: { session: { userId }, userId: { not: userId } },
+      where: { session: { userId }, userId: { not: userId }, active: true },
     }),
     prisma.workoutSession.count({ where: { userId } }),
   ]);
@@ -506,7 +540,7 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
   // 7. Fetch fist bumps for all sessions
   const allSessionIds = sessions.map((s) => s.id);
   const allFistBumps = await prisma.workoutFistBump.findMany({
-    where: { sessionId: { in: allSessionIds } },
+    where: { sessionId: { in: allSessionIds }, active: true },
     select: {
       sessionId: true,
       userId: true,
