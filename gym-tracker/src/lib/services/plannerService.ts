@@ -335,52 +335,60 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const oneYearAgoISO = dbDateToISO(oneYearAgo);
   const allRecentWorkouts = await getWorkedOutDates(userId, oneYearAgoISO, todayISO);
 
-  // Include sorry-excused days as "done" for streak purposes
-  const sorryExcusedYearPlanned = await prisma.plannedWorkout.findMany({
+  // Fetch all planned workout dates for the past year (used for plan-based streak + sorry dates)
+  const allPlannedYearRaw = await prisma.plannedWorkout.findMany({
     where: {
       userId,
-      sorryExcused: true,
       date: {
         gte: new Date(oneYearAgoISO + "T00:00:00"),
         lte: new Date(todayISO + "T23:59:59"),
       },
     },
-    select: { date: true },
+    select: { date: true, sorryExcused: true },
+    orderBy: { date: "desc" },
   });
-  const sorryDates = new Set(sorryExcusedYearPlanned.map((pw) => dbDateToISO(pw.date)));
+  const sorryDates = new Set(
+    allPlannedYearRaw.filter((pw) => pw.sorryExcused).map((pw) => dbDateToISO(pw.date))
+  );
   // Combined set: actual workouts + sorry-excused days both count as "done"
   const doneDates = new Set([...allRecentWorkouts, ...sorryDates]);
 
-  // General streak: count consecutive days ending at yesterday (today is always exempt —
-  // you have until EOD to work out without breaking your streak). If today already has a
-  // workout or sorry token, add 1 on top.
+  // Unique planned dates (past year, deduplicated), sorted descending
+  const uniquePlannedDatesDesc = [
+    ...new Set(allPlannedYearRaw.map((pw) => dbDateToISO(pw.date))),
+  ].sort().reverse();
+  const plannedDatesSet = new Set(uniquePlannedDatesDesc);
+
+  // General streak: consecutive PLANNED days completed, going backward from yesterday.
+  // Today is exempt — you have until EOD to finish today's planned workout.
   const yesterdayCursor = new Date(d);
   yesterdayCursor.setDate(yesterdayCursor.getDate() - 1);
+  const yesterdayISOStr = `${yesterdayCursor.getFullYear()}-${String(yesterdayCursor.getMonth() + 1).padStart(2, "0")}-${String(yesterdayCursor.getDate()).padStart(2, "0")}`;
   let generalStreak = 0;
-  const streakCursor = new Date(yesterdayCursor);
-  while (true) {
-    const iso = `${streakCursor.getFullYear()}-${String(streakCursor.getMonth() + 1).padStart(2, "0")}-${String(streakCursor.getDate()).padStart(2, "0")}`;
-    if (!doneDates.has(iso)) break;
-    generalStreak++;
-    streakCursor.setDate(streakCursor.getDate() - 1);
+  for (const iso of uniquePlannedDatesDesc) {
+    if (iso > yesterdayISOStr) continue; // skip today
+    if (doneDates.has(iso)) {
+      generalStreak++;
+    } else {
+      break; // missed a planned day — streak ends
+    }
   }
-  // Add today if already worked out or sorry-excused
-  if (doneDates.has(todayISO)) generalStreak++;
+  // Add today if it's a planned day and already done
+  if (plannedDatesSet.has(todayISO) && doneDates.has(todayISO)) generalStreak++;
 
-  // Best streak: longest consecutive run in the past year (workouts + sorry days)
-  const sortedDates = [...doneDates].sort();
+  // Best streak: longest run of consecutive PLANNED days completed
+  const uniquePlannedDatesAsc = [...uniquePlannedDatesDesc].reverse();
   let bestStreak = 0;
   let runLength = 0;
-  let prevMs: number | null = null;
-  for (const iso of sortedDates) {
-    const ms = new Date(iso + "T12:00:00").getTime();
-    if (prevMs !== null && ms - prevMs === 86_400_000) {
+  for (const iso of uniquePlannedDatesAsc) {
+    if (iso > todayISO) break; // ignore future planned days
+    if (doneDates.has(iso)) {
       runLength++;
-    } else {
-      runLength = 1;
+      if (runLength > bestStreak) bestStreak = runLength;
+    } else if (iso < todayISO) {
+      runLength = 0; // missed a past planned day — run ends
     }
-    if (runLength > bestStreak) bestStreak = runLength;
-    prevMs = ms;
+    // iso === todayISO and not yet done: don't reset (today is still exempt)
   }
 
   // Total distinct workout days this month
