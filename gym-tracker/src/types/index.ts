@@ -129,9 +129,15 @@ export interface WorkoutFeedEntry {
 }
 
 export interface NewFistBumpNotification {
+  sessionId: string;
   bumperName: string | null;
   bumperUsername: string | null;
   bumperImage: string | null;
+}
+
+export interface SocialStats {
+  totalFistBumpsReceived: number;
+  totalWorkoutsTracked: number;
 }
 
 export interface UserRequestItem {

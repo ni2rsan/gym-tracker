@@ -9,7 +9,7 @@ import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings
 import { removeFriend, upsertFriendPrivacyOverride, toggleFistBump, markSocialSeen } from "@/actions/social";
 import { FriendProfileView } from "@/components/social/FriendProfileView";
 import { Toast } from "@/components/ui/Toast";
-import type { FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification } from "@/types";
+import type { FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification, SocialStats } from "@/types";
 
 const MILESTONE_EMOJI: Record<number, string> = {
   10: "🥉", 30: "🥈", 50: "🥇", 75: "💎", 100: "👑",
@@ -47,6 +47,7 @@ interface Props {
   privacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
   inviteToken: string;
   newFistBumps: NewFistBumpNotification[];
+  socialStats: SocialStats;
 }
 
 type FeedFilter = "all" | "me" | "friends";
@@ -71,9 +72,11 @@ function formatDateAgo(dateStr: string): string {
 function FeedCard({
   entry,
   onFistBump,
+  isNew,
 }: {
   entry: WorkoutFeedEntry;
   onFistBump: (sessionId: string) => void;
+  isNew?: boolean;
 }) {
   const displayName = entry.isOwnWorkout
     ? "You"
@@ -82,7 +85,7 @@ function FeedCard({
   const bumpCount = entry.fistBumps.length;
 
   return (
-    <div className="flex gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+    <div className={`flex gap-3 rounded-2xl border bg-white dark:bg-zinc-900 p-4 transition-colors ${isNew ? "border-amber-300 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-800" : "border-zinc-200 dark:border-zinc-800"}`}>
       {entry.image ? (
         <img src={entry.image} alt={displayName} className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
       ) : (
@@ -363,14 +366,16 @@ function FriendManageRow({
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps }: Props) {
+export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps, socialStats }: Props) {
   const [view, setView] = useState<"main" | "manage">("main");
   const [tab, setTab] = useState<"feed" | "friends">("friends");
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
   const [friends, setFriends] = useState(friendsWithStats);
+  const [pendingState, setPendingState] = useState(pendingReceived);
   const [copied, setCopied] = useState(false);
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
   const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(newFistBumps.length > 0);
+  const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
   const router = useRouter();
 
   useEffect(() => {
@@ -380,16 +385,23 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mark feed as seen only when the feed tab is actually visible
+  // Mark feed as seen when feed tab is visible — clear highlights + refresh navbar badge
   useEffect(() => {
     if (view === "main" && tab === "feed") {
       markSocialSeen("feed");
+      setNewBumpSessionIds(new Set());
+      router.refresh();
     }
-  }, [view, tab]);
+  }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFriendRemoved = (userId: string) => {
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
     router.refresh();
+  };
+
+  const handleRequestActioned = (friendshipId: string) => {
+    setPendingState((prev) => prev.filter((r) => r.id !== friendshipId));
+    router.refresh(); // re-fetches friends list + clears navbar badge
   };
 
   const handleOpenManage = useCallback(() => {
@@ -485,15 +497,15 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <AddFriendForm />
         </div>
 
-        {pendingReceived.length > 0 && (
+        {pendingState.length > 0 && (
           <div className="space-y-2">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-white px-0.5">
               Friend Requests{" "}
-              <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium px-2 py-0.5">{pendingReceived.length}</span>
+              <span className="ml-1.5 inline-flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium px-2 py-0.5">{pendingState.length}</span>
             </h2>
             <div className="space-y-2">
-              {pendingReceived.map((req) => (
-                <FriendRequestCard key={req.id} friendshipId={req.id} sender={req.sender} />
+              {pendingState.map((req) => (
+                <FriendRequestCard key={req.id} friendshipId={req.id} sender={req.sender} onAccepted={() => handleRequestActioned(req.id)} onDeclined={() => handleRequestActioned(req.id)} />
               ))}
             </div>
           </div>
@@ -614,13 +626,28 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             title="Add friends / manage"
           >
             <UserPlus className="h-4 w-4" />
-            {pendingReceived.length > 0 && (
+            {pendingState.length > 0 && (
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-                {pendingReceived.length}
+                {pendingState.length}
               </span>
             )}
           </button>
         </div>
+      </div>
+
+      {/* Stats panel — always visible */}
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { value: friends.length, label: "Friends", emoji: "👥" },
+          { value: socialStats.totalFistBumpsReceived, label: "Fist bumps", emoji: "👊" },
+          { value: socialStats.totalWorkoutsTracked, label: "Workouts", emoji: "💪" },
+        ].map(({ value, label, emoji }) => (
+          <div key={label} className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
+            <div className="text-base leading-none mb-1">{emoji}</div>
+            <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{value}</div>
+            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">{label}</div>
+          </div>
+        ))}
       </div>
 
       {/* Feed tab */}
@@ -654,7 +681,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             </div>
           ) : (
             filteredFeed.map((entry) => (
-              <FeedCard key={entry.sessionId} entry={entry} onFistBump={handleFistBump} />
+              <FeedCard key={entry.sessionId} entry={entry} onFistBump={handleFistBump} isNew={newBumpSessionIds.has(entry.sessionId)} />
             ))
           )}
         </div>
