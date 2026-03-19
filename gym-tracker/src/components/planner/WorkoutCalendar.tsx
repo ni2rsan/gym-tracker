@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MonthView } from "./MonthView";
@@ -53,6 +53,8 @@ export function WorkoutCalendar({
   initialStreakData,
   prs,
 }: WorkoutCalendarProps) {
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   const [view, setView] = useState<View>("month");
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
