@@ -186,7 +186,6 @@ function FriendExpandableCard({
             )}
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {topMilestone != null && <span className="text-xl">{MILESTONE_EMOJI[topMilestone]}</span>}
             {expanded ? <ChevronUp className="h-4 w-4 text-zinc-400" /> : <ChevronDown className="h-4 w-4 text-zinc-400" />}
           </div>
         </div>
