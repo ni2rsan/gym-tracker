@@ -398,14 +398,12 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     if (allRecentWorkouts.has(iso)) last30DaysWorkouts.push(iso);
   }
 
-  // Consistency: planned blocks in last 30 days vs completed/excused
-  const thirtyDaysAgoDate = new Date(d);
-  thirtyDaysAgoDate.setDate(thirtyDaysAgoDate.getDate() - 29);
+  // Consistency: planned blocks this month vs completed/excused
   const allPlannedLast30 = await prisma.plannedWorkout.findMany({
     where: {
       userId,
       date: {
-        gte: new Date(dbDateToISO(thirtyDaysAgoDate) + "T00:00:00"),
+        gte: new Date(monthStart + "T00:00:00"),
         lte: new Date(todayISO + "T23:59:59"),
       },
     },
