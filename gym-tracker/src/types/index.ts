@@ -128,6 +128,12 @@ export interface WorkoutFeedEntry {
   myFistBump: boolean;
 }
 
+export interface NewFistBumpNotification {
+  bumperName: string | null;
+  bumperUsername: string | null;
+  bumperImage: string | null;
+}
+
 export interface UserRequestItem {
   id: string;
   type: "BUG" | "FEATURE";

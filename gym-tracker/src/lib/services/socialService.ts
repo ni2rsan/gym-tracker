@@ -3,7 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getStreakData } from "@/lib/services/plannerService";
 import { getPersonalRecords } from "@/lib/services/reportService";
 import { getLatestBodyMetric } from "@/lib/services/metricsService";
-import type { FriendSummary, FriendProfileData, WorkoutFeedEntry } from "@/types";
+import type { FriendSummary, FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification } from "@/types";
 
 const MILESTONES = [10, 30, 50, 75, 100];
 
@@ -356,6 +356,30 @@ export async function markSocialSeen(
         ? { lastSeenRequests: now }
         : { lastSeenFeed: now, lastSeenFistBumps: now }, // viewing feed clears both
   });
+}
+
+export async function getNewFistBumpsForUser(userId: string): Promise<NewFistBumpNotification[]> {
+  const seen = await prisma.socialNotificationSeen.findUnique({ where: { userId } });
+  const lastSeen = seen?.lastSeenFistBumps ?? new Date(0);
+
+  const bumps = await prisma.workoutFistBump.findMany({
+    where: {
+      session: { userId },   // on the user's own sessions
+      userId: { not: userId }, // exclude self-bumps
+      createdAt: { gt: lastSeen },
+    },
+    include: {
+      user: { select: { name: true, username: true, image: true, profileImageBase64: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+
+  return bumps.map((b) => ({
+    bumperName: b.user.name,
+    bumperUsername: b.user.username,
+    bumperImage: b.user.profileImageBase64 ?? b.user.image ?? null,
+  }));
 }
 
 // ─── Friends feed ────────────────────────────────────────────────────────────
