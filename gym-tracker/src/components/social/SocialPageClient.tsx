@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check } from "lucide-react";
+import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check, Users, Dumbbell } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings";
@@ -373,22 +373,25 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [pendingState, setPendingState] = useState(pendingReceived);
   const [copied, setCopied] = useState(false);
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
-  const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(newFistBumps.length > 0);
+  const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(false);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
+  const [feedBadge, setFeedBadge] = useState(newFistBumps.length);
   const router = useRouter();
 
+  // Auto-dismiss overlay after 4s whenever it opens
   useEffect(() => {
-    if (newFistBumps.length > 0) {
-      const timer = setTimeout(() => setShowFistBumpOverlay(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!showFistBumpOverlay) return;
+    const timer = setTimeout(() => setShowFistBumpOverlay(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showFistBumpOverlay]);
 
-  // Mark feed as seen when feed tab is visible — clear highlights + refresh navbar badge
+  // Mark feed as seen when feed tab is visible — trigger overlay, clear highlights + refresh navbar badge
   useEffect(() => {
     if (view === "main" && tab === "feed") {
       markSocialSeen("feed");
       setNewBumpSessionIds(new Set());
+      if (feedBadge > 0) setShowFistBumpOverlay(true);
+      setFeedBadge(0);
       router.refresh();
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -607,9 +610,14 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 gap-1">
             <button
               onClick={() => setTab("feed")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${tab === "feed" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"}`}
+              className={`relative rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${tab === "feed" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"}`}
             >
               Feed
+              {feedBadge > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-zinc-900 text-[8px] font-bold leading-none">
+                  {feedBadge > 9 ? "9+" : feedBadge}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setTab("friends")}
@@ -636,17 +644,21 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
 
       {/* Stats panel — always visible */}
       <div className="grid grid-cols-3 gap-2">
-        {[
-          { value: friends.length, label: "Friends", emoji: "👥" },
-          { value: socialStats.totalFistBumpsReceived, label: "Fist bumps", emoji: "👊" },
-          { value: socialStats.totalWorkoutsTracked, label: "Workouts", emoji: "💪" },
-        ].map(({ value, label, emoji }) => (
-          <div key={label} className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
-            <div className="text-base leading-none mb-1">{emoji}</div>
-            <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{value}</div>
-            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">{label}</div>
-          </div>
-        ))}
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
+          <Users className="h-4 w-4 text-zinc-400 dark:text-zinc-500 mx-auto mb-1" strokeWidth={1.5} />
+          <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{friends.length}</div>
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Friends</div>
+        </div>
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
+          <div className="text-base leading-none mb-1">👊</div>
+          <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{socialStats.totalFistBumpsReceived}</div>
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Fist bumps</div>
+        </div>
+        <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
+          <Dumbbell className="h-4 w-4 text-zinc-400 dark:text-zinc-500 mx-auto mb-1" strokeWidth={1.5} />
+          <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{socialStats.totalWorkoutsTracked}</div>
+          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Workouts</div>
+        </div>
       </div>
 
       {/* Feed tab */}
