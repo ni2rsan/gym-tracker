@@ -229,7 +229,7 @@ function ConsistencyCard({ plannedLast30, completedLast30 }: { plannedLast30: nu
         Consistency
       </div>
       <div className="text-[11px] text-zinc-400 dark:text-zinc-500">
-        {completedLast30} of {plannedLast30} planned workouts
+        {completedLast30} of {plannedLast30} workouts this month
       </div>
     </div>
   );
