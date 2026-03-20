@@ -66,8 +66,8 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           {/* Logo */}
           <Link href="/planner" className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500">
-              <DumbbellIcon className="h-4 w-4 text-white" strokeWidth={2.5} />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950">
+              <DumbbellIcon className="h-4 w-4 text-amber-400" strokeWidth={2.5} />
             </div>
             <span className="hidden sm:block">Gym Tracker</span>
           </Link>
