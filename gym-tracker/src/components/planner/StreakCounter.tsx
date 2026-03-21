@@ -6,7 +6,15 @@ import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
 import type { MuscleGroup } from "@/types";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
+import { BlockDot } from "@/components/planner/BlockDot";
 import { setSorryTokenMax } from "@/actions/planner";
+
+function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
+  if (!groups || groups.size === 0) return false;
+  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
+  if (blockType === "CARDIO") return groups.has("CARDIO");
+  return groups.has(blockType);
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -235,8 +243,22 @@ function ConsistencyCard({ plannedLast30, completedLast30 }: { plannedLast30: nu
   );
 }
 
-function ThisWeekCard({ thisWeekWorkouts, plannedThisWeek, completedThisWeek }: { thisWeekWorkouts: string[]; plannedThisWeek: number; completedThisWeek: number }) {
+function ThisWeekCard({
+  thisWeekWorkouts,
+  plannedThisWeek,
+  completedThisWeek,
+  thisWeekBlocksByDate,
+  trackedGroupsByDate,
+}: {
+  thisWeekWorkouts: string[];
+  plannedThisWeek: number;
+  completedThisWeek: number;
+  thisWeekBlocksByDate: Record<string, string[]>;
+  trackedGroupsByDate: Record<string, Set<string>>;
+}) {
   const days = buildWeekDays(thisWeekWorkouts);
+  const todayISO = toISO(new Date());
+
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
       <div className="flex items-center justify-between mb-3">
@@ -250,27 +272,55 @@ function ThisWeekCard({ thisWeekWorkouts, plannedThisWeek, completedThisWeek }: 
         )}
       </div>
       <div className="flex items-center justify-between gap-1">
-        {days.map((day) => (
-          <div key={day.iso} className="flex flex-col items-center gap-1">
-            <div
-              className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center transition-all",
-                day.worked
-                  ? "bg-amber-500 ring-2 ring-amber-300"
-                  : day.isToday
-                  ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-900/20"
-                  : day.isFuture
-                  ? "border border-zinc-200 dark:border-zinc-700"
-                  : "bg-zinc-100 dark:bg-zinc-800"
+        {days.map((day) => {
+          const blocks = thisWeekBlocksByDate[day.iso] ?? [];
+          const trackedGroups = trackedGroupsByDate[day.iso];
+
+          // Blocks still due: today's untracked blocks + all future planned blocks
+          const dueBlocks = blocks.filter((bt) => {
+            if (day.isFuture) return true;
+            if (day.iso === todayISO && !day.worked) return !isBlockTracked(trackedGroups, bt);
+            return false;
+          });
+
+          return (
+            <div key={day.iso} className="flex flex-col items-center gap-0.5">
+              <div className="relative">
+                <div
+                  className={cn(
+                    "w-7 h-7 rounded-full flex items-center justify-center transition-all",
+                    day.worked
+                      ? "bg-amber-500 ring-2 ring-amber-300"
+                      : day.isToday
+                      ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-900/20"
+                      : day.isFuture
+                      ? "border border-zinc-200 dark:border-zinc-700"
+                      : "bg-zinc-100 dark:bg-zinc-800"
+                  )}
+                >
+                  {day.worked && <span className="text-[11px] font-black leading-none text-white drop-shadow-sm">✓</span>}
+                </div>
+                {day.worked && blocks.length >= 2 && (
+                  <span className="absolute -top-1.5 -right-2 text-[7px] font-black leading-none text-amber-500 tabular-nums">
+                    {blocks.length}
+                  </span>
+                )}
+              </div>
+              {dueBlocks.length > 0 ? (
+                <div className="flex gap-0.5 justify-center min-h-[10px]">
+                  {dueBlocks.map((bt, i) => (
+                    <BlockDot key={i} blockType={bt} size="sm" />
+                  ))}
+                </div>
+              ) : (
+                <div className="min-h-[10px]" />
               )}
-            >
-              {day.worked && <span className="text-[11px] font-black leading-none text-white drop-shadow-sm">✓</span>}
+              <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500">
+                {day.label}
+              </span>
             </div>
-            <span className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500">
-              {day.label}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -532,9 +582,10 @@ function FooterCard({
 interface StreakCounterProps {
   streakData: StreakData;
   prs: PRRecord[];
+  trackedGroupsByDate: Record<string, Set<string>>;
 }
 
-export function StreakCounter({ streakData, prs }: StreakCounterProps) {
+export function StreakCounter({ streakData, prs, trackedGroupsByDate }: StreakCounterProps) {
   const {
     generalStreak,
     bestStreak,
@@ -547,6 +598,7 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
     completedLast30,
     plannedThisWeek,
     completedThisWeek,
+    thisWeekBlocksByDate,
   } = streakData;
 
   return (
@@ -558,7 +610,7 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ConsistencyCard plannedLast30={plannedLast30} completedLast30={completedLast30} />
-        <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} plannedThisWeek={plannedThisWeek} completedThisWeek={completedThisWeek} />
+        <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} plannedThisWeek={plannedThisWeek} completedThisWeek={completedThisWeek} thisWeekBlocksByDate={thisWeekBlocksByDate} trackedGroupsByDate={trackedGroupsByDate} />
       </div>
       <MilestonesCard generalStreak={generalStreak} bestStreak={bestStreak} />
       <PRPanel prs={prs} />
