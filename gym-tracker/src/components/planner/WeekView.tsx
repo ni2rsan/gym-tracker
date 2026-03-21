@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { BlockDot, BlockBadge } from "./BlockDot";
+import { BlockDot } from "./BlockDot";
 import type { PlannedBlock } from "./WorkoutCalendar";
 
 const WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -101,7 +101,14 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
                 <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full border border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center pointer-events-none font-bold text-amber-600 dark:text-amber-400" style={{ fontSize: "7px" }}>S</span>
               )}
               {blocks.every((b) => isBlockTracked(groups, b.blockType) || b.sorryExcused) ? (
-                <BlockDot blockType={blocks[0].blockType} size="md" status="tracked" />
+                <div className="relative">
+                  <BlockDot blockType={blocks[0].blockType} size="md" status="tracked" />
+                  {blocks.length > 1 && (
+                    <span className="absolute -top-1 -right-1.5 text-[7px] font-black leading-none text-amber-500 tabular-nums">
+                      {blocks.length}
+                    </span>
+                  )}
+                </div>
               ) : (
                 blocks.map((b) => {
                   const tracked = isBlockTracked(groups, b.blockType);
