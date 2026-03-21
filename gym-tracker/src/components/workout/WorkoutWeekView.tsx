@@ -93,21 +93,44 @@ export function WorkoutWeekView({ anchorDate, data, selectedDate, onDateSelect, 
             >
               {dayNum}
             </span>
-            <div className="flex flex-wrap gap-0.5 justify-center min-h-[16px]">
-              {plannerBlocks.length > 0 ? (
-                plannerBlocks.every((b) => isBlockTracked(trackedGroups, b.blockType) || b.sorryExcused) ? (
-                  <BlockDot blockType={plannerBlocks[0].blockType} size="sm" status="tracked" />
-                ) : (
-                  plannerBlocks.map((b) => {
-                    const tracked = isBlockTracked(trackedGroups, b.blockType);
-                    const missed = !tracked && !b.sorryExcused && !isToday && date < today;
-                    const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
-                    return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
-                  })
-                )
-              ) : (
+            <div className="relative flex flex-wrap gap-0.5 justify-center min-h-[16px]">
+              {plannerBlocks.length > 0 ? (() => {
+                const isAllTracked = plannerBlocks.every((b) => isBlockTracked(trackedGroups, b.blockType) || b.sorryExcused);
+                const isAnySorryExcused = plannerBlocks.some((b) => b.sorryExcused);
+                const isAnyTracked = plannerBlocks.some((b) => isBlockTracked(trackedGroups, b.blockType));
+                const showSorryBadge = isAnySorryExcused && !isAnyTracked;
+                return (
+                  <>
+                    {showSorryBadge && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center pointer-events-none font-bold text-amber-600 dark:text-amber-400" style={{ fontSize: "7px" }}>S</span>
+                    )}
+                    {isAllTracked ? (
+                      <div className="relative">
+                        <BlockDot blockType={plannerBlocks[0].blockType} size="sm" status="tracked" />
+                        {plannerBlocks.length > 1 && (
+                          <span className="absolute -top-1 -right-1.5 text-[7px] font-black leading-none text-amber-500 tabular-nums">
+                            {plannerBlocks.length}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      plannerBlocks.map((b) => {
+                        const tracked = isBlockTracked(trackedGroups, b.blockType);
+                        const missed = !tracked && !b.sorryExcused && !isToday && date < today;
+                        const status = (tracked || b.sorryExcused) ? "tracked" : missed ? "missed" : undefined;
+                        return <BlockDot key={b.id} blockType={b.blockType} size="sm" status={status} />;
+                      })
+                    )}
+                  </>
+                );
+              })() : (
                 workoutMuscleGroups.length > 1 ? (
-                  <BlockDot blockType={workoutMuscleGroups[0]} size="sm" status="tracked" />
+                  <div className="relative">
+                    <BlockDot blockType={workoutMuscleGroups[0]} size="sm" status="tracked" />
+                    <span className="absolute -top-1 -right-1.5 text-[7px] font-black leading-none text-amber-500 tabular-nums">
+                      {workoutMuscleGroups.length}
+                    </span>
+                  </div>
                 ) : (
                   workoutMuscleGroups.map((mg) => (
                     <BlockDot key={mg} blockType={mg} size="sm" status="tracked" />

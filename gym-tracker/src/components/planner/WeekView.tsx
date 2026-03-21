@@ -100,7 +100,7 @@ export function WeekView({ year, month, weekOffset, blocksByDate, trackedGroupsB
               {showSorryBadge && (
                 <span className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full border border-amber-400 bg-amber-100 dark:border-amber-500 dark:bg-amber-900/40 flex items-center justify-center pointer-events-none font-bold text-amber-600 dark:text-amber-400" style={{ fontSize: "7px" }}>S</span>
               )}
-              {blocks.every((b) => isBlockTracked(groups, b.blockType) || b.sorryExcused) ? (
+              {blocks.length > 0 && blocks.every((b) => isBlockTracked(groups, b.blockType) || b.sorryExcused) ? (
                 <div className="relative">
                   <BlockDot blockType={blocks[0].blockType} size="md" status="tracked" />
                   {blocks.length > 1 && (
