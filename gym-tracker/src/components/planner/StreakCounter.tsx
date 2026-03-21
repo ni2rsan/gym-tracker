@@ -235,12 +235,19 @@ function ConsistencyCard({ plannedLast30, completedLast30 }: { plannedLast30: nu
   );
 }
 
-function ThisWeekCard({ thisWeekWorkouts }: { thisWeekWorkouts: string[] }) {
+function ThisWeekCard({ thisWeekWorkouts, plannedThisWeek, completedThisWeek }: { thisWeekWorkouts: string[]; plannedThisWeek: number; completedThisWeek: number }) {
   const days = buildWeekDays(thisWeekWorkouts);
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
-      <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
-        This Week
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+          This Week
+        </div>
+        {plannedThisWeek > 0 && (
+          <div className="text-xs font-bold text-amber-500 tabular-nums">
+            {completedThisWeek}/{plannedThisWeek} done
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between gap-1">
         {days.map((day) => (
@@ -535,10 +542,11 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
     sorryUsed,
     sorryMax,
     canEditSorryMax,
-    last30DaysWorkouts,
     thisWeekWorkouts,
     plannedLast30,
     completedLast30,
+    plannedThisWeek,
+    completedThisWeek,
   } = streakData;
 
   return (
@@ -550,7 +558,7 @@ export function StreakCounter({ streakData, prs }: StreakCounterProps) {
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ConsistencyCard plannedLast30={plannedLast30} completedLast30={completedLast30} />
-        <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} />
+        <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} plannedThisWeek={plannedThisWeek} completedThisWeek={completedThisWeek} />
       </div>
       <MilestonesCard generalStreak={generalStreak} bestStreak={bestStreak} />
       <PRPanel prs={prs} />
