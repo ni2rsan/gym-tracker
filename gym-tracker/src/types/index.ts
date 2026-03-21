@@ -63,6 +63,7 @@ export interface PRRecord {
   repsAtMaxWeight: number | null;
   maxReps: number | null;
   achievedOn: string;
+  isAssisted?: boolean;
 }
 
 export interface DashboardStats {
