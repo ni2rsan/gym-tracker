@@ -23,20 +23,20 @@ export default function Icon() {
           viewBox="0 0 24 24"
           fill="none"
           stroke="#fbbf24"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
           {/* Bar */}
           <line x1="8.5" y1="12" x2="15.5" y2="12" />
           {/* Left plate outer */}
-          <line x1="5" y1="9" x2="5" y2="15" stroke-width="3" />
+          <line x1="5" y1="9" x2="5" y2="15" strokeWidth="3" />
           {/* Left plate inner */}
-          <line x1="7" y1="10" x2="7" y2="14" stroke-width="2.5" />
+          <line x1="7" y1="10" x2="7" y2="14" />
           {/* Right plate inner */}
-          <line x1="17" y1="10" x2="17" y2="14" stroke-width="2.5" />
+          <line x1="17" y1="10" x2="17" y2="14" />
           {/* Right plate outer */}
-          <line x1="19" y1="9" x2="19" y2="15" stroke-width="3" />
+          <line x1="19" y1="9" x2="19" y2="15" strokeWidth="3" />
         </svg>
       </div>
     ),
