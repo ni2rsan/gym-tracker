@@ -18,7 +18,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Gym Tracker",
   description: "Track your workouts, body metrics, and progress over time.",
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
