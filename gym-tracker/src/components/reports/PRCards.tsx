@@ -33,6 +33,9 @@ export function PRCards({ prs }: PRCardsProps) {
                   ? `${Number(pr.maxWeightKg).toFixed(1)} kg × ${pr.repsAtMaxWeight} reps`
                   : `${pr.maxReps} reps`}
               </p>
+              {pr.isAssisted && (
+                <p className="text-[10px] text-zinc-400 dark:text-zinc-500">↓ lower = better</p>
+              )}
               <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                 {formatDate(pr.achievedOn)}
               </p>

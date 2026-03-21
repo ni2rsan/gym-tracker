@@ -48,10 +48,15 @@ export async function getWeightTrendData(userId: string, range: TimeRange): Prom
     }));
 }
 
+function isAssistedExercise(name: string): boolean {
+  return name.toUpperCase().startsWith("ASSISTED");
+}
+
 export async function getExerciseProgressData(
   userId: string,
   exerciseId: string,
-  range: TimeRange
+  range: TimeRange,
+  isAssisted = false
 ): Promise<ExerciseProgressPoint[]> {
   const since = getRangeStart(range);
 
@@ -87,7 +92,11 @@ export async function getExerciseProgressData(
     for (const set of Object.values(latestBySetNumber)) {
       const weight = set.weightKg ? Number(set.weightKg) : null;
       if (weight !== null) {
-        byDay[day].maxWeight = Math.max(byDay[day].maxWeight ?? 0, weight);
+        if (isAssisted) {
+          byDay[day].maxWeight = byDay[day].maxWeight === null ? weight : Math.min(byDay[day].maxWeight, weight);
+        } else {
+          byDay[day].maxWeight = Math.max(byDay[day].maxWeight ?? 0, weight);
+        }
         byDay[day].totalVolume += weight * set.reps;
       }
       byDay[day].maxReps = Math.max(byDay[day].maxReps, set.reps);
@@ -106,6 +115,7 @@ export type ExerciseSeriesData = {
   exerciseId: string;
   name: string;
   isBodyweight: boolean;
+  isAssisted: boolean;
   points: ExerciseProgressPoint[];
 };
 
@@ -122,12 +132,16 @@ export async function getMultiExerciseProgressData(
   });
 
   return Promise.all(
-    exercises.map(async (ex) => ({
-      exerciseId: ex.id,
-      name: ex.name,
-      isBodyweight: ex.isBodyweight,
-      points: await getExerciseProgressData(userId, ex.id, range),
-    }))
+    exercises.map(async (ex) => {
+      const assisted = isAssistedExercise(ex.name);
+      return {
+        exerciseId: ex.id,
+        name: ex.name,
+        isBodyweight: ex.isBodyweight,
+        isAssisted: assisted,
+        points: await getExerciseProgressData(userId, ex.id, range, assisted),
+      };
+    })
   );
 }
 
@@ -145,6 +159,7 @@ export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
   const prs: PRRecord[] = [];
 
   for (const exercise of exercises) {
+    const assisted = isAssistedExercise(exercise.name);
     const sets = await prisma.exerciseSet.findMany({
       where: {
         exerciseId: exercise.id,
@@ -153,7 +168,9 @@ export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
       include: { session: { select: { date: true } } },
       orderBy: exercise.isBodyweight
         ? [{ reps: "desc" }, { recordedAt: "desc" }]
-        : [{ weightKg: "desc" }, { reps: "desc" }, { recordedAt: "desc" }],
+        : assisted
+          ? [{ weightKg: "asc" }, { reps: "desc" }, { recordedAt: "desc" }]
+          : [{ weightKg: "desc" }, { reps: "desc" }, { recordedAt: "desc" }],
       take: 1,
     });
 
@@ -167,6 +184,7 @@ export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
         repsAtMaxWeight: best.reps,
         maxReps: exercise.isBodyweight ? best.reps : null,
         achievedOn: best.session.date.toISOString().split("T")[0],
+        isAssisted: assisted,
       });
     }
   }
