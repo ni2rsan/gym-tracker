@@ -296,6 +296,8 @@ export interface StreakData {
   thisWeekWorkouts: string[];   // ISO dates with workouts Mon–Sun of current week
   plannedLast30: number;   // planned blocks in last 30 days
   completedLast30: number; // of those, worked out or sorry-excused
+  plannedThisWeek: number;   // planned blocks Mon–Sun of current week
+  completedThisWeek: number; // of those, worked out or sorry-excused
 }
 
 async function incrementSorryToken(userId: string, month: string): Promise<void> {
@@ -391,10 +393,10 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     // iso === todayISO and not yet done: don't reset (today is still exempt)
   }
 
-  // Total distinct workout days this month
+  // Total distinct completed days this month (workouts + sorry-excused planned days)
   const monthStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
   let totalWorkoutsThisMonth = 0;
-  for (const iso of allRecentWorkouts) {
+  for (const iso of doneDates) {
     if (iso >= monthStart && iso <= todayISO) totalWorkoutsThisMonth++;
   }
 
@@ -427,11 +429,31 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const thisWeekWorkouts: string[] = [];
   const dow = d.getDay(); // 0=Sun
   const monday = new Date(d); monday.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+  const weekIsos: string[] = [];
   for (let i = 0; i < 7; i++) {
     const cur = new Date(monday); cur.setDate(monday.getDate() + i);
     const iso = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+    weekIsos.push(iso);
     if (doneDates.has(iso)) thisWeekWorkouts.push(iso);
   }
+
+  // Planned vs completed blocks this week
+  const sundayISO = weekIsos[6];
+  const allPlannedThisWeek = await prisma.plannedWorkout.findMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(weekIsos[0] + "T00:00:00"),
+        lte: new Date(sundayISO + "T23:59:59"),
+      },
+    },
+    select: { date: true, sorryExcused: true },
+  });
+  const plannedThisWeek = allPlannedThisWeek.length;
+  const completedThisWeek = allPlannedThisWeek.filter((pw) => {
+    const iso = dbDateToISO(pw.date);
+    return pw.sorryExcused || allRecentWorkouts.has(iso);
+  }).length;
 
   // Active series: has any instance in past 60 days or in the future
   const sixtyDaysAgo = new Date(d);
@@ -445,7 +467,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   });
 
   if (allSeries.length === 0) {
-    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30 };
+    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30, plannedThisWeek, completedThisWeek };
   }
 
   // Fetch worked-out dates covering all series
@@ -499,7 +521,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     streaks.push({ seriesId: series.id, blockType: series.blockType, count: streak });
   }
 
-  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30 };
+  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30, plannedThisWeek, completedThisWeek };
 }
 
 // ─── SORRY token operations ────────────────────────────────────────────────

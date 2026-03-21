@@ -109,7 +109,14 @@ export function MonthView({ year, month, blocksByDate, trackedGroupsByDate, onDa
               {blocks.length > 0 && (
                 <div className="flex flex-wrap gap-px justify-center items-center">
                   {blocks.every((b) => isBlockTracked(groups, b.blockType) || b.sorryExcused) ? (
-                    <BlockDot blockType={blocks[0].blockType} size="md" status="tracked" />
+                    <div className="relative">
+                      <BlockDot blockType={blocks[0].blockType} size="md" status="tracked" />
+                      {blocks.length > 1 && (
+                        <span className="absolute -top-1 -right-1.5 text-[7px] font-black leading-none text-amber-500 tabular-nums">
+                          {blocks.length}
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     blocks.map((b) => {
                       const tracked = isBlockTracked(groups, b.blockType);
