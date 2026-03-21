@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays, Shield, Inbox, Users } from "lucide-react";
+import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays, Shield, Inbox, Users, Trophy } from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ import { GuideButton } from "@/components/guide/GuideButton";
 const NAV_ITEMS = [
   { href: "/planner",  label: "Planner",  icon: CalendarDays },
   { href: "/workout",  label: "Tracker",  icon: Dumbbell },
+  { href: "/progress", label: "Fortschritt", icon: Trophy },
   { href: "/reports",  label: "Reports",  icon: BarChart3 },
   { href: "/logs",     label: "Logs",     icon: ScrollText },
   { href: "/social",   label: "Social",   icon: Users },
@@ -172,7 +173,7 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
 
       {/* ── Mobile bottom tab bar ────────────────────────────────────────────── */}
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-6 h-16">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
             return (
