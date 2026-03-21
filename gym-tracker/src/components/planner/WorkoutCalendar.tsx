@@ -38,12 +38,6 @@ interface WorkoutCalendarProps {
   prs: PRRecord[];
 }
 
-function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
-  if (!groups || groups.size === 0) return false;
-  if (blockType === "FULL_BODY") return groups.has("UPPER_BODY") || groups.has("LOWER_BODY") || groups.has("BODYWEIGHT");
-  if (blockType === "CARDIO") return groups.has("CARDIO");
-  return groups.has(blockType);
-}
 
 export function WorkoutCalendar({
   plannedWorkouts: initialWorkouts,
@@ -323,7 +317,7 @@ export function WorkoutCalendar({
       </div>
 
       {/* Streak counter */}
-      <StreakCounter streakData={streakData} prs={prs} />
+      <StreakCounter streakData={streakData} prs={prs} trackedGroupsByDate={trackedGroups} />
 
       {/* Add block modal */}
       {addModalDate && (
