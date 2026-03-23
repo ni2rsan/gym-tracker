@@ -34,7 +34,7 @@ function NavBadges({ href, socialBadges }: { href: string; socialBadges?: Navbar
   if (href !== "/social") return null;
   const requestBadge = socialBadges?.requests ?? 0;
   const fistBumpBadge = socialBadges?.fistBumps ?? 0;
-  const feedBadge = fistBumpBadge === 0 ? (socialBadges?.feed ?? 0) : 0;
+  const feedBadge = socialBadges?.feed ?? 0;
   return (
     <>
       {requestBadge > 0 && (
@@ -43,12 +43,13 @@ function NavBadges({ href, socialBadges }: { href: string; socialBadges?: Navbar
         </span>
       )}
       {fistBumpBadge > 0 && (
-        <span className="absolute -bottom-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-zinc-900 text-[8px] font-bold leading-none">
-          {fistBumpBadge > 9 ? "9+" : fistBumpBadge}
+        <span className="absolute -bottom-1.5 -right-2.5 flex items-center gap-px text-[8px] font-bold leading-none">
+          <span className="text-[10px]">👊</span>
+          <span className="text-amber-500 dark:text-amber-400">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
         </span>
       )}
       {feedBadge > 0 && (
-        <span className="absolute -bottom-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[8px] font-bold leading-none">
+        <span className="absolute -top-1.5 -left-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[8px] font-bold leading-none">
           {feedBadge > 9 ? "9+" : feedBadge}
         </span>
       )}
