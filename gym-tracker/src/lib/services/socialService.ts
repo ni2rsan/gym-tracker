@@ -417,6 +417,37 @@ export async function getNewFistBumpsForUser(userId: string): Promise<NewFistBum
   }));
 }
 
+export async function getNewFeedSessionIds(userId: string): Promise<string[]> {
+  const seen = await prisma.socialNotificationSeen.findUnique({ where: { userId } });
+  const lastSeenFeed = seen?.lastSeenFeed ?? new Date(0);
+
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      OR: [{ senderId: userId }, { receiverId: userId }],
+      status: "ACCEPTED",
+    },
+    select: { senderId: true, receiverId: true },
+  });
+  const friendIds = friendships.map((f) => (f.senderId === userId ? f.receiverId : f.senderId));
+  if (friendIds.length === 0) return [];
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const cutoff = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  const sessions = await prisma.workoutSession.findMany({
+    where: {
+      userId: { in: friendIds },
+      date: { gte: cutoff, lt: today },
+      createdAt: { gt: lastSeenFeed },
+    },
+    select: { id: true },
+    take: 50,
+  });
+
+  return sessions.map((s) => s.id);
+}
+
 export async function getSocialStats(userId: string): Promise<SocialStats> {
   const [totalFistBumpsReceived, totalWorkoutsTracked] = await Promise.all([
     prisma.workoutFistBump.count({

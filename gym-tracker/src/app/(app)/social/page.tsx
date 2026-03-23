@@ -7,6 +7,7 @@ import {
   getPrivacySettings,
   getOrCreateInviteToken,
   getNewFistBumpsForUser,
+  getNewFeedSessionIds,
   getSocialStats,
 } from "@/lib/services/socialService";
 import { SocialPageClient } from "@/components/social/SocialPageClient";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function SocialPage() {
   const userId = await getCurrentUserId();
 
-  const [friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps, socialStats] = await Promise.all([
+  const [friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps, newFeedSessionIds, socialStats] = await Promise.all([
     getFriendsWithStats(userId),
     getFriendsFeed(userId),
     getPendingReceived(userId),
@@ -25,6 +26,7 @@ export default async function SocialPage() {
     getPrivacySettings(userId),
     getOrCreateInviteToken(userId),
     getNewFistBumpsForUser(userId),
+    getNewFeedSessionIds(userId),
     getSocialStats(userId),
   ]);
 
@@ -37,6 +39,7 @@ export default async function SocialPage() {
       privacy={privacy}
       inviteToken={inviteToken}
       newFistBumps={newFistBumps}
+      newFeedSessionIds={newFeedSessionIds}
       socialStats={socialStats}
     />
   );

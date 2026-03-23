@@ -59,6 +59,7 @@ interface Props {
   privacy: { shareWeight: boolean; shareBodyFat: boolean; sharePRs: boolean };
   inviteToken: string;
   newFistBumps: NewFistBumpNotification[];
+  newFeedSessionIds: string[];
   socialStats: SocialStats;
 }
 
@@ -84,11 +85,11 @@ function formatDateAgo(dateStr: string): string {
 function FeedCard({
   entry,
   onFistBump,
-  isNew,
+  highlightColor,
 }: {
   entry: WorkoutFeedEntry;
   onFistBump: (sessionId: string) => void;
-  isNew?: boolean;
+  highlightColor?: "amber" | "blue";
 }) {
   const displayName = entry.isOwnWorkout
     ? "You"
@@ -96,8 +97,14 @@ function FeedCard({
   const dateLabel = formatDateAgo(entry.date);
   const bumpCount = entry.fistBumps.length;
 
+  const highlightClass = highlightColor === "amber"
+    ? "border-amber-300 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-800"
+    : highlightColor === "blue"
+    ? "border-blue-300 dark:border-blue-600 ring-1 ring-blue-200 dark:ring-blue-800"
+    : "border-zinc-200 dark:border-zinc-800";
+
   return (
-    <div className={`flex gap-3 rounded-2xl border bg-white dark:bg-zinc-900 p-4 transition-colors ${isNew ? "border-amber-300 dark:border-amber-600 ring-1 ring-amber-200 dark:ring-amber-800" : "border-zinc-200 dark:border-zinc-800"}`}>
+    <div className={`flex gap-3 rounded-2xl border bg-white dark:bg-zinc-900 p-4 transition-colors ${highlightClass}`}>
       {entry.image ? (
         <img src={entry.image} alt={displayName} className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
       ) : (
@@ -376,7 +383,7 @@ function FriendManageRow({
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
-export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps, socialStats }: Props) {
+export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps, newFeedSessionIds, socialStats }: Props) {
   const [view, setView] = useState<"main" | "manage">("main");
   const [tab, setTab] = useState<"feed" | "friends">("friends");
   const [feedFilter, setFeedFilter] = useState<FeedFilter>("all");
@@ -388,7 +395,9 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [overlayBumpers, setOverlayBumpers] = useState<string[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
-  const [feedBadge, setFeedBadge] = useState(newFistBumps.length);
+  const [newFeedIds, setNewFeedIds] = useState(() => new Set(newFeedSessionIds));
+  const [fistBumpBadge, setFistBumpBadge] = useState(newFistBumps.length);
+  const [feedBadge, setFeedBadge] = useState(newFeedSessionIds.length);
   const hasVisitedFeedRef = useRef(false);
   const router = useRouter();
 
@@ -398,16 +407,18 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     if (view === "main" && tab === "feed") {
       hasVisitedFeedRef.current = true;
       markSocialSeen("feed");
-      if (feedBadge > 0) {
+      if (fistBumpBadge > 0) {
         const names = [...new Set(newFistBumps.map((b) => b.bumperUsername ?? b.bumperName ?? "Someone"))];
         setOverlayBumpers(names);
         setShowConfetti(false);
         setShowFistBumpOverlay(true);
       }
+      setFistBumpBadge(0);
       setFeedBadge(0);
       router.refresh();
     } else if (hasVisitedFeedRef.current) {
       setNewBumpSessionIds(new Set());
+      setNewFeedIds(new Set());
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -647,8 +658,14 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
               className={`relative rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${tab === "feed" ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"}`}
             >
               Feed
+              {fistBumpBadge > 0 && (
+                <span className="absolute -top-2 -right-3 flex items-center gap-px text-[8px] font-bold leading-none">
+                  <span className="text-[10px]">👊</span>
+                  <span className="text-amber-500">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
+                </span>
+              )}
               {feedBadge > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-zinc-900 text-[8px] font-bold leading-none">
+                <span className="absolute -top-1.5 -left-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[8px] font-bold leading-none">
                   {feedBadge > 9 ? "9+" : feedBadge}
                 </span>
               )}
@@ -725,9 +742,12 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
               </p>
             </div>
           ) : (
-            filteredFeed.map((entry) => (
-              <FeedCard key={entry.sessionId} entry={entry} onFistBump={handleFistBump} isNew={newBumpSessionIds.has(entry.sessionId)} />
-            ))
+            filteredFeed.map((entry) => {
+              const isBumpHighlight = newBumpSessionIds.has(entry.sessionId);
+              const isFeedHighlight = newFeedIds.has(entry.sessionId);
+              const color = isBumpHighlight ? "amber" as const : isFeedHighlight ? "blue" as const : undefined;
+              return <FeedCard key={entry.sessionId} entry={entry} onFistBump={handleFistBump} highlightColor={color} />;
+            })
           )}
         </div>
       )}
