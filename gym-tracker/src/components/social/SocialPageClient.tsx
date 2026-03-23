@@ -641,7 +641,9 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                 {overlayText}
               </p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                {overlayBumpers.length === 1 ? "gave you a fistbump!" : "gave you fistbumps!"}
+                {newFistBumps.length === 1
+                  ? "gave you a fist bump!"
+                  : `gave you ${newFistBumps.length} fist bumps!`}
               </p>
             </div>
           </div>
@@ -659,13 +661,13 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
             >
               Feed
               {fistBumpBadge > 0 && (
-                <span className="absolute -top-2 -right-3 flex items-center gap-px text-[8px] font-bold leading-none">
+                <span className="absolute -top-2 -right-1 flex items-center gap-px text-[8px] font-bold leading-none">
                   <span className="text-[10px]">👊</span>
                   <span className="text-amber-500">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
                 </span>
               )}
               {feedBadge > 0 && (
-                <span className="absolute -top-1.5 -left-2 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[8px] font-bold leading-none">
+                <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-blue-500 text-white text-[8px] font-bold leading-none">
                   {feedBadge > 9 ? "9+" : feedBadge}
                 </span>
               )}
