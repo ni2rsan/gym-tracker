@@ -43,7 +43,7 @@ function NavBadges({ href, socialBadges }: { href: string; socialBadges?: Navbar
         </span>
       )}
       {fistBumpBadge > 0 && (
-        <span className="absolute -top-1.5 -right-1 flex items-center gap-px text-[8px] font-bold leading-none">
+        <span className="absolute -top-2 -right-3.5 flex items-center gap-px text-[8px] font-bold leading-none">
           <span className="text-[10px]">👊</span>
           <span className="text-amber-500 dark:text-amber-400">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
         </span>
