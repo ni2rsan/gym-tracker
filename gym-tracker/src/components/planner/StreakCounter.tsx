@@ -581,11 +581,10 @@ function FooterCard({
 
 interface StreakCounterProps {
   streakData: StreakData;
-  prs: PRRecord[];
   trackedGroupsByDate: Record<string, Set<string>>;
 }
 
-export function StreakCounter({ streakData, prs, trackedGroupsByDate }: StreakCounterProps) {
+export function StreakCounter({ streakData, trackedGroupsByDate }: StreakCounterProps) {
   const {
     generalStreak,
     bestStreak,
@@ -612,8 +611,6 @@ export function StreakCounter({ streakData, prs, trackedGroupsByDate }: StreakCo
         <ConsistencyCard plannedLast30={plannedLast30} completedLast30={completedLast30} />
         <ThisWeekCard thisWeekWorkouts={thisWeekWorkouts} plannedThisWeek={plannedThisWeek} completedThisWeek={completedThisWeek} thisWeekBlocksByDate={thisWeekBlocksByDate} trackedGroupsByDate={trackedGroupsByDate} />
       </div>
-      <MilestonesCard generalStreak={generalStreak} bestStreak={bestStreak} />
-      <PRPanel prs={prs} />
       <FooterCard generalStreak={generalStreak} sorryUsed={sorryUsed} sorryMax={sorryMax} canEditSorryMax={canEditSorryMax} />
     </div>
   );

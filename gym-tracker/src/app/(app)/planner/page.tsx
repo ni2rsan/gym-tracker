@@ -1,6 +1,5 @@
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getPlannedWorkoutsInRange, getTrackedGroupsByDate, getStreakData } from "@/lib/services/plannerService";
-import { getPersonalRecords } from "@/lib/services/reportService";
 import { WorkoutCalendar } from "@/components/planner/WorkoutCalendar";
 import { PlannerGuide } from "@/components/guide/PlannerGuide";
 
@@ -23,11 +22,10 @@ export default async function PlannerPage({
   const startDate = new Date(year, month - 3, 1).toISOString().split("T")[0];
   const endDate = new Date(year + 1, month + 1, 0).toISOString().split("T")[0];
 
-  const [plannedWorkouts, trackedGroupsByDate, streakData, prs] = await Promise.all([
+  const [plannedWorkouts, trackedGroupsByDate, streakData] = await Promise.all([
     getPlannedWorkoutsInRange(userId, startDate, endDate),
     getTrackedGroupsByDate(userId, startDate, endDate),
     getStreakData(userId),
-    getPersonalRecords(userId),
   ]);
 
   const serialized = plannedWorkouts.map((pw) => ({
@@ -54,7 +52,6 @@ export default async function PlannerPage({
           initialYear={year}
           initialMonth={month}
           initialStreakData={streakData}
-          prs={prs}
         />
       </div>
     </>
