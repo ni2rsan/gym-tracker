@@ -59,6 +59,14 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
 
   return (
     <>
+      {/* Preload all badge images so they're cached before the casket opens */}
+      <div className="hidden" aria-hidden="true">
+        {VOLUME_BADGES.map((b) => (
+          <img key={b.key} src={`/volume/${b.key}.png`} alt="" />
+        ))}
+        <img src="/volume/casketopen.png" alt="" />
+      </div>
+
       {/* Badge detail overlay */}
       {activeBadge && (
         <div
