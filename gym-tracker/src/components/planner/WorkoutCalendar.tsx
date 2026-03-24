@@ -12,7 +12,6 @@ import { DayContextMenu } from "./DayContextMenu";
 import { StreakCounter } from "./StreakCounter";
 import { getStreakDataAction } from "@/actions/planner";
 import type { StreakData } from "@/lib/services/plannerService";
-import type { PRRecord } from "@/types";
 
 export interface PlannedBlock {
   id: string;
@@ -35,7 +34,6 @@ interface WorkoutCalendarProps {
   initialYear: number;
   initialMonth: number; // 0-indexed
   initialStreakData: StreakData;
-  prs: PRRecord[];
 }
 
 
@@ -45,7 +43,6 @@ export function WorkoutCalendar({
   initialYear,
   initialMonth,
   initialStreakData,
-  prs,
 }: WorkoutCalendarProps) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -317,7 +314,7 @@ export function WorkoutCalendar({
       </div>
 
       {/* Streak counter */}
-      <StreakCounter streakData={streakData} prs={prs} trackedGroupsByDate={trackedGroups} />
+      <StreakCounter streakData={streakData} trackedGroupsByDate={trackedGroups} />
 
       {/* Add block modal */}
       {addModalDate && (

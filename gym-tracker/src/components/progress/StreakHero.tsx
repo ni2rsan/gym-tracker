@@ -22,10 +22,10 @@ function getSvgRingParams(generalStreak: number) {
 
 function getFooterText(generalStreak: number): string {
   const next = MILESTONES.find((m) => m > generalStreak);
-  if (!next) return "Du hast jeden Meilenstein erreicht.";
+  if (!next) return "You've conquered every milestone.";
   const diff = next - generalStreak;
-  if (diff === 1) return `Noch 1 Tag bis zum ${next}-Tage-Meilenstein!`;
-  return `Noch ${diff} Tage bis zum ${next}-Tage-Meilenstein`;
+  if (diff === 1) return `Just 1 more day to reach your ${next}-day milestone!`;
+  return `Keep going — ${diff} days to your ${next}-day milestone`;
 }
 
 interface StreakHeroProps {
@@ -56,10 +56,10 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-3xl font-black text-white leading-none tabular-nums">{generalStreak}</span>
-              <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest leading-none mt-0.5">TAGE</span>
+              <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest leading-none mt-0.5">DAYS</span>
             </div>
           </div>
-          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wide mt-1">IN FOLGE</span>
+          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wide mt-1">IN A ROW</span>
         </div>
 
         <div className="flex-1 min-w-0 w-full">
@@ -70,7 +70,7 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
             </p>
             {isPersonalBest && (
               <span className="text-[10px] font-black uppercase tracking-wide bg-white/20 text-white rounded-full px-2 py-0.5">
-                🏅 NEUER REKORD
+                🏅 NEW PERSONAL BEST
               </span>
             )}
           </div>
@@ -129,7 +129,7 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
                 {totalWorkoutsThisMonth}
               </div>
               <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">
-                Diesen Monat
+                This month
               </div>
             </div>
             <div className="rounded-xl bg-white/15 px-3 py-2">
@@ -137,7 +137,7 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
                 {bestStreak}
               </div>
               <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">
-                Beste Streak
+                Best streak
               </div>
             </div>
           </div>
