@@ -101,7 +101,7 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
           aria-label={open ? "Close casket" : "Open casket"}
         >
           <img
-            src={open ? "/volume/opencasket.png" : "/volume/closedcasket.png"}
+            src={open ? "/volume/casketopen.png" : "/volume/casketclosed.png"}
             alt={open ? "Open casket" : "Closed casket"}
             className="w-full object-contain"
           />
