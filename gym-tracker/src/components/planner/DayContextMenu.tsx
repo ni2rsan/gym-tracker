@@ -128,7 +128,10 @@ export function DayContextMenu({
       if (result.success) {
         onBlockDeleted(blockId);
         if (blocks.length === 1) onClose();
-        else setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+        else {
+          setConfirmDelete(null);
+          setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+        }
       }
     });
   };
@@ -140,7 +143,10 @@ export function DayContextMenu({
       if (result.success) {
         onBlockDeleted(blockId);
         if (blocks.length === 1) onClose();
-        else setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+        else {
+          setConfirmDelete(null);
+          setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+        }
       }
     });
   };
@@ -152,7 +158,10 @@ export function DayContextMenu({
       if (result.success) {
         onBlockDeleted(blockId);
         if (blocks.length === 1) onClose();
-        else setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+        else {
+          setConfirmDelete(null);
+          setActiveBlock(blocks.find(b => b.id !== blockId) ?? blocks[0]);
+        }
       }
     });
   };
@@ -298,7 +307,7 @@ export function DayContextMenu({
           {blocks.map(b => (
             <button
               key={b.id}
-              onClick={() => setActiveBlock(b)}
+              onClick={() => { setActiveBlock(b); setConfirmDelete(null); }}
               className={cn(
                 "rounded-lg px-2 py-1 text-xs font-medium border transition-colors",
                 activeBlock.id === b.id
