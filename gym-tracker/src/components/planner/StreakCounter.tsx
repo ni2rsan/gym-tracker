@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
@@ -84,6 +85,7 @@ const GROUP_META: Record<string, { label: string; color: string; dot: string }> 
 };
 
 export function PRPanel({ prs }: { prs: PRRecord[] }) {
+  const [collapsed, setCollapsed] = useState(false);
   if (prs.length === 0) return null;
 
   // Group by muscleGroup preserving order: UPPER_BODY, LOWER_BODY, BODYWEIGHT, then any others
@@ -100,13 +102,19 @@ export function PRPanel({ prs }: { prs: PRRecord[] }) {
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+      <button
+        onClick={() => setCollapsed((v) => !v)}
+        className="w-full px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2 focus:outline-none"
+      >
         <span className="text-sm">🏆</span>
-        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+        <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide flex-1 text-left">
           Personal Records
         </span>
-      </div>
-      <div className="p-3 space-y-4">
+        <ChevronDown
+          className={cn("h-4 w-4 text-zinc-400 transition-transform duration-200", collapsed && "-rotate-90")}
+        />
+      </button>
+      {!collapsed && <div className="p-3 space-y-4">
         {groups.map((group) => {
           const meta = GROUP_META[group] ?? { label: group, color: "text-zinc-600 dark:text-zinc-400", dot: "bg-zinc-400" };
           return (
@@ -152,7 +160,7 @@ export function PRPanel({ prs }: { prs: PRRecord[] }) {
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

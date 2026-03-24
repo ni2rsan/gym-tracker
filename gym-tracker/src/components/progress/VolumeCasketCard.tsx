@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VolumeBadge {
@@ -37,13 +38,11 @@ interface VolumeCasketCardProps {
 }
 
 export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
-  const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [activeBadge, setActiveBadge] = useState<VolumeBadge | null>(null);
 
-  const achievedBadges = VOLUME_BADGES.filter((b) => cumulativeVolume >= b.thresholdKg);
-  const lockedBadges = VOLUME_BADGES.filter((b) => cumulativeVolume < b.thresholdKg);
-  const lastAchieved = achievedBadges.at(-1) ?? null;
-  const nextBadge = lockedBadges[0] ?? null;
+  const lastAchieved = [...VOLUME_BADGES].reverse().find((b) => cumulativeVolume >= b.thresholdKg) ?? null;
+  const nextBadge = VOLUME_BADGES.find((b) => cumulativeVolume < b.thresholdKg) ?? null;
 
   const progressPct = nextBadge
     ? Math.min(
@@ -54,19 +53,8 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
       )
     : 100;
 
-  // Columns: cap at 5, so badges shrink automatically as more are earned
-  const cols = Math.min(Math.max(achievedBadges.length, 1), 5);
-
   return (
     <>
-      {/* Preload all badge images so they're cached before the casket opens */}
-      <div className="hidden" aria-hidden="true">
-        {VOLUME_BADGES.map((b) => (
-          <img key={b.key} src={`/volume/${b.key}.png`} alt="" />
-        ))}
-        <img src="/volume/casketopen.png" alt="" />
-      </div>
-
       {/* Badge detail overlay */}
       {activeBadge && (
         <div
@@ -103,125 +91,103 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
 
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
         {/* Card header */}
-        <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+        <button
+          onClick={() => setCollapsed((v) => !v)}
+          className="w-full px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between focus:outline-none"
+        >
           <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
             Volume
           </span>
-        </div>
-
-        {/* Casket image — achieved badges overlaid inside when open */}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="w-full block focus:outline-none relative"
-          aria-label={open ? "Close casket" : "Open casket"}
-        >
-          <img
-            src={open ? "/volume/casketopen.png" : "/volume/casketclosed.png"}
-            alt={open ? "Open casket" : "Closed casket"}
-            className="w-full"
+          <ChevronDown
+            className={cn("h-4 w-4 text-zinc-400 transition-transform duration-200", collapsed && "-rotate-90")}
           />
-
-          {/* Achieved badges overlaid inside the open casket */}
-          {open && achievedBadges.length > 0 && (
-            <div
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ padding: "12% 10% 8%" }}
-            >
-              <div
-                className="grid w-full gap-x-1 gap-y-0.5"
-                style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-              >
-                {achievedBadges.map((badge) => (
-                  <button
-                    key={badge.key}
-                    onClick={(e) => { e.stopPropagation(); setActiveBadge(badge); }}
-                    className="flex flex-col items-center focus:outline-none"
-                  >
-                    <img
-                      src={`/volume/${badge.key}.png`}
-                      alt={badge.label}
-                      className="w-full aspect-square object-contain drop-shadow-sm"
-                    />
-                    <span className="text-[6px] sm:text-[8px] font-black text-white/90 uppercase leading-none mt-0.5 drop-shadow">
-                      {badge.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </button>
 
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center py-1 font-medium">
-          {open ? "Tap to close" : "Tap to open"}
-        </p>
+        {!collapsed && (
+          <>
+            {/* Badge grid */}
+            <div className="px-4 pt-3 pb-2">
+              <div className="grid grid-cols-5 gap-2">
+                {VOLUME_BADGES.map((badge) => {
+                  const achieved = cumulativeVolume >= badge.thresholdKg;
+                  return achieved ? (
+                    <button
+                      key={badge.key}
+                      onClick={() => setActiveBadge(badge)}
+                      className="flex flex-col items-center focus:outline-none"
+                    >
+                      <img
+                        src={`/volume/${badge.key}.png`}
+                        alt={badge.label}
+                        className="w-full aspect-square object-contain"
+                      />
+                      <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-0.5">
+                        {badge.label}
+                      </span>
+                    </button>
+                  ) : (
+                    <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
+                      <img
+                        src={`/volume/${badge.key}.png`}
+                        alt={badge.label}
+                        className="w-full aspect-square object-contain"
+                      />
+                      <span className="text-[8px] font-bold text-zinc-400 uppercase leading-none mt-0.5">
+                        {badge.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-        {/* Locked badges — outside, below the casket */}
-        {open && lockedBadges.length > 0 && (
-          <div className="px-4 pb-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">Locked</p>
-            <div className="grid grid-cols-5 gap-2">
-              {lockedBadges.map((badge) => (
-                <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
-                  <img
-                    src={`/volume/${badge.key}.png`}
-                    alt={badge.label}
-                    className="w-full aspect-square object-contain"
+            {/* Progress bar */}
+            <div className="px-4 pb-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 shrink-0">
+                  {lastAchieved ? (
+                    <img
+                      src={`/volume/${lastAchieved.key}.png`}
+                      alt={lastAchieved.label}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                  )}
+                </div>
+
+                <div className="flex-1 h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{
+                      width: `${progressPct}%`,
+                      background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
+                      boxShadow: progressPct > 0 ? "0 0 8px rgba(245,158,11,0.6)" : "none",
+                    }}
                   />
-                  <span className="text-[8px] font-bold text-zinc-400 uppercase leading-none mt-0.5">
-                    {badge.label}
-                  </span>
                 </div>
-              ))}
+
+                <div className="w-10 h-10 shrink-0">
+                  {nextBadge ? (
+                    <img
+                      src={`/volume/${nextBadge.key}.png`}
+                      alt={nextBadge.label}
+                      className="w-full h-full object-contain opacity-40 grayscale"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-[9px] font-black text-amber-500 uppercase">MAX</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-medium tabular-nums">
+                {formatVolume(cumulativeVolume)}
+              </p>
             </div>
-          </div>
+          </>
         )}
-
-        {/* Progress bar */}
-        <div className="px-4 pb-4 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 shrink-0">
-              {lastAchieved ? (
-                <img
-                  src={`/volume/${lastAchieved.key}.png`}
-                  alt={lastAchieved.label}
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="w-full h-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
-              )}
-            </div>
-
-            <div className="flex-1 h-3 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700 ease-out"
-                style={{
-                  width: `${progressPct}%`,
-                  background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
-                  boxShadow: progressPct > 0 ? "0 0 8px rgba(245,158,11,0.6)" : "none",
-                }}
-              />
-            </div>
-
-            <div className="w-10 h-10 shrink-0">
-              {nextBadge ? (
-                <img
-                  src={`/volume/${nextBadge.key}.png`}
-                  alt={nextBadge.label}
-                  className={cn("w-full h-full object-contain opacity-40 grayscale")}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-[9px] font-black text-amber-500 uppercase">MAX</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 font-medium tabular-nums">
-            {formatVolume(cumulativeVolume)}
-          </p>
-        </div>
       </div>
     </>
   );
