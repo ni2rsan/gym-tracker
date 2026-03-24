@@ -118,7 +118,6 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
             <div
               className="absolute inset-0 flex items-center justify-center"
               style={{ padding: "12% 10% 8%" }}
-              onClick={(e) => e.stopPropagation()}
             >
               <div
                 className="grid w-full gap-x-1 gap-y-0.5"
@@ -127,7 +126,7 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
                 {achievedBadges.map((badge) => (
                   <button
                     key={badge.key}
-                    onClick={() => setActiveBadge(badge)}
+                    onClick={(e) => { e.stopPropagation(); setActiveBadge(badge); }}
                     className="flex flex-col items-center focus:outline-none"
                   >
                     <img
