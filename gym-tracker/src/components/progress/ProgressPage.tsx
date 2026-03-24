@@ -2,65 +2,45 @@
 
 import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
-import type { WeeklyVolumeComparison, BiggestJumpResult, TrainingBalance } from "@/lib/services/progressService";
-import type { UserBadge } from "@/constants/badges";
 import { StreakHero } from "./StreakHero";
-import { ThisWeekCard } from "./ThisWeekCard";
-import { VolumeComparisonCard } from "./VolumeComparisonCard";
-import { BiggestJumpCard } from "./BiggestJumpCard";
 import { PRHighlights } from "./PRHighlights";
-import { BadgeShowcase } from "./BadgeShowcase";
-import { TrainingBalanceCard } from "./TrainingBalanceCard";
+import { VolumeCasketCard } from "./VolumeCasketCard";
+import { MilestonesCard, PRPanel } from "@/components/planner/StreakCounter";
 
 interface ProgressPageProps {
   streakData: StreakData;
-  recentPRs: PRRecord[];
-  volumeComparison: WeeklyVolumeComparison;
-  biggestJump: BiggestJumpResult | null;
-  balance: TrainingBalance;
-  badges: UserBadge[];
+  prs: PRRecord[];
   cumulativeVolume: number;
 }
 
-export function ProgressPage({
-  streakData,
-  recentPRs,
-  volumeComparison,
-  biggestJump,
-  balance,
-  badges,
-  cumulativeVolume,
-}: ProgressPageProps) {
+export function ProgressPage({ streakData, prs, cumulativeVolume }: ProgressPageProps) {
+  const recentPRs = [...prs]
+    .sort((a, b) => b.achievedOn.localeCompare(a.achievedOn))
+    .slice(0, 3);
+
   return (
     <div className="space-y-3">
-      {/* 1. Streak Hero */}
+      {/* 1. Days in a row */}
       <StreakHero
         generalStreak={streakData.generalStreak}
         bestStreak={streakData.bestStreak}
         totalWorkoutsThisMonth={streakData.totalWorkoutsThisMonth}
       />
 
-      {/* 2. This Week + Volume (2-col) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <ThisWeekCard
-          thisWeekWorkouts={streakData.thisWeekWorkouts}
-          plannedThisWeek={streakData.plannedThisWeek}
-          completedThisWeek={streakData.completedThisWeek}
-        />
-        <VolumeComparisonCard data={volumeComparison} />
-      </div>
+      {/* 2. Milestones */}
+      <MilestonesCard
+        generalStreak={streakData.generalStreak}
+        bestStreak={streakData.bestStreak}
+      />
 
-      {/* 3. Biggest Jump */}
-      {biggestJump && <BiggestJumpCard data={biggestJump} />}
-
-      {/* 4. PR Highlights */}
+      {/* 3. Newest PRs (top 3) */}
       {recentPRs.length > 0 && <PRHighlights prs={recentPRs} />}
 
-      {/* 5-6. Badge Showcase */}
-      <BadgeShowcase badges={badges} cumulativeVolume={cumulativeVolume} />
+      {/* 4. All PRs by group */}
+      {prs.length > 0 && <PRPanel prs={prs} />}
 
-      {/* 7. Training Balance */}
-      {balance.total >= 10 && <TrainingBalanceCard data={balance} />}
+      {/* 5. Volume casket */}
+      <VolumeCasketCard cumulativeVolume={cumulativeVolume} />
     </div>
   );
 }

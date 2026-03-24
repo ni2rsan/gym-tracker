@@ -19,7 +19,7 @@ export function PRHighlights({ prs }: PRHighlightsProps) {
       <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
         <Trophy className="h-4 w-4 text-amber-500" />
         <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-          Neueste Personal Records
+          Newest Personal Records
         </span>
       </div>
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -48,7 +48,7 @@ export function PRHighlights({ prs }: PRHighlightsProps) {
                   {formatDate(pr.achievedOn)}
                 </p>
                 {isRecent && (
-                  <span className="text-[9px] font-bold text-amber-500 uppercase">NEU</span>
+                  <span className="text-[9px] font-bold text-amber-500 uppercase">NEW</span>
                 )}
               </div>
             </div>

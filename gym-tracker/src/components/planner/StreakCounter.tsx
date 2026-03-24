@@ -326,7 +326,7 @@ function ThisWeekCard({
   );
 }
 
-function MilestonesCard({ generalStreak, bestStreak }: { generalStreak: number; bestStreak: number }) {
+export function MilestonesCard({ generalStreak, bestStreak }: { generalStreak: number; bestStreak: number }) {
   const nextMilestone = MILESTONES.find((m) => m > generalStreak) ?? null;
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
@@ -383,7 +383,7 @@ const GROUP_META: Record<string, { label: string; color: string; dot: string }> 
   BODYWEIGHT:  { label: "Bodyweight",  color: "text-purple-600 dark:text-purple-400", dot: "bg-purple-400" },
 };
 
-function PRPanel({ prs }: { prs: PRRecord[] }) {
+export function PRPanel({ prs }: { prs: PRRecord[] }) {
   if (prs.length === 0) return null;
 
   // Group by muscleGroup preserving order: UPPER_BODY, LOWER_BODY, BODYWEIGHT, then any others

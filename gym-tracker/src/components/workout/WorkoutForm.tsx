@@ -871,7 +871,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
 
           {/* Standalone groups — due ones first, then the rest */}
           {standaloneGroups.map((mg) => (
-            <div key={mg} id={`section-${mg}`}>
+            <div key={`${selectedDate}-${mg}`} id={`section-${mg}`}>
               <ExerciseGroup
                 muscleGroup={mg}
                 exercises={exercisesByGroup[mg]}
