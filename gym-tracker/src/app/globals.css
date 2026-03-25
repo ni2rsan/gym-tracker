@@ -26,15 +26,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Fistbump PNG icon — grey in light mode, lighter grey in dark mode */
-.fb-icon {
-  filter: grayscale(1) brightness(0.55);
-}
-@variant dark {
-  .fb-icon {
-    filter: grayscale(1) brightness(1.8);
-  }
-}
 
 /* Badge sparkle animation */
 @keyframes sparkle-twinkle {
