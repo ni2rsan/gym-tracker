@@ -64,7 +64,7 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
         <div className="relative shrink-0 rounded-2xl bg-amber-500/10 border border-amber-400/20 p-3 flex flex-col items-center justify-center overflow-hidden" style={{ width: 140, height: 140 }}>
           {prevMilestone != null ? (
             <div
-              className={`relative w-24 h-24 overflow-hidden ${!badgeImgError ? "hero-badge-shine" : ""}`}
+              className={`relative w-24 h-24 overflow-hidden rounded-full ${!badgeImgError ? "hero-badge-shine" : ""}`}
             >
               {!badgeImgError ? (
                 <img

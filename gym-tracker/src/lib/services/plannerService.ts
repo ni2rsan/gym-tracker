@@ -300,9 +300,9 @@ export interface StreakData {
   completedThisWeek: number; // of those, worked out or sorry-excused
   thisWeekBlocksByDate: Record<string, string[]>; // date → blockTypes planned this week
   // All-time workout stats
-  totalTracked: number;  // distinct workout dates ever logged
-  totalPlanned: number;  // all past planned workout blocks (up to yesterday)
-  totalMissed: number;   // past planned blocks not done and not sorry-excused
+  totalTracked: number;  // distinct workout dates ever logged (includes today if done)
+  totalPlanned: number;  // distinct planned dates before today (excludes today — still in progress)
+  totalMissed: number;   // planned dates before today not done and not sorry-excused
 }
 
 async function incrementSorryToken(userId: string, month: string): Promise<void> {
@@ -336,21 +336,21 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     prisma.plannedWorkout.findMany({ where: { userId, date: { lte: new Date(todayISO + "T23:59:59") } }, select: { date: true, sorryExcused: true } }),
   ]);
 
-  // All-time workout stats — all counts are by unique *date* for apples-to-apples comparison
+  // All-time workout stats — all counts use distinct dates for apples-to-apples comparison
   const allTimeWorkedSet = new Set(allTimeSessionDates.map((s) => {
     const sd = s.date; return `${sd.getUTCFullYear()}-${String(sd.getUTCMonth() + 1).padStart(2, "0")}-${String(sd.getUTCDate()).padStart(2, "0")}`;
   }));
   const allTimeSorryDates = new Set(
     allTimePlannedRaw.filter((pw) => pw.sorryExcused).map((pw) => dbDateToISO(pw.date))
   );
-  // Distinct planned dates up to today
-  const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))];
+  // Distinct planned dates BEFORE today (today is still in progress — don't count it as planned)
+  const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))].filter(d => d < todayISO);
   const totalPlanned = uniquePlannedDates.length;
-  // Tracked = total workout sessions (two muscle groups on same day = 2 workouts)
-  const totalTracked = allTimeSessionDates.length;
+  // Tracked = distinct workout dates (includes today if already done)
+  const totalTracked = allTimeWorkedSet.size;
   // Missed = planned dates strictly before today where no workout logged and not sorry-excused
   const totalMissed = uniquePlannedDates.filter(
-    (date) => date < todayISO && !allTimeWorkedSet.has(date) && !allTimeSorryDates.has(date)
+    (date) => !allTimeWorkedSet.has(date) && !allTimeSorryDates.has(date)
   ).length;
   const sorryUsed = sorryToken?.usedCount ?? 0;
   const sorryMax = userPrefs?.sorryTokenMax ?? 3;
