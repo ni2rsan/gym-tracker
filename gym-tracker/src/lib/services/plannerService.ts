@@ -346,8 +346,8 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   // Distinct planned dates up to today
   const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))];
   const totalPlanned = uniquePlannedDates.length;
-  // Tracked = distinct workout dates
-  const totalTracked = allTimeWorkedSet.size;
+  // Tracked = total workout sessions (two muscle groups on same day = 2 workouts)
+  const totalTracked = allTimeSessionDates.length;
   // Missed = planned dates strictly before today where no workout logged and not sorry-excused
   const totalMissed = uniquePlannedDates.filter(
     (date) => date < todayISO && !allTimeWorkedSet.has(date) && !allTimeSorryDates.has(date)
