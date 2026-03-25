@@ -4,6 +4,11 @@ import { useState } from "react";
 
 const MILESTONES = [1, 10, 20, 30, 50, 60, 75, 100];
 
+const MILESTONE_TITLES: Record<number, string> = {
+  1: "Rookie", 10: "Brawler", 20: "Grinder", 30: "Gym Rat",
+  50: "Warrior", 60: "Gladiator", 75: "Spartan", 100: "Legend",
+};
+
 function getMilestoneParams(totalTracked: number) {
   const nextMilestone = MILESTONES.find((m) => m > totalTracked) ?? null;
   const prevMilestone = [...MILESTONES].reverse().find((m) => m <= totalTracked) ?? null;
@@ -60,14 +65,19 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
               <span className="text-6xl leading-none">🎯</span>
             </div>
           )}
-          <span className="text-xs font-black text-white/80 uppercase tracking-wider">
+          {prevMilestone != null && MILESTONE_TITLES[prevMilestone] && (
+            <span className="text-xl font-black text-white leading-tight tracking-wide">
+              {MILESTONE_TITLES[prevMilestone]}
+            </span>
+          )}
+          <span className="text-[10px] text-white/50 uppercase tracking-wider">
             {totalTracked} Workouts
           </span>
         </div>
 
         <div className="flex-1 min-w-0 w-full">
           {/* Milestone text */}
-          <p className="text-sm font-bold text-white/90 mb-3">
+          <p className="text-sm text-white/90 mb-3">
             {getMilestoneText(totalTracked)}
           </p>
 
