@@ -396,7 +396,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [overlayCount, setOverlayCount] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showClash, setShowClash] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fbImgRef = useRef<HTMLImageElement>(null);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
   const [newFeedIds, setNewFeedIds] = useState(() => new Set(newFeedSessionIds));
   const [fistBumpBadge, setFistBumpBadge] = useState(newFistBumps.length);
@@ -415,7 +415,6 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
         setOverlayBumpers(names);
         setOverlayCount(newFistBumps.length);
         setShowConfetti(false);
-        setAnimFrame(1);
         setShowClash(false);
         setShowFistBumpOverlay(true);
       }
@@ -428,61 +427,55 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Canvas-based fistbump animation — preload all 10 frames, draw with requestAnimationFrame
+  // Img-ref fistbump animation — preload all 10 frames, swap src directly on DOM node (no re-renders)
   useEffect(() => {
     if (!showFistBumpOverlay) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
 
     const FRAME_COUNT = 10;
     const CYCLES = 3;
-    const FPS = 18; // frames per second — smooth but readable
-    const TOTAL_FRAMES = FRAME_COUNT * CYCLES; // 30
-    const MS_PER_FRAME = 1000 / FPS;
+    const MS_PER_FRAME = 80; // ~12.5 fps — smooth and readable
+    const TOTAL_STEPS = FRAME_COUNT * CYCLES; // 30
 
-    const images: HTMLImageElement[] = [];
+    // Preload all frames into browser cache
+    const preloaded: HTMLImageElement[] = Array.from({ length: FRAME_COUNT }, (_, i) => {
+      const img = new Image();
+      img.src = `/fistbump${i + 1}.png`;
+      return img;
+    });
+
     let loaded = 0;
     let rafId: number;
 
     const runAnimation = () => {
-      let frameIndex = 0;
+      let step = 0;
       let lastTime = 0;
 
-      const draw = (timestamp: number) => {
-        if (timestamp - lastTime >= MS_PER_FRAME) {
-          lastTime = timestamp;
-          const img = images[frameIndex % FRAME_COUNT];
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-          if (frameIndex === TOTAL_FRAMES - 1) {
+      const tick = (ts: number) => {
+        if (ts - lastTime >= MS_PER_FRAME) {
+          lastTime = ts;
+          // Swap src directly — no React state update, no re-render
+          if (fbImgRef.current) {
+            fbImgRef.current.src = preloaded[step % FRAME_COUNT].src;
+          }
+          if (step === TOTAL_STEPS - 1) {
             setShowClash(true);
             setTimeout(() => setShowClash(false), 520);
           }
-
-          frameIndex++;
-          if (frameIndex >= TOTAL_FRAMES) {
+          step++;
+          if (step >= TOTAL_STEPS) {
             setShowConfetti(true);
             return;
           }
         }
-        rafId = requestAnimationFrame(draw);
+        rafId = requestAnimationFrame(tick);
       };
-
-      rafId = requestAnimationFrame(draw);
+      rafId = requestAnimationFrame(tick);
     };
 
-    for (let i = 1; i <= FRAME_COUNT; i++) {
-      const img = new Image();
-      img.src = `/fistbump${i}.png`;
-      img.onload = () => {
-        loaded++;
-        if (loaded === FRAME_COUNT) runAnimation();
-      };
-      images[i - 1] = img;
-    }
+    preloaded.forEach((img) => {
+      if (img.complete) { loaded++; if (loaded === FRAME_COUNT) runAnimation(); }
+      else img.onload = () => { loaded++; if (loaded === FRAME_COUNT) runAnimation(); };
+    });
 
     return () => { if (rafId) cancelAnimationFrame(rafId); };
   }, [showFistBumpOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -698,13 +691,13 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                   } as React.CSSProperties}
                 />
               ))}
-              {/* Canvas fistbump animation */}
+              {/* Fistbump frame animation */}
               <div className="relative w-28 h-28 mx-auto mb-5 select-none">
-                <canvas
-                  ref={canvasRef}
-                  width={200}
-                  height={200}
-                  className="w-full h-full dark:invert"
+                <img
+                  ref={fbImgRef}
+                  src="/fistbump1.png"
+                  alt="fist bump"
+                  className="w-full h-full object-contain dark:invert"
                 />
                 {/* Comic clash effect on frame 3 */}
                 {showClash && (
