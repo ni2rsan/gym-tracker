@@ -619,7 +619,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <style>{`
             @keyframes fb-fade-in { from { opacity: 0 } to { opacity: 1 } }
             @keyframes fb-slide-up { from { transform: translateY(48px) scale(0.92); opacity: 0 } to { transform: translateY(0) scale(1); opacity: 1 } }
-            @keyframes fb-frame-pop { 0% { opacity: 0; transform: scale(0.72) rotate(-8deg); } 65% { opacity: 1; transform: scale(1.1) rotate(4deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
+            @keyframes fb-frame-pop { 0% { transform: scale(0.78) rotate(-8deg); } 65% { transform: scale(1.1) rotate(4deg); } 100% { transform: scale(1) rotate(0deg); } }
             @keyframes confetti-fly { 0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1 } 70% { opacity: 1 } 100% { transform: translate(var(--cx),var(--cy)) rotate(540deg) scale(0.2); opacity: 0 } }
             @keyframes clash-ray { 0% { opacity: 1; transform: rotate(var(--rd)) translateY(-18px) scaleY(0.1); } 100% { opacity: 0; transform: rotate(var(--rd)) translateY(-38px) scaleY(1); } }
             @keyframes clash-burst { 0% { opacity: 0.9; transform: scale(0.2); } 100% { opacity: 0; transform: scale(2.8); } }
@@ -667,7 +667,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                   key={animFrame}
                   src={`/fistbump${animFrame}.png`}
                   alt="fist bump"
-                  className="w-full h-full object-contain fb-icon"
+                  className="w-full h-full object-contain"
                   style={{ animation: "fb-frame-pop 0.26s cubic-bezier(0.34,1.56,0.64,1) both" }}
                 />
                 {/* Comic clash effect on frame 3 */}
