@@ -147,14 +147,14 @@ function FeedCard({
               }`}
               title={entry.myFistBump ? "Remove fist bump" : "Fist bump!"}
             >
-              <span>👊</span>
+              <img src="/fistbump3.png" alt="" className="h-4 w-4 object-contain" />
               {bumpCount > 0 && <span>{bumpCount}</span>}
             </button>
           )}
           {/* Own entry: show bumper names */}
           {entry.isOwnWorkout && bumpCount > 0 && (
             <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-[160px]">
-              <span className="flex-shrink-0">👊</span>
+              <img src="/fistbump3.png" alt="" className="h-3.5 w-3.5 object-contain flex-shrink-0" />
               <span className="truncate">
                 {(() => {
                   const names = entry.fistBumps.map((b) => b.username ?? b.name ?? "Someone");
@@ -776,7 +776,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Friends</div>
         </div>
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
-          <div className="text-base leading-none mb-1">👊</div>
+          <img src="/fistbump3.png" alt="" className="h-4 w-4 object-contain mx-auto mb-1" />
           <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{socialStats.totalFistBumpsReceived}</div>
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Fist bumps</div>
         </div>
