@@ -327,26 +327,31 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const todayISO = localTodayISO();
   const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-  // Yesterday ISO (for all-time planned cutoff — today is exempt)
-  const yesterdayCursorD = new Date(d);
-  yesterdayCursorD.setDate(yesterdayCursorD.getDate() - 1);
-  const allTimeCutoffISO = `${yesterdayCursorD.getFullYear()}-${String(yesterdayCursorD.getMonth() + 1).padStart(2, "0")}-${String(yesterdayCursorD.getDate()).padStart(2, "0")}`;
-
   // SORRY tokens + user-configured max + all-time stats
-  const [sorryToken, userPrefs, allTimeSessionDates, allTimePlannedPast] = await Promise.all([
+  const [sorryToken, userPrefs, allTimeSessionDates, allTimePlannedRaw] = await Promise.all([
     prisma.userSorryToken.findUnique({ where: { userId_month: { userId, month } } }),
     prisma.user.findUnique({ where: { id: userId }, select: { sorryTokenMax: true, sorryTokenMaxEditedMonth: true } }),
     prisma.workoutSession.findMany({ where: { userId, sets: { some: {} } }, select: { date: true } }),
-    prisma.plannedWorkout.findMany({ where: { userId, date: { lte: new Date(allTimeCutoffISO + "T23:59:59") } }, select: { date: true, sorryExcused: true } }),
+    // Include today — planned today counts as "planned so far"
+    prisma.plannedWorkout.findMany({ where: { userId, date: { lte: new Date(todayISO + "T23:59:59") } }, select: { date: true, sorryExcused: true } }),
   ]);
 
-  // All-time workout stats
+  // All-time workout stats — all counts are by unique *date* for apples-to-apples comparison
   const allTimeWorkedSet = new Set(allTimeSessionDates.map((s) => {
     const sd = s.date; return `${sd.getUTCFullYear()}-${String(sd.getUTCMonth() + 1).padStart(2, "0")}-${String(sd.getUTCDate()).padStart(2, "0")}`;
   }));
+  const allTimeSorryDates = new Set(
+    allTimePlannedRaw.filter((pw) => pw.sorryExcused).map((pw) => dbDateToISO(pw.date))
+  );
+  // Distinct planned dates up to today
+  const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))];
+  const totalPlanned = uniquePlannedDates.length;
+  // Tracked = distinct workout dates
   const totalTracked = allTimeWorkedSet.size;
-  const totalPlanned = allTimePlannedPast.length;
-  const totalMissed = allTimePlannedPast.filter((pw) => !pw.sorryExcused && !allTimeWorkedSet.has(dbDateToISO(pw.date))).length;
+  // Missed = planned dates strictly before today where no workout logged and not sorry-excused
+  const totalMissed = uniquePlannedDates.filter(
+    (date) => date < todayISO && !allTimeWorkedSet.has(date) && !allTimeSorryDates.has(date)
+  ).length;
   const sorryUsed = sorryToken?.usedCount ?? 0;
   const sorryMax = userPrefs?.sorryTokenMax ?? 3;
   const canEditSorryMax = userPrefs?.sorryTokenMaxEditedMonth !== month;
