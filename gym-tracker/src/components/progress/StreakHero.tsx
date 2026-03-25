@@ -45,6 +45,13 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
       <div className="flex flex-col sm:flex-row items-center gap-5">
         {/* Current milestone badge */}
         <div className="relative shrink-0 flex flex-col items-center justify-center gap-1">
+          {prevMilestone != null && (
+            <>
+              <span className="sparkle" style={{ top: 2, right: 8 }}>✦</span>
+              <span className="sparkle sparkle-d1" style={{ top: 24, left: 4 }}>✦</span>
+              <span className="sparkle sparkle-d2" style={{ bottom: 32, right: 2 }}>✦</span>
+            </>
+          )}
           {prevMilestone != null ? (
             <div
               className="relative w-32 h-32 overflow-hidden rounded-full"
