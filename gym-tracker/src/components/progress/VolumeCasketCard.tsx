@@ -7,25 +7,26 @@ import { cn } from "@/lib/utils";
 interface VolumeBadge {
   key: string;
   label: string;
+  title: string;
   thresholdKg: number;
   headline: string | null;
   subtext: string | null;
 }
 
 const VOLUME_BADGES: VolumeBadge[] = [
-  { key: "50t",   label: "50T",   thresholdKg: 50_000,    headline: "You moved 19 hippopotamuses", subtext: "A full crash of hippos. They were furious. You didn't negotiate." },
-  { key: "100t",  label: "100T",  thresholdKg: 100_000,   headline: "You moved a blue whale", subtext: "Nature's answer to \"how big can you make a thing before it stops working.\" The answer is: this big, barely." },
-  { key: "150t",  label: "150T",  thresholdKg: 150_000,   headline: "You moved an empty Boeing 747", subtext: "150 tonnes of recycled air, broken seat-back screens, and quiet despair." },
-  { key: "250t",  label: "250T",  thresholdKg: 250_000,   headline: "You moved the world's biggest dump truck", subtext: "The tires alone cost $42,000 each. It cannot legally drive on any road. It exists only for this." },
-  { key: "500t",  label: "500T",  thresholdKg: 500_000,   headline: "You moved the Eiffel Tower", subtext: "Iron structure only. Gustave Eiffel got dunked on by every Parisian for years. He was fine. So are you." },
-  { key: "750t",  label: "750T",  thresholdKg: 750_000,   headline: "You moved a fully loaded Airbus A380", subtext: "500 passengers. None of them voted on this. You moved them anyway." },
-  { key: "1000t", label: "1000T", thresholdKg: 1_000_000, headline: "You moved the Saturn V rocket", subtext: "Fuelled. Three astronauts on top. They filed a formal complaint. You filed a new PR." },
-  { key: "1500t", label: "1500T", thresholdKg: 1_500_000, headline: "You moved a nuclear submarine", subtext: "Virginia-class. The crew had a very bad Tuesday. You had a very good one." },
-  { key: "2000t", label: "2000T", thresholdKg: 2_000_000, headline: "You moved the Statue of Liberty", subtext: "Pedestal included. She looked alarmed. You had excellent form." },
-  { key: "2500t", label: "2500T", thresholdKg: 2_500_000, headline: "You moved the world's largest crane", subtext: "A machine so big it needs its own crane to assemble it. You moved it without one." },
-  { key: "3000t", label: "3000T", thresholdKg: 3_000_000, headline: "You moved an Iowa battleship hull", subtext: "Empty. The guns are someone else's problem. The hull was yours." },
-  { key: "4000t", label: "4000T", thresholdKg: 4_000_000, headline: "You moved the top third of the Great Pyramid", subtext: "3,000 years old. Never moved. Until you showed up." },
-  { key: "5000t", label: "5000T", thresholdKg: 5_000_000, headline: "You moved a tenth of a Nimitz carrier", subtext: "One-tenth of an aircraft carrier. The Navy has questions. You have gains." },
+  { key: "50t",   label: "50T",   title: "Hippos",          thresholdKg: 50_000,    headline: "You moved 19 hippopotamuses", subtext: "A full crash of hippos. They were furious. You didn't negotiate." },
+  { key: "100t",  label: "100T",  title: "Blue Whale",      thresholdKg: 100_000,   headline: "You moved a blue whale", subtext: "Nature's answer to \"how big can you make a thing before it stops working.\" The answer is: this big, barely." },
+  { key: "150t",  label: "150T",  title: "Boeing 747",      thresholdKg: 150_000,   headline: "You moved an empty Boeing 747", subtext: "150 tonnes of recycled air, broken seat-back screens, and quiet despair." },
+  { key: "250t",  label: "250T",  title: "Dump Truck",      thresholdKg: 250_000,   headline: "You moved the world's biggest dump truck", subtext: "The tires alone cost $42,000 each. It cannot legally drive on any road. It exists only for this." },
+  { key: "500t",  label: "500T",  title: "Eiffel Tower",    thresholdKg: 500_000,   headline: "You moved the Eiffel Tower", subtext: "Iron structure only. Gustave Eiffel got dunked on by every Parisian for years. He was fine. So are you." },
+  { key: "750t",  label: "750T",  title: "Airbus A380",     thresholdKg: 750_000,   headline: "You moved a fully loaded Airbus A380", subtext: "500 passengers. None of them voted on this. You moved them anyway." },
+  { key: "1000t", label: "1000T", title: "Saturn V",        thresholdKg: 1_000_000, headline: "You moved the Saturn V rocket", subtext: "Fuelled. Three astronauts on top. They filed a formal complaint. You filed a new PR." },
+  { key: "1500t", label: "1500T", title: "Submarine",       thresholdKg: 1_500_000, headline: "You moved a nuclear submarine", subtext: "Virginia-class. The crew had a very bad Tuesday. You had a very good one." },
+  { key: "2000t", label: "2000T", title: "Statue of Liberty", thresholdKg: 2_000_000, headline: "You moved the Statue of Liberty", subtext: "Pedestal included. She looked alarmed. You had excellent form." },
+  { key: "2500t", label: "2500T", title: "Giant Crane",     thresholdKg: 2_500_000, headline: "You moved the world's largest crane", subtext: "A machine so big it needs its own crane to assemble it. You moved it without one." },
+  { key: "3000t", label: "3000T", title: "Battleship",      thresholdKg: 3_000_000, headline: "You moved an Iowa battleship hull", subtext: "Empty. The guns are someone else's problem. The hull was yours." },
+  { key: "4000t", label: "4000T", title: "Great Pyramid",   thresholdKg: 4_000_000, headline: "You moved the top third of the Great Pyramid", subtext: "3,000 years old. Never moved. Until you showed up." },
+  { key: "5000t", label: "5000T", title: "Nimitz Carrier",  thresholdKg: 5_000_000, headline: "You moved a tenth of a Nimitz carrier", subtext: "One-tenth of an aircraft carrier. The Navy has questions. You have gains." },
 ];
 
 function formatVolume(kg: number): string {
@@ -123,6 +124,9 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
                       />
                       <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-0.5">
                         {badge.label}
+                      </span>
+                      <span className="text-[7px] font-medium text-zinc-500 dark:text-zinc-400 leading-none mt-0.5 text-center">
+                        {badge.title}
                       </span>
                     </button>
                   ) : (
