@@ -48,9 +48,9 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
           {prevMilestone != null ? (
             <div className="relative w-32 h-32">
               {/* sparkles on the badge */}
-              <span className="sparkle" style={{ top: 24, right: 28 }}>✦</span>
-              <span className="sparkle sparkle-d1" style={{ top: 40, left: 24 }}>✦</span>
-              <span className="sparkle sparkle-d2" style={{ bottom: 28, right: 26 }}>✦</span>
+              <span className="sparkle" style={{ top: 20, right: 23 }}>✦</span>
+              <span className="sparkle sparkle-d1" style={{ top: 36, left: 20 }}>✦</span>
+              <span className="sparkle sparkle-d2" style={{ bottom: 24, right: 22 }}>✦</span>
               <div className="w-full h-full overflow-hidden rounded-full">
                 {!badgeImgError ? (
                   <img
