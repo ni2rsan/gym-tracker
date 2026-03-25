@@ -103,7 +103,14 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
             );
 
             return (
-              <div key={milestone} className="flex flex-col items-center gap-1">
+              <div key={milestone} className="relative flex flex-col items-center gap-1">
+                {unlocked && (
+                  <>
+                    <span className="sparkle" style={{ top: 2, right: 6 }}>✦</span>
+                    <span className="sparkle sparkle-d1" style={{ top: 18, left: 4 }}>✦</span>
+                    <span className="sparkle sparkle-d2" style={{ bottom: 24, right: 2 }}>✦</span>
+                  </>
+                )}
                 {unlocked ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); setActive(data); }}
