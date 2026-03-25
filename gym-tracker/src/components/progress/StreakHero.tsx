@@ -33,36 +33,16 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
   const [badgeImgError, setBadgeImgError] = useState(false);
   const [nextBadgeImgError, setNextBadgeImgError] = useState(false);
 
-  const consistency = totalPlanned > 0 ? Math.round(((totalPlanned - totalMissed) / totalPlanned) * 100) : 0;
+  const consistency = totalPlanned > 0 ? Math.round((totalTracked / totalPlanned) * 100) : 0;
 
   return (
     <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950 rounded-2xl p-5">
-      <style>{`
-        @keyframes hero-badge-shine {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        .hero-badge-shine::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255,255,255,0.55) 50%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          animation: hero-badge-shine 2.8s ease-in-out infinite;
-          pointer-events: none;
-        }
-      `}</style>
       <div className="flex flex-col sm:flex-row items-center gap-5">
         {/* Current milestone badge */}
         <div className="relative shrink-0 flex flex-col items-center justify-center" style={{ width: 140, height: 140 }}>
           {prevMilestone != null ? (
             <div
-              className={`relative w-32 h-32 overflow-hidden rounded-full ${!badgeImgError ? "hero-badge-shine" : ""}`}
+              className="relative w-32 h-32 overflow-hidden rounded-full"
             >
               {!badgeImgError ? (
                 <img

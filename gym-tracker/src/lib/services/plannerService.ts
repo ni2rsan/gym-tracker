@@ -340,19 +340,18 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const allTimeWorkedSet = new Set(allTimeSessionDates.map((s) => {
     const sd = s.date; return `${sd.getUTCFullYear()}-${String(sd.getUTCMonth() + 1).padStart(2, "0")}-${String(sd.getUTCDate()).padStart(2, "0")}`;
   }));
-  const allTimeSorryDates = new Set(
-    allTimePlannedRaw.filter((pw) => pw.sorryExcused).map((pw) => dbDateToISO(pw.date))
-  );
-  // Distinct planned dates up to and including today
-  const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))];
-  const totalPlanned = uniquePlannedDates.length;
-  // Tracked = distinct dates worked out OR sorry-excused (both count as "done")
-  const allTimeDoneSet = new Set([...allTimeWorkedSet, ...allTimeSorryDates]);
-  const totalTracked = allTimeDoneSet.size;
-  // Missed = planned dates strictly before today that are not done
-  const totalMissed = uniquePlannedDates.filter(
-    (date) => date < todayISO && !allTimeDoneSet.has(date)
-  ).length;
+  // Count planned BLOCKS (not distinct dates) — some days have 2 blocks (upper + lower)
+  const totalPlanned = allTimePlannedRaw.length;
+  // Tracked = planned blocks that were completed (session on that date OR sorry-excused)
+  const totalTracked = allTimePlannedRaw.filter((pw) => {
+    const dateISO = dbDateToISO(pw.date);
+    return pw.sorryExcused || allTimeWorkedSet.has(dateISO);
+  }).length;
+  // Missed = planned blocks before today that were NOT completed
+  const totalMissed = allTimePlannedRaw.filter((pw) => {
+    const dateISO = dbDateToISO(pw.date);
+    return dateISO < todayISO && !pw.sorryExcused && !allTimeWorkedSet.has(dateISO);
+  }).length;
   const sorryUsed = sorryToken?.usedCount ?? 0;
   const sorryMax = userPrefs?.sorryTokenMax ?? 3;
   const canEditSorryMax = userPrefs?.sorryTokenMaxEditedMonth !== month;

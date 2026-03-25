@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StreakData } from "@/lib/services/plannerService";
@@ -29,42 +29,20 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
-      <style>{`
-        @keyframes badge-shine {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        .badge-shine::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255,255,255,0.55) 50%,
-            transparent 100%
-          );
-          background-size: 200% 100%;
-          animation: badge-shine 2.8s ease-in-out infinite;
-          animation-delay: var(--shine-delay, 0s);
-          pointer-events: none;
-        }
-      `}</style>
       <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
         Milestones
       </div>
       <div className="flex flex-wrap gap-3 justify-between">
-        {MILESTONES.map((m, i) => {
+        {MILESTONES.map((m) => {
           const unlocked = totalTracked >= m;
           const hasImgError = imgErrors[m];
           return (
             <div key={m} className="flex flex-col items-center gap-1">
               <div
                 className={cn(
-                  "w-32 h-32 flex items-center justify-center overflow-hidden rounded-full transition-all relative",
-                  unlocked ? "badge-shine" : "opacity-30 grayscale"
+                  "w-32 h-32 flex items-center justify-center overflow-hidden rounded-full transition-all",
+                  unlocked ? "" : "opacity-30 grayscale"
                 )}
-                style={unlocked ? { "--shine-delay": `${i * 0.35}s` } as React.CSSProperties : undefined}
               >
                 {!hasImgError ? (
                   <img
