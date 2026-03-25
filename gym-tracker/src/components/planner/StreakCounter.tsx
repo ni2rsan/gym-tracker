@@ -14,6 +14,24 @@ import { setSorryTokenMax } from "@/actions/planner";
 const SORRY_MAX_LIMIT = 5; // absolute ceiling
 const MILESTONES = [1, 10, 20, 30, 50, 60, 75, 100];
 
+interface MilestoneInfo {
+  milestone: number;
+  title: string;
+  headline: string;
+  subtext: string;
+}
+
+const MILESTONE_DATA: MilestoneInfo[] = [
+  { milestone: 1,   title: "Rookie",    headline: "Every champion was once where you are right now.", subtext: "You found the app. You found the gym. You found muscles you didn't know existed. They found you back. Ow." },
+  { milestone: 10,  title: "Brawler",   headline: "Raw. Unpolished. But you show up and you put in the work. That's enough.", subtext: "Ten workouts in and you've already developed strong opinions about other people's form. You're not wrong. But maybe keep it to yourself." },
+  { milestone: 20,  title: "Grinder",   headline: "No shortcuts. No excuses. Just you and the work, twenty times over.", subtext: "You've started meal prepping. You own a shaker bottle. You said \"gains\" out loud unironically this week. There's no going back." },
+  { milestone: 30,  title: "Gym Rat",   headline: "Thirty sessions in. The iron is familiar now. You are getting harder to stop.", subtext: "You have a favourite machine. You have a least favourite machine. You have feelings about both. The gym staff knows your order." },
+  { milestone: 50,  title: "Warrior",   headline: "Fifty workouts. Most people never get here. You made it look like a habit.", subtext: "Fifty sessions. You've sweated through that shirt so many times it now goes to the gym on its own. People ask you for advice. You give it. Confidently." },
+  { milestone: 60,  title: "Gladiator", headline: "Sixty sessions in the arena. You don't wait for the fight to come to you.", subtext: "Sixty workouts. You refer to the gym as \"the arena\" now. Your colleagues have noticed something different about you. They can't quite place it. It's the traps." },
+  { milestone: 75,  title: "Spartan",   headline: "Seventy-five workouts. Discipline over motivation. Every single time.", subtext: "You trained on your birthday. You trained on a public holiday. You trained during a thunderstorm. At this point the gym should be paying you rent." },
+  { milestone: 100, title: "Legend",    headline: "One hundred workouts. The bar bends. You don't.", subtext: "One hundred workouts. New members point at you and whisper. Old members nod at you with respect. The dumbbells are afraid of you. As they should be." },
+];
+
 function getFooterText(generalStreak: number): string {
   const next = MILESTONES.find((m) => m > generalStreak);
   if (!next) return "You've conquered every milestone.";
@@ -26,48 +44,92 @@ function getFooterText(generalStreak: number): string {
 
 export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
+  const [active, setActive] = useState<MilestoneInfo | null>(null);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
-      <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
-        Milestones
-      </div>
-      <div className="flex flex-wrap gap-3 justify-between">
-        {MILESTONES.map((m) => {
-          const unlocked = totalTracked >= m;
-          const hasImgError = imgErrors[m];
-          return (
-            <div key={m} className="flex flex-col items-center gap-1">
-              <div
-                className={cn(
-                  "w-32 h-32 flex items-center justify-center overflow-hidden rounded-full transition-all",
-                  unlocked ? "" : "opacity-30 grayscale"
-                )}
-              >
-                {!hasImgError ? (
-                  <img
-                    src={`/milestones/${m}.png`}
-                    alt={`${m} workout milestone`}
-                    className="w-full h-full object-contain"
-                    onError={() => setImgErrors(prev => ({ ...prev, [m]: true }))}
-                  />
+    <>
+      {/* Overlay */}
+      {active && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+          onClick={() => setActive(null)}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={`/milestones/${active.milestone}.png`}
+              alt={active.title}
+              className="w-24 h-24 object-contain mx-auto mb-3"
+            />
+            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
+              {active.milestone} workouts · {active.title}
+            </p>
+            <p className="text-base font-bold text-zinc-900 dark:text-white leading-snug mb-2">
+              {active.headline}
+            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              {active.subtext}
+            </p>
+            <button
+              onClick={() => setActive(null)}
+              className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+        <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
+          Milestones
+        </div>
+        <div className="flex flex-wrap gap-3 justify-between">
+          {MILESTONE_DATA.map((data) => {
+            const { milestone, title } = data;
+            const unlocked = totalTracked >= milestone;
+            const hasImgError = imgErrors[milestone];
+            const badgeImg = !hasImgError ? (
+              <img
+                src={`/milestones/${milestone}.png`}
+                alt={`${milestone} workout milestone`}
+                className="w-full h-full object-contain"
+                onError={() => setImgErrors(prev => ({ ...prev, [milestone]: true }))}
+              />
+            ) : (
+              <span className="text-3xl">🏅</span>
+            );
+
+            return (
+              <div key={milestone} className="flex flex-col items-center gap-1">
+                {unlocked ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setActive(data); }}
+                    className={cn("w-32 h-32 flex items-center justify-center overflow-hidden rounded-full focus:outline-none")}
+                  >
+                    {badgeImg}
+                  </button>
                 ) : (
-                  <span className="text-3xl">🏅</span>
+                  <div className="w-32 h-32 flex items-center justify-center overflow-hidden rounded-full opacity-30 grayscale">
+                    {badgeImg}
+                  </div>
+                )}
+                <span className={cn("text-[10px] font-bold", unlocked ? "text-amber-600 dark:text-amber-400" : "text-zinc-400 dark:text-zinc-500")}>
+                  {milestone}
+                </span>
+                {unlocked && (
+                  <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 leading-none">
+                    {title}
+                  </span>
                 )}
               </div>
-              <span
-                className={cn(
-                  "text-[10px] font-bold",
-                  unlocked ? "text-amber-600 dark:text-amber-400" : "text-zinc-400 dark:text-zinc-500"
-                )}
-              >
-                {m}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
