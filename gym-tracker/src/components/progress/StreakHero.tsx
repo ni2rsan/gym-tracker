@@ -39,7 +39,7 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
     <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950 rounded-2xl p-5">
       <div className="flex flex-col sm:flex-row items-center gap-5">
         {/* Current milestone badge */}
-        <div className="relative shrink-0 flex flex-col items-center justify-center" style={{ width: 140, height: 140 }}>
+        <div className="relative shrink-0 flex flex-col items-center justify-center gap-1">
           {prevMilestone != null ? (
             <div
               className="relative w-32 h-32 overflow-hidden rounded-full"
@@ -60,8 +60,8 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
               <span className="text-6xl leading-none">🎯</span>
             </div>
           )}
-          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wide mt-1">
-            {totalTracked} WORKOUTS
+          <span className="text-xs font-black text-white/80 uppercase tracking-wider">
+            {totalTracked} Workouts
           </span>
         </div>
 
