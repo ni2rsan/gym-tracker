@@ -12,10 +12,7 @@ import { setSorryTokenMax } from "@/actions/planner";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SORRY_MAX_LIMIT = 5; // absolute ceiling
-const MILESTONES = [10, 30, 50, 75, 100];
-const MILESTONE_EMOJIS: Record<number, string> = {
-  10: "🥉", 30: "🥈", 50: "🥇", 75: "💎", 100: "👑",
-};
+const MILESTONES = [1, 10, 20, 30, 50, 60, 75, 100];
 
 function getFooterText(generalStreak: number): string {
   const next = MILESTONES.find((m) => m > generalStreak);
@@ -27,8 +24,7 @@ function getFooterText(generalStreak: number): string {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-export function MilestonesCard({ generalStreak, bestStreak }: { generalStreak: number; bestStreak: number }) {
-  const nextMilestone = MILESTONES.find((m) => m > generalStreak) ?? null;
+export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
   return (
@@ -38,8 +34,7 @@ export function MilestonesCard({ generalStreak, bestStreak }: { generalStreak: n
       </div>
       <div className="flex flex-wrap gap-3 justify-between">
         {MILESTONES.map((m) => {
-          const unlocked = bestStreak >= m;
-          const isNext = m === nextMilestone;
+          const unlocked = totalTracked >= m;
           const hasImgError = imgErrors[m];
           return (
             <div key={m} className="flex flex-col items-center gap-1">
@@ -57,9 +52,7 @@ export function MilestonesCard({ generalStreak, bestStreak }: { generalStreak: n
                     onError={() => setImgErrors(prev => ({ ...prev, [m]: true }))}
                   />
                 ) : (
-                  <span className="text-3xl">
-                    {unlocked || isNext ? MILESTONE_EMOJIS[m] : "🔒"}
-                  </span>
+                  <span className="text-3xl">🏅</span>
                 )}
               </div>
               <span
@@ -68,7 +61,7 @@ export function MilestonesCard({ generalStreak, bestStreak }: { generalStreak: n
                   unlocked ? "text-amber-600 dark:text-amber-400" : "text-zinc-400 dark:text-zinc-500"
                 )}
               >
-                {m}d
+                {m}
               </span>
             </div>
           );
