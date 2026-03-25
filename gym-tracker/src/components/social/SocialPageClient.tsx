@@ -393,7 +393,10 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [feedState, setFeedState] = useState<WorkoutFeedEntry[]>(feed);
   const [showFistBumpOverlay, setShowFistBumpOverlay] = useState(false);
   const [overlayBumpers, setOverlayBumpers] = useState<string[]>([]);
+  const [overlayCount, setOverlayCount] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [animFrame, setAnimFrame] = useState<1|2|3>(1);
+  const [showClash, setShowClash] = useState(false);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
   const [newFeedIds, setNewFeedIds] = useState(() => new Set(newFeedSessionIds));
   const [fistBumpBadge, setFistBumpBadge] = useState(newFistBumps.length);
@@ -410,7 +413,10 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
       if (fistBumpBadge > 0) {
         const names = [...new Set(newFistBumps.map((b) => b.bumperUsername ?? b.bumperName ?? "Someone"))];
         setOverlayBumpers(names);
+        setOverlayCount(newFistBumps.length);
         setShowConfetti(false);
+        setAnimFrame(1);
+        setShowClash(false);
         setShowFistBumpOverlay(true);
       }
       setFistBumpBadge(0);
@@ -421,6 +427,27 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
       setNewFeedIds(new Set());
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 3-frame fistbump animation
+  useEffect(() => {
+    if (!showFistBumpOverlay) return;
+    const seq: Array<1|2|3> = [1, 2, 3, 1, 2, 3, 1, 2, 3];
+    let step = 0;
+    const id = setInterval(() => {
+      step++;
+      if (step >= seq.length) {
+        clearInterval(id);
+        setShowConfetti(true);
+        return;
+      }
+      setAnimFrame(seq[step]);
+      if (seq[step] === 3) {
+        setShowClash(true);
+        setTimeout(() => setShowClash(false), 420);
+      }
+    }, 220);
+    return () => clearInterval(id);
+  }, [showFistBumpOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFriendRemoved = (userId: string) => {
     setFriends((prev) => prev.filter((f) => f.userId !== userId));
@@ -591,8 +618,11 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <style>{`
             @keyframes fb-fade-in { from { opacity: 0 } to { opacity: 1 } }
             @keyframes fb-slide-up { from { transform: translateY(48px) scale(0.92); opacity: 0 } to { transform: translateY(0) scale(1); opacity: 1 } }
-            @keyframes fb-bump { 0%,100% { transform: scale(1) rotate(-8deg) } 50% { transform: scale(1.3) rotate(10deg) } }
+            @keyframes fb-frame-pop { 0% { transform: scale(0.85) } 60% { transform: scale(1.08) } 100% { transform: scale(1) } }
             @keyframes confetti-fly { 0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1 } 70% { opacity: 1 } 100% { transform: translate(var(--cx),var(--cy)) rotate(540deg) scale(0.2); opacity: 0 } }
+            @keyframes clash-ray { 0% { opacity: 1; transform: rotate(var(--rd)) translateY(-18px) scaleY(0.1); } 100% { opacity: 0; transform: rotate(var(--rd)) translateY(-38px) scaleY(1); } }
+            @keyframes clash-burst { 0% { opacity: 0.9; transform: scale(0.2); } 100% { opacity: 0; transform: scale(2.8); } }
+            @keyframes clash-star { 0% { opacity: 1; transform: scale(0) rotate(0deg); } 70% { opacity: 1; transform: scale(1) rotate(30deg); } 100% { opacity: 0; transform: scale(1.1) rotate(40deg); } }
           `}</style>
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-6"
@@ -630,20 +660,63 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                   } as React.CSSProperties}
                 />
               ))}
-              <div
-                className="text-7xl mb-5 select-none"
-                style={{ animation: "fb-bump 0.55s ease-in-out 3 forwards", display: "inline-block" }}
-                onAnimationEnd={() => setShowConfetti(true)}
-              >
-                👊
+              {/* 3-frame fistbump animation */}
+              <div className="relative w-28 h-28 mx-auto mb-5 select-none">
+                <img
+                  key={animFrame}
+                  src={`/fistbump${animFrame}.png`}
+                  alt="fist bump"
+                  className="w-full h-full object-contain"
+                  style={{ animation: "fb-frame-pop 0.18s ease-out both" }}
+                />
+                {/* Comic clash effect on frame 3 */}
+                {showClash && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    {[0, 60, 120, 180, 240, 300].map((deg) => (
+                      <div
+                        key={deg}
+                        style={{
+                          position: "absolute",
+                          width: "4px",
+                          height: "22px",
+                          background: "#fbbf24",
+                          borderRadius: "3px",
+                          left: "50%",
+                          top: "50%",
+                          marginLeft: "-2px",
+                          marginTop: "-11px",
+                          transformOrigin: "50% 50%",
+                          "--rd": `${deg}deg`,
+                          animation: "clash-ray 0.38s ease-out forwards",
+                        } as React.CSSProperties}
+                      />
+                    ))}
+                    {/* centre burst */}
+                    <div style={{
+                      position: "absolute",
+                      width: "20px", height: "20px",
+                      background: "#fbbf24",
+                      borderRadius: "50%",
+                      animation: "clash-burst 0.38s ease-out forwards",
+                    }} />
+                    {/* star */}
+                    <div style={{
+                      position: "absolute",
+                      width: "14px", height: "14px",
+                      background: "#f97316",
+                      clipPath: "polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)",
+                      animation: "clash-star 0.38s ease-out forwards",
+                    }} />
+                  </div>
+                )}
               </div>
               <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug">
                 {overlayText}
               </p>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                {newFistBumps.length === 1
+                {overlayCount === 1
                   ? "gave you a fist bump!"
-                  : `gave you ${newFistBumps.length} fist bumps!`}
+                  : `gave you ${overlayCount} fist bumps!`}
               </p>
             </div>
           </div>
@@ -662,7 +735,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
               Feed
               {fistBumpBadge > 0 && (
                 <span className="absolute -top-2 -right-1 flex items-center gap-px text-[8px] font-bold leading-none">
-                  <span className="text-[10px]">👊</span>
+                  <img src="/fistbump3.png" alt="" className="h-3.5 w-3.5 object-contain" />
                   <span className="text-amber-500">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
                 </span>
               )}
