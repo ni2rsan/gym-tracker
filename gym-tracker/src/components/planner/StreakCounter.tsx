@@ -103,21 +103,19 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
             );
 
             return (
-              <div key={milestone} className="relative flex flex-col items-center gap-1">
-                {unlocked && (
-                  <>
-                    <span className="sparkle" style={{ top: 2, right: 6 }}>✦</span>
-                    <span className="sparkle sparkle-d1" style={{ top: 18, left: 4 }}>✦</span>
-                    <span className="sparkle sparkle-d2" style={{ bottom: 24, right: 2 }}>✦</span>
-                  </>
-                )}
+              <div key={milestone} className="flex flex-col items-center gap-1">
                 {unlocked ? (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setActive(data); }}
-                    className={cn("w-32 h-32 flex items-center justify-center overflow-hidden rounded-full focus:outline-none")}
-                  >
-                    {badgeImg}
-                  </button>
+                  <div className="relative w-32 h-32">
+                    <span className="sparkle" style={{ top: 8, right: 12 }}>✦</span>
+                    <span className="sparkle sparkle-d1" style={{ top: 28, left: 8 }}>✦</span>
+                    <span className="sparkle sparkle-d2" style={{ bottom: 16, right: 10 }}>✦</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActive(data); }}
+                      className="w-full h-full flex items-center justify-center overflow-hidden rounded-full focus:outline-none"
+                    >
+                      {badgeImg}
+                    </button>
+                  </div>
                 ) : (
                   <div className="w-32 h-32 flex items-center justify-center overflow-hidden rounded-full opacity-30 grayscale">
                     {badgeImg}
