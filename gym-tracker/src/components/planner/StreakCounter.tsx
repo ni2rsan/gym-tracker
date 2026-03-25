@@ -46,6 +46,7 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
             rgba(255,255,255,0.08) 70%,
             transparent 100%
           );
+          mix-blend-mode: overlay;
           animation: badge-shine 2.8s ease-in-out infinite;
           animation-delay: var(--shine-delay, 0s);
           pointer-events: none;
