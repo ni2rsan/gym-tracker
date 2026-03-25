@@ -20,11 +20,11 @@ export function ProgressPage({ streakData, prs, cumulativeVolume }: ProgressPage
 
   return (
     <div className="space-y-3">
-      {/* 1. Days in a row */}
+      {/* 1. Workouts */}
       <StreakHero
-        generalStreak={streakData.generalStreak}
-        bestStreak={streakData.bestStreak}
-        totalWorkoutsThisMonth={streakData.totalWorkoutsThisMonth}
+        totalTracked={streakData.totalTracked}
+        totalPlanned={streakData.totalPlanned}
+        totalMissed={streakData.totalMissed}
       />
 
       {/* 2. Milestones */}

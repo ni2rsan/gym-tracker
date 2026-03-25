@@ -2,42 +2,40 @@
 
 import { useState } from "react";
 
-const MILESTONES = [10, 30, 50, 75, 100];
-const MILESTONE_EMOJIS: Record<number, string> = {
-  10: "🥉", 30: "🥈", 50: "🥇", 75: "💎", 100: "👑",
-};
+const MILESTONES = [1, 10, 20, 30, 50, 60, 75, 100];
 
 const RADIUS = 44;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-function getSvgRingParams(generalStreak: number) {
-  const nextMilestone = MILESTONES.find((m) => m > generalStreak) ?? null;
-  const prevMilestone = [...MILESTONES].reverse().find((m) => m <= generalStreak) ?? 0;
+function getRingParams(totalTracked: number) {
+  const nextMilestone = MILESTONES.find((m) => m > totalTracked) ?? null;
+  const prevMilestone = [...MILESTONES].reverse().find((m) => m <= totalTracked) ?? 0;
   const ringProgress = nextMilestone
-    ? (generalStreak - prevMilestone) / (nextMilestone - prevMilestone)
+    ? (totalTracked - prevMilestone) / (nextMilestone - prevMilestone)
     : 1;
   const offset = CIRCUMFERENCE * (1 - ringProgress);
   return { nextMilestone, prevMilestone, ringProgress, offset };
 }
 
-function getFooterText(generalStreak: number): string {
-  const next = MILESTONES.find((m) => m > generalStreak);
-  if (!next) return "You've conquered every milestone.";
-  const diff = next - generalStreak;
-  if (diff === 1) return `Just 1 more day to reach your ${next}-day milestone!`;
-  return `Keep going — ${diff} days to your ${next}-day milestone`;
+function getMilestoneText(totalTracked: number): string {
+  const next = MILESTONES.find((m) => m > totalTracked);
+  if (!next) return "You've hit every workout milestone.";
+  const diff = next - totalTracked;
+  if (diff === 1) return `Just 1 more workout to reach the ${next}-workout milestone!`;
+  return `Keep going — ${diff} workouts to your ${next}-workout milestone`;
 }
 
 interface StreakHeroProps {
-  generalStreak: number;
-  bestStreak: number;
-  totalWorkoutsThisMonth: number;
+  totalTracked: number;
+  totalPlanned: number;
+  totalMissed: number;
 }
 
-export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }: StreakHeroProps) {
-  const { nextMilestone, prevMilestone, ringProgress, offset } = getSvgRingParams(generalStreak);
-  const isPersonalBest = generalStreak > 0 && generalStreak >= bestStreak;
+export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHeroProps) {
+  const { nextMilestone, prevMilestone, ringProgress, offset } = getRingParams(totalTracked);
   const [badgeImgError, setBadgeImgError] = useState(false);
+
+  const consistency = totalPlanned > 0 ? Math.round((totalTracked / totalPlanned) * 100) : 0;
 
   return (
     <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950 rounded-2xl p-5">
@@ -55,35 +53,28 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-white leading-none tabular-nums">{generalStreak}</span>
-              <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest leading-none mt-0.5">DAYS</span>
+              <span className="text-3xl font-black text-white leading-none tabular-nums">{totalTracked}</span>
+              <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest leading-none mt-0.5">WORKOUTS</span>
             </div>
           </div>
-          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wide mt-1">IN A ROW</span>
+          <span className="text-[9px] font-bold text-white/40 uppercase tracking-wide mt-1">ALL TIME</span>
         </div>
 
         <div className="flex-1 min-w-0 w-full">
-          {/* Motivation + PB badge */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-bold text-white/90">
-              {getFooterText(generalStreak)}
-            </p>
-            {isPersonalBest && (
-              <span className="text-[10px] font-black uppercase tracking-wide bg-white/20 text-white rounded-full px-2 py-0.5">
-                🏅 NEW PERSONAL BEST
-              </span>
-            )}
-          </div>
+          {/* Milestone text */}
+          <p className="text-sm font-bold text-white/90 mb-3">
+            {getMilestoneText(totalTracked)}
+          </p>
 
           {/* Milestone progress bar */}
           {nextMilestone && (
-            <div className="mt-3 bg-black/20 rounded-2xl p-3">
+            <div className="bg-black/20 rounded-2xl p-3 mb-3">
               <div className="flex items-center gap-3">
                 {prevMilestone > 0 && (
                   <div className="w-12 h-12 shrink-0">
                     <img
                       src={`/milestones/${prevMilestone}.png`}
-                      alt={`${prevMilestone}d`}
+                      alt={`${prevMilestone} workouts`}
                       className="w-full h-full object-contain drop-shadow"
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                     />
@@ -91,9 +82,9 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between text-[10px] text-white/50 font-semibold mb-1.5">
-                    <span>{prevMilestone}d</span>
-                    <span className="text-amber-400">{generalStreak}d</span>
-                    <span>{nextMilestone}d</span>
+                    <span>{prevMilestone}</span>
+                    <span className="text-amber-400">{totalTracked}</span>
+                    <span>{nextMilestone}</span>
                   </div>
                   <div className="relative h-3 rounded-full bg-black/30 overflow-hidden">
                     <div
@@ -110,35 +101,35 @@ export function StreakHero({ generalStreak, bestStreak, totalWorkoutsThisMonth }
                   {!badgeImgError ? (
                     <img
                       src={`/milestones/${nextMilestone}.png`}
-                      alt={`${nextMilestone}d`}
+                      alt={`${nextMilestone} workouts`}
                       className="w-full h-full object-contain opacity-70 grayscale brightness-150 drop-shadow"
                       onError={() => setBadgeImgError(true)}
                     />
                   ) : (
-                    <span className="text-4xl leading-none">{MILESTONE_EMOJIS[nextMilestone]}</span>
+                    <span className="text-4xl leading-none">🏅</span>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Stat pills */}
-          <div className="grid grid-cols-2 gap-2 mt-3">
+          {/* Stat pills — 2×2 grid */}
+          <div className="grid grid-cols-2 gap-2">
             <div className="rounded-xl bg-white/15 px-3 py-2">
-              <div className="text-xl font-black text-white tabular-nums leading-none">
-                {totalWorkoutsThisMonth}
-              </div>
-              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">
-                This month
-              </div>
+              <div className="text-xl font-black text-white tabular-nums leading-none">{totalPlanned}</div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">Planned</div>
             </div>
             <div className="rounded-xl bg-white/15 px-3 py-2">
-              <div className="text-xl font-black text-white tabular-nums leading-none">
-                {bestStreak}
-              </div>
-              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">
-                Best streak
-              </div>
+              <div className="text-xl font-black text-white tabular-nums leading-none">{totalMissed}</div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">Missed</div>
+            </div>
+            <div className="rounded-xl bg-white/15 px-3 py-2">
+              <div className="text-xl font-black text-white tabular-nums leading-none">{totalTracked}</div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">Tracked</div>
+            </div>
+            <div className="rounded-xl bg-white/15 px-3 py-2">
+              <div className="text-xl font-black text-white tabular-nums leading-none">{consistency}%</div>
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wide mt-0.5">Consistency</div>
             </div>
           </div>
         </div>

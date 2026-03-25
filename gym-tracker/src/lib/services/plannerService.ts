@@ -299,6 +299,10 @@ export interface StreakData {
   plannedThisWeek: number;   // planned blocks Mon–Sun of current week
   completedThisWeek: number; // of those, worked out or sorry-excused
   thisWeekBlocksByDate: Record<string, string[]>; // date → blockTypes planned this week
+  // All-time workout stats
+  totalTracked: number;  // distinct workout dates ever logged
+  totalPlanned: number;  // all past planned workout blocks (up to yesterday)
+  totalMissed: number;   // past planned blocks not done and not sorry-excused
 }
 
 async function incrementSorryToken(userId: string, month: string): Promise<void> {
@@ -323,11 +327,26 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const todayISO = localTodayISO();
   const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 
-  // SORRY tokens + user-configured max
-  const [sorryToken, userPrefs] = await Promise.all([
+  // Yesterday ISO (for all-time planned cutoff — today is exempt)
+  const yesterdayCursorD = new Date(d);
+  yesterdayCursorD.setDate(yesterdayCursorD.getDate() - 1);
+  const allTimeCutoffISO = `${yesterdayCursorD.getFullYear()}-${String(yesterdayCursorD.getMonth() + 1).padStart(2, "0")}-${String(yesterdayCursorD.getDate()).padStart(2, "0")}`;
+
+  // SORRY tokens + user-configured max + all-time stats
+  const [sorryToken, userPrefs, allTimeSessionDates, allTimePlannedPast] = await Promise.all([
     prisma.userSorryToken.findUnique({ where: { userId_month: { userId, month } } }),
     prisma.user.findUnique({ where: { id: userId }, select: { sorryTokenMax: true, sorryTokenMaxEditedMonth: true } }),
+    prisma.workoutSession.findMany({ where: { userId, sets: { some: {} } }, select: { date: true } }),
+    prisma.plannedWorkout.findMany({ where: { userId, date: { lte: new Date(allTimeCutoffISO + "T23:59:59") } }, select: { date: true, sorryExcused: true } }),
   ]);
+
+  // All-time workout stats
+  const allTimeWorkedSet = new Set(allTimeSessionDates.map((s) => {
+    const sd = s.date; return `${sd.getUTCFullYear()}-${String(sd.getUTCMonth() + 1).padStart(2, "0")}-${String(sd.getUTCDate()).padStart(2, "0")}`;
+  }));
+  const totalTracked = allTimeWorkedSet.size;
+  const totalPlanned = allTimePlannedPast.length;
+  const totalMissed = allTimePlannedPast.filter((pw) => !pw.sorryExcused && !allTimeWorkedSet.has(dbDateToISO(pw.date))).length;
   const sorryUsed = sorryToken?.usedCount ?? 0;
   const sorryMax = userPrefs?.sorryTokenMax ?? 3;
   const canEditSorryMax = userPrefs?.sorryTokenMaxEditedMonth !== month;
@@ -474,7 +493,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   });
 
   if (allSeries.length === 0) {
-    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30, plannedThisWeek, completedThisWeek, thisWeekBlocksByDate };
+    return { streaks: [], sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30, plannedThisWeek, completedThisWeek, thisWeekBlocksByDate, totalTracked, totalPlanned, totalMissed };
   }
 
   // Fetch worked-out dates covering all series
@@ -528,7 +547,7 @@ export async function getStreakData(userId: string): Promise<StreakData> {
     streaks.push({ seriesId: series.id, blockType: series.blockType, count: streak });
   }
 
-  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30, plannedThisWeek, completedThisWeek, thisWeekBlocksByDate };
+  return { streaks, sorryUsed, sorryRemaining: Math.max(0, sorryMax - sorryUsed), sorryMax, canEditSorryMax, month, generalStreak, bestStreak, totalWorkoutsThisMonth, last30DaysWorkouts, thisWeekWorkouts, plannedLast30, completedLast30, plannedThisWeek, completedThisWeek, thisWeekBlocksByDate, totalTracked, totalPlanned, totalMissed };
 }
 
 // ─── SORRY token operations ────────────────────────────────────────────────
