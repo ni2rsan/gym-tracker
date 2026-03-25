@@ -54,8 +54,8 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
             rgba(255,255,255,0.08) 70%,
             transparent 100%
           );
-          -webkit-mask-image: radial-gradient(circle 45% at center, black 40%, transparent 75%);
-          mask-image: radial-gradient(circle 45% at center, black 40%, transparent 75%);
+          -webkit-mask-image: radial-gradient(circle 32% at center, black 40%, transparent 72%);
+          mask-image: radial-gradient(circle 32% at center, black 40%, transparent 72%);
           animation: hero-badge-shine 2.8s ease-in-out infinite;
           pointer-events: none;
         }

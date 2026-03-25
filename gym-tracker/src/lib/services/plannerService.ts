@@ -300,8 +300,8 @@ export interface StreakData {
   completedThisWeek: number; // of those, worked out or sorry-excused
   thisWeekBlocksByDate: Record<string, string[]>; // date → blockTypes planned this week
   // All-time workout stats
-  totalTracked: number;  // distinct workout dates ever logged (includes today if done)
-  totalPlanned: number;  // distinct planned dates before today (excludes today — still in progress)
+  totalTracked: number;  // distinct dates worked out OR sorry-excused
+  totalPlanned: number;  // distinct planned dates up to and including today
   totalMissed: number;   // planned dates before today not done and not sorry-excused
 }
 
@@ -343,14 +343,15 @@ export async function getStreakData(userId: string): Promise<StreakData> {
   const allTimeSorryDates = new Set(
     allTimePlannedRaw.filter((pw) => pw.sorryExcused).map((pw) => dbDateToISO(pw.date))
   );
-  // Distinct planned dates BEFORE today (today is still in progress — don't count it as planned)
-  const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))].filter(d => d < todayISO);
+  // Distinct planned dates up to and including today
+  const uniquePlannedDates = [...new Set(allTimePlannedRaw.map((pw) => dbDateToISO(pw.date)))];
   const totalPlanned = uniquePlannedDates.length;
-  // Tracked = distinct workout dates (includes today if already done)
-  const totalTracked = allTimeWorkedSet.size;
-  // Missed = planned dates strictly before today where no workout logged and not sorry-excused
+  // Tracked = distinct dates worked out OR sorry-excused (both count as "done")
+  const allTimeDoneSet = new Set([...allTimeWorkedSet, ...allTimeSorryDates]);
+  const totalTracked = allTimeDoneSet.size;
+  // Missed = planned dates strictly before today that are not done
   const totalMissed = uniquePlannedDates.filter(
-    (date) => !allTimeWorkedSet.has(date) && !allTimeSorryDates.has(date)
+    (date) => date < todayISO && !allTimeDoneSet.has(date)
   ).length;
   const sorryUsed = sorryToken?.usedCount ?? 0;
   const sorryMax = userPrefs?.sorryTokenMax ?? 3;

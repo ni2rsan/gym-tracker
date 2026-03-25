@@ -46,7 +46,8 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
             rgba(255,255,255,0.08) 70%,
             transparent 100%
           );
-          mix-blend-mode: overlay;
+          -webkit-mask-image: radial-gradient(circle 32% at center, black 40%, transparent 72%);
+          mask-image: radial-gradient(circle 32% at center, black 40%, transparent 72%);
           animation: badge-shine 2.8s ease-in-out infinite;
           animation-delay: var(--shine-delay, 0s);
           pointer-events: none;
@@ -63,7 +64,7 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
             <div key={m} className="flex flex-col items-center gap-1">
               <div
                 className={cn(
-                  "w-32 h-32 flex items-center justify-center overflow-hidden rounded-full transition-all relative",
+                  "w-32 h-32 flex items-center justify-center overflow-hidden transition-all relative",
                   unlocked ? "badge-shine" : "opacity-30 grayscale"
                 )}
                 style={unlocked ? { "--shine-delay": `${i * 0.35}s` } as React.CSSProperties : undefined}
