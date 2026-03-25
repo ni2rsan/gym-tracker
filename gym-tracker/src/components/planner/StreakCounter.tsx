@@ -106,9 +106,9 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
               <div key={milestone} className="flex flex-col items-center gap-1">
                 {unlocked ? (
                   <div className="relative w-32 h-32">
-                    <span className="sparkle" style={{ top: 8, right: 12 }}>✦</span>
-                    <span className="sparkle sparkle-d1" style={{ top: 28, left: 8 }}>✦</span>
-                    <span className="sparkle sparkle-d2" style={{ bottom: 16, right: 10 }}>✦</span>
+                    <span className="sparkle" style={{ top: 24, right: 28 }}>✦</span>
+                    <span className="sparkle sparkle-d1" style={{ top: 40, left: 24 }}>✦</span>
+                    <span className="sparkle sparkle-d2" style={{ bottom: 28, right: 26 }}>✦</span>
                     <button
                       onClick={(e) => { e.stopPropagation(); setActive(data); }}
                       className="w-full h-full flex items-center justify-center overflow-hidden rounded-full focus:outline-none"
