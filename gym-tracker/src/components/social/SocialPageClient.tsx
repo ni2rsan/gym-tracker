@@ -667,7 +667,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                   key={animFrame}
                   src={`/fistbump${animFrame}.png`}
                   alt="fist bump"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain dark:invert"
                   style={{ animation: "fb-frame-pop 0.26s cubic-bezier(0.34,1.56,0.64,1) both" }}
                 />
                 {/* Comic clash effect on frame 3 */}
