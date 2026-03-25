@@ -26,6 +26,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Fistbump PNG icon — matches zinc-400 (light) / zinc-500 (dark) like lucide icons */
+.fb-icon {
+  filter: brightness(0) opacity(0.55);
+}
+@variant dark {
+  .fb-icon {
+    filter: brightness(0) invert(1) opacity(0.4);
+  }
+}
+
 /* Badge sparkle animation */
 @keyframes sparkle-twinkle {
   0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
