@@ -26,13 +26,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Fistbump PNG icon — zinc-400 in light mode, zinc-500 in dark mode */
+/* Fistbump PNG icon — grey in light mode, lighter grey in dark mode */
 .fb-icon {
-  filter: brightness(0) invert(0.62); /* #9e9e9e ≈ zinc-400 */
+  filter: grayscale(1) brightness(0.55);
 }
 @variant dark {
   .fb-icon {
-    filter: brightness(0) invert(0.42); /* #6b6b6b ≈ zinc-500 */
+    filter: grayscale(1) brightness(1.8);
   }
 }
 
