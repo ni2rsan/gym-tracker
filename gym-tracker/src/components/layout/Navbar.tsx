@@ -44,7 +44,7 @@ function NavBadges({ href, socialBadges }: { href: string; socialBadges?: Navbar
       )}
       {fistBumpBadge > 0 && (
         <span className="absolute -top-2 -right-3.5 flex items-center gap-px text-[8px] font-bold leading-none">
-          <img src="/fistbump3.png" alt="" className="h-4 w-4 object-contain" />
+          <img src="/fistbump3.png" alt="" className="h-4 w-4 object-contain fb-icon" />
           <span className="text-amber-500 dark:text-amber-400">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
         </span>
       )}
