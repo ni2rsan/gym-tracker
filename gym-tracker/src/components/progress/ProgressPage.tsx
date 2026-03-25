@@ -28,10 +28,7 @@ export function ProgressPage({ streakData, prs, cumulativeVolume }: ProgressPage
       />
 
       {/* 2. Milestones */}
-      <MilestonesCard
-        generalStreak={streakData.generalStreak}
-        bestStreak={streakData.bestStreak}
-      />
+      <MilestonesCard totalTracked={streakData.totalTracked} />
 
       {/* 3. Newest PRs (top 3) */}
       {recentPRs.length > 0 && <PRHighlights prs={recentPRs} />}
