@@ -54,7 +54,8 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
             rgba(255,255,255,0.08) 70%,
             transparent 100%
           );
-          mix-blend-mode: overlay;
+          -webkit-mask-image: radial-gradient(circle 45% at center, black 40%, transparent 75%);
+          mask-image: radial-gradient(circle 45% at center, black 40%, transparent 75%);
           animation: hero-badge-shine 2.8s ease-in-out infinite;
           pointer-events: none;
         }
@@ -64,7 +65,7 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
         <div className="relative shrink-0 flex flex-col items-center justify-center" style={{ width: 140, height: 140 }}>
           {prevMilestone != null ? (
             <div
-              className={`relative w-24 h-24 overflow-hidden rounded-full ${!badgeImgError ? "hero-badge-shine" : ""}`}
+              className={`relative w-32 h-32 overflow-hidden ${!badgeImgError ? "hero-badge-shine" : ""}`}
             >
               {!badgeImgError ? (
                 <img
@@ -78,8 +79,8 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
               )}
             </div>
           ) : (
-            <div className="w-24 h-24 flex items-center justify-center">
-              <span className="text-5xl leading-none">🎯</span>
+            <div className="w-32 h-32 flex items-center justify-center">
+              <span className="text-6xl leading-none">🎯</span>
             </div>
           )}
           <span className="text-[9px] font-bold text-white/40 uppercase tracking-wide mt-1">
