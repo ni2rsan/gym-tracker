@@ -142,7 +142,7 @@ function FeedCard({
               onClick={() => onFistBump(entry.sessionId)}
               className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${
                 entry.myFistBump
-                  ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
                   : "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
               }`}
               title={entry.myFistBump ? "Remove fist bump" : "Fist bump!"}
@@ -666,7 +666,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                   key={animFrame}
                   src={`/fistbump${animFrame}.png`}
                   alt="fist bump"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain fb-icon"
                   style={{ animation: "fb-frame-pop 0.18s ease-out both" }}
                 />
                 {/* Comic clash effect on frame 3 */}
@@ -735,7 +735,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
               Feed
               {fistBumpBadge > 0 && (
                 <span className="absolute -top-2 -right-1 flex items-center gap-px text-[8px] font-bold leading-none">
-                  <img src="/fistbump3.png" alt="" className="h-3.5 w-3.5 object-contain fb-icon" />
+                  <img src="/fistbump3.png" alt="" className="h-5 w-5 object-contain fb-icon" />
                   <span className="text-amber-500">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
                 </span>
               )}
@@ -776,7 +776,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Friends</div>
         </div>
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
-          <img src="/fistbump3.png" alt="" className="h-4 w-4 object-contain mx-auto mb-1 fb-icon" />
+          <img src="/fistbump3.png" alt="" className="h-6 w-6 object-contain mx-auto mb-1 fb-icon" />
           <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{socialStats.totalFistBumpsReceived}</div>
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Fist bumps</div>
         </div>
