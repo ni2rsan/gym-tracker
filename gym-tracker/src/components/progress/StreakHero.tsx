@@ -44,28 +44,25 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
     <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950 rounded-2xl p-5">
       <div className="flex flex-col sm:flex-row items-center gap-5">
         {/* Current milestone badge */}
-        <div className="relative shrink-0 flex flex-col items-center justify-center gap-1">
-          {prevMilestone != null && (
-            <>
-              <span className="sparkle" style={{ top: 2, right: 8 }}>✦</span>
-              <span className="sparkle sparkle-d1" style={{ top: 24, left: 4 }}>✦</span>
-              <span className="sparkle sparkle-d2" style={{ bottom: 32, right: 2 }}>✦</span>
-            </>
-          )}
+        <div className="shrink-0 flex flex-col items-center justify-center gap-1">
           {prevMilestone != null ? (
-            <div
-              className="relative w-32 h-32 overflow-hidden rounded-full"
-            >
-              {!badgeImgError ? (
-                <img
-                  src={`/milestones/${prevMilestone}.png`}
-                  alt={`${prevMilestone} workouts`}
-                  className="w-full h-full object-contain drop-shadow"
-                  onError={() => setBadgeImgError(true)}
-                />
-              ) : (
-                <span className="text-5xl leading-none flex items-center justify-center w-full h-full">🏅</span>
-              )}
+            <div className="relative w-32 h-32">
+              {/* sparkles on the badge */}
+              <span className="sparkle" style={{ top: 8, right: 12 }}>✦</span>
+              <span className="sparkle sparkle-d1" style={{ top: 28, left: 8 }}>✦</span>
+              <span className="sparkle sparkle-d2" style={{ bottom: 16, right: 10 }}>✦</span>
+              <div className="w-full h-full overflow-hidden rounded-full">
+                {!badgeImgError ? (
+                  <img
+                    src={`/milestones/${prevMilestone}.png`}
+                    alt={`${prevMilestone} workouts`}
+                    className="w-full h-full object-contain drop-shadow"
+                    onError={() => setBadgeImgError(true)}
+                  />
+                ) : (
+                  <span className="text-5xl leading-none flex items-center justify-center w-full h-full">🏅</span>
+                )}
+              </div>
             </div>
           ) : (
             <div className="w-32 h-32 flex items-center justify-center">
