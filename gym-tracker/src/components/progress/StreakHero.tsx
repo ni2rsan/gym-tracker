@@ -39,8 +39,8 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
     <div className="bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950 rounded-2xl p-5">
       <style>{`
         @keyframes hero-badge-shine {
-          0%   { transform: translateX(-130%) skewX(-20deg); }
-          100% { transform: translateX(230%)  skewX(-20deg); }
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
         }
         .hero-badge-shine::after {
           content: '';
@@ -49,13 +49,10 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
           background: linear-gradient(
             90deg,
             transparent 0%,
-            rgba(255,255,255,0.08) 30%,
             rgba(255,255,255,0.55) 50%,
-            rgba(255,255,255,0.08) 70%,
             transparent 100%
           );
-          -webkit-mask-image: radial-gradient(circle 32% at center, black 40%, transparent 72%);
-          mask-image: radial-gradient(circle 32% at center, black 40%, transparent 72%);
+          background-size: 200% 100%;
           animation: hero-badge-shine 2.8s ease-in-out infinite;
           pointer-events: none;
         }
@@ -65,7 +62,7 @@ export function StreakHero({ totalTracked, totalPlanned, totalMissed }: StreakHe
         <div className="relative shrink-0 flex flex-col items-center justify-center" style={{ width: 140, height: 140 }}>
           {prevMilestone != null ? (
             <div
-              className={`relative w-32 h-32 overflow-hidden ${!badgeImgError ? "hero-badge-shine" : ""}`}
+              className={`relative w-32 h-32 overflow-hidden rounded-full ${!badgeImgError ? "hero-badge-shine" : ""}`}
             >
               {!badgeImgError ? (
                 <img
