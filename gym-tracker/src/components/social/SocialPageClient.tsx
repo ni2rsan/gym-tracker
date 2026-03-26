@@ -433,10 +433,18 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     const el = spriteDivRef.current;
     if (!el) return;
 
-    // Natural frame start positions in the sprite (widths: 164,160,156,152,148,145,142,137,133,128 — 25px gaps)
+    // Natural frame start positions + widths (25px gaps between frames)
     const FRAME_X_NAT = [0, 189, 374, 555, 732, 905, 1075, 1242, 1404, 1562];
-    const SCALE = 112 / 131; // scale sprite to display height 112px (h-28)
-    const FRAME_POS = FRAME_X_NAT.map(x => -Math.round(x * SCALE)); // [-0, -162, -320, ...]
+    const FRAME_W_NAT = [164, 160, 156, 152, 148, 145, 142, 137, 133, 128];
+    const SCALE = 112 / 131; // scale sprite to display height 112px
+    const CONTAINER_W = 144; // w-36
+    // Center each frame in the container so both fists move equally toward center
+    const FRAME_POS = FRAME_X_NAT.map((x, i) => {
+      const scaledX = Math.round(x * SCALE);
+      const scaledW = Math.round(FRAME_W_NAT[i] * SCALE);
+      const centerOffset = Math.round((CONTAINER_W - scaledW) / 2);
+      return -scaledX + centerOffset;
+    });
 
     const CYCLES = 3;
     const TOTAL_STEPS = 10 * CYCLES;
