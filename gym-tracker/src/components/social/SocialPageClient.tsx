@@ -405,10 +405,12 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const router = useRouter();
 
   // Scroll to top on mount (useLayoutEffect beats Next.js scroll restoration)
-  // Scroll to top on mount — rAF beats Next.js scroll restoration which runs after mount
+  // Scroll to top on mount — disable browser scroll restoration so it can't override us
   useEffect(() => {
-    const id = requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" }));
-    return () => cancelAnimationFrame(id);
+    const prev = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    window.scrollTo({ top: 0, behavior: "instant" });
+    return () => { window.history.scrollRestoration = prev; };
   }, []);
   // Scroll to top on view/tab change
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [view, tab]);
