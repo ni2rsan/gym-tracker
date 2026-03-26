@@ -180,7 +180,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
               <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 Friends
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {FRIEND_BADGES.map((badge) => {
                   const achieved = friendCount >= badge.threshold;
                   return achieved ? (
@@ -223,7 +223,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
 
               {/* Friends progress bar */}
               <div className="flex items-center gap-1.5 mt-auto">
-                <div className="w-14 h-14 shrink-0">
+                <div className="w-20 h-20 shrink-0">
                   {lastFriend ? (
                     <img src={`/social/${lastFriend.key}.png`} alt={lastFriend.label} className="w-full h-full object-contain" />
                   ) : (
@@ -240,7 +240,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     }}
                   />
                 </div>
-                <div className="w-14 h-14 shrink-0">
+                <div className="w-20 h-20 shrink-0">
                   {nextFriend ? (
                     <img src={`/social/${nextFriend.key}.png`} alt={nextFriend.label} className="w-full h-full object-contain opacity-40 grayscale" />
                   ) : (
@@ -260,7 +260,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
               <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 Fist Bumps
               </p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {FISTBUMP_BADGES.map((badge) => {
                   const achieved = fistbumpCount >= badge.threshold;
                   return achieved ? (
@@ -303,7 +303,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
 
               {/* Fistbumps progress bar */}
               <div className="flex items-center gap-1.5 mt-auto">
-                <div className="w-14 h-14 shrink-0">
+                <div className="w-20 h-20 shrink-0">
                   {lastFistbump ? (
                     <img src={`/social/${lastFistbump.key}.png`} alt={lastFistbump.label} className="w-full h-full object-contain" />
                   ) : (
@@ -320,7 +320,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     }}
                   />
                 </div>
-                <div className="w-14 h-14 shrink-0">
+                <div className="w-20 h-20 shrink-0">
                   {nextFistbump ? (
                     <img src={`/social/${nextFistbump.key}.png`} alt={nextFistbump.label} className="w-full h-full object-contain opacity-40 grayscale" />
                   ) : (
