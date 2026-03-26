@@ -2,6 +2,7 @@ import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getStreakData } from "@/lib/services/plannerService";
 import { getPersonalRecords } from "@/lib/services/reportService";
 import { getCumulativeVolume } from "@/lib/services/progressService";
+import { getSocialStats } from "@/lib/services/socialService";
 import { ProgressPage } from "@/components/progress/ProgressPage";
 
 export const metadata = { title: "Progress — Gym Tracker" };
@@ -10,10 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function Progress() {
   const userId = await getCurrentUserId();
 
-  const [streakData, prs, cumulativeVolume] = await Promise.all([
+  const [streakData, prs, cumulativeVolume, socialStats] = await Promise.all([
     getStreakData(userId),
     getPersonalRecords(userId),
     getCumulativeVolume(userId),
+    getSocialStats(userId),
   ]);
 
   return (
@@ -28,6 +30,8 @@ export default async function Progress() {
         streakData={streakData}
         prs={prs}
         cumulativeVolume={cumulativeVolume}
+        friendCount={socialStats.friendCount}
+        fistbumpCount={socialStats.totalFistBumpsReceived}
       />
     </div>
   );
