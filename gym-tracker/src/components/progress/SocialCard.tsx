@@ -174,13 +174,13 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
         </button>
 
         {!collapsed && (
-          <>
-            {/* Friends section */}
-            <div className="px-4 pt-3 pb-2">
-              <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
+          <div className="flex divide-x divide-zinc-100 dark:divide-zinc-800">
+            {/* ── Friends column ── */}
+            <div className="flex-1 px-3 pt-3 pb-4 flex flex-col gap-2">
+              <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 Friends
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {FRIEND_BADGES.map((badge) => {
                   const achieved = friendCount >= badge.threshold;
                   return achieved ? (
@@ -190,9 +190,9 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       className="flex flex-col items-center focus:outline-none"
                     >
                       <div className="relative w-full aspect-square">
-                        <span className="sparkle" style={{ top: "10%", right: "15%" }}>✦</span>
-                        <span className="sparkle sparkle-d1" style={{ top: "30%", left: "12%" }}>✦</span>
-                        <span className="sparkle sparkle-d2" style={{ bottom: "12%", right: "18%" }}>✦</span>
+                        <span className="sparkle" style={{ top: "22%", right: "22%" }}>✦</span>
+                        <span className="sparkle sparkle-d1" style={{ top: "38%", left: "20%" }}>✦</span>
+                        <span className="sparkle sparkle-d2" style={{ bottom: "20%", right: "24%" }}>✦</span>
                         <img
                           src={`/social/${badge.key}.png`}
                           alt={badge.label}
@@ -220,12 +220,10 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                   );
                 })}
               </div>
-            </div>
 
-            {/* Friends progress bar */}
-            <div className="px-4 pb-3 pt-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 shrink-0">
+              {/* Friends progress bar */}
+              <div className="flex items-center gap-1.5 mt-auto">
+                <div className="w-14 h-14 shrink-0">
                   {lastFriend ? (
                     <img src={`/social/${lastFriend.key}.png`} alt={lastFriend.label} className="w-full h-full object-contain" />
                   ) : (
@@ -242,7 +240,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     }}
                   />
                 </div>
-                <div className="w-8 h-8 shrink-0">
+                <div className="w-14 h-14 shrink-0">
                   {nextFriend ? (
                     <img src={`/social/${nextFriend.key}.png`} alt={nextFriend.label} className="w-full h-full object-contain opacity-40 grayscale" />
                   ) : (
@@ -252,19 +250,17 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                   )}
                 </div>
               </div>
-              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tabular-nums">
+              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 font-medium tabular-nums">
                 {friendCount} {friendCount === 1 ? "friend" : "friends"}
               </p>
             </div>
 
-            <div className="mx-4 border-t border-zinc-100 dark:border-zinc-800" />
-
-            {/* Fistbumps section */}
-            <div className="px-4 pt-3 pb-2">
-              <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
+            {/* ── Fistbumps column ── */}
+            <div className="flex-1 px-3 pt-3 pb-4 flex flex-col gap-2">
+              <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 Fist Bumps
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {FISTBUMP_BADGES.map((badge) => {
                   const achieved = fistbumpCount >= badge.threshold;
                   return achieved ? (
@@ -274,9 +270,9 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       className="flex flex-col items-center focus:outline-none"
                     >
                       <div className="relative w-full aspect-square">
-                        <span className="sparkle" style={{ top: "10%", right: "15%" }}>✦</span>
-                        <span className="sparkle sparkle-d1" style={{ top: "30%", left: "12%" }}>✦</span>
-                        <span className="sparkle sparkle-d2" style={{ bottom: "12%", right: "18%" }}>✦</span>
+                        <span className="sparkle" style={{ top: "22%", right: "22%" }}>✦</span>
+                        <span className="sparkle sparkle-d1" style={{ top: "38%", left: "20%" }}>✦</span>
+                        <span className="sparkle sparkle-d2" style={{ bottom: "20%", right: "24%" }}>✦</span>
                         <img
                           src={`/social/${badge.key}.png`}
                           alt={badge.label}
@@ -304,12 +300,10 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                   );
                 })}
               </div>
-            </div>
 
-            {/* Fistbumps progress bar */}
-            <div className="px-4 pb-4 pt-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 shrink-0">
+              {/* Fistbumps progress bar */}
+              <div className="flex items-center gap-1.5 mt-auto">
+                <div className="w-14 h-14 shrink-0">
                   {lastFistbump ? (
                     <img src={`/social/${lastFistbump.key}.png`} alt={lastFistbump.label} className="w-full h-full object-contain" />
                   ) : (
@@ -326,7 +320,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     }}
                   />
                 </div>
-                <div className="w-8 h-8 shrink-0">
+                <div className="w-14 h-14 shrink-0">
                   {nextFistbump ? (
                     <img src={`/social/${nextFistbump.key}.png`} alt={nextFistbump.label} className="w-full h-full object-contain opacity-40 grayscale" />
                   ) : (
@@ -336,11 +330,11 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                   )}
                 </div>
               </div>
-              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tabular-nums">
+              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 font-medium tabular-nums">
                 {fistbumpCount} {fistbumpCount === 1 ? "fist bump" : "fist bumps"} received
               </p>
             </div>
-          </>
+          </div>
         )}
       </div>
     </>
