@@ -396,7 +396,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const [overlayCount, setOverlayCount] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showClash, setShowClash] = useState(false);
-  const fbImgRef = useRef<HTMLImageElement>(null);
+  const spriteDivRef = useRef<HTMLDivElement>(null);
   const [newBumpSessionIds, setNewBumpSessionIds] = useState(() => new Set(newFistBumps.map((b) => b.sessionId)));
   const [newFeedIds, setNewFeedIds] = useState(() => new Set(newFeedSessionIds));
   const [fistBumpBadge, setFistBumpBadge] = useState(newFistBumps.length);
@@ -427,57 +427,44 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     }
   }, [view, tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Img-ref fistbump animation — preload all 10 frames, swap src directly on DOM node (no re-renders)
+  // Sprite-sheet animation — variable-width frames, JS-driven background-position
   useEffect(() => {
     if (!showFistBumpOverlay) return;
+    const el = spriteDivRef.current;
+    if (!el) return;
 
-    const FRAME_COUNT = 10;
+    // Natural frame start positions in the sprite (widths: 164,160,156,152,148,145,142,137,133,128 — 25px gaps)
+    const FRAME_X_NAT = [0, 189, 374, 555, 732, 905, 1075, 1242, 1404, 1562];
+    const SCALE = 112 / 131; // scale sprite to display height 112px (h-28)
+    const FRAME_POS = FRAME_X_NAT.map(x => -Math.round(x * SCALE)); // [-0, -162, -320, ...]
+
     const CYCLES = 3;
-    const MS_PER_FRAME = 80; // ~12.5 fps — smooth and readable
-    const TOTAL_STEPS = FRAME_COUNT * CYCLES; // 30
+    const TOTAL_STEPS = 10 * CYCLES;
+    const MS_PER_FRAME = 80;
 
-    // Preload all frames into browser cache
-    const preloaded: HTMLImageElement[] = Array.from({ length: FRAME_COUNT }, (_, i) => {
-      const img = new Image();
-      img.src = `/fistbump${i + 1}.png`;
-      return img;
-    });
-
-    let loaded = 0;
+    let step = 0;
+    let lastTime = 0;
     let rafId: number;
 
-    const runAnimation = () => {
-      let step = 0;
-      let lastTime = 0;
-
-      const tick = (ts: number) => {
-        if (ts - lastTime >= MS_PER_FRAME) {
-          lastTime = ts;
-          // Swap src directly — no React state update, no re-render
-          if (fbImgRef.current) {
-            fbImgRef.current.src = preloaded[step % FRAME_COUNT].src;
-          }
-          if (step === TOTAL_STEPS - 1) {
-            setShowClash(true);
-            setTimeout(() => setShowClash(false), 520);
-          }
-          step++;
-          if (step >= TOTAL_STEPS) {
-            setShowConfetti(true);
-            return;
-          }
+    const tick = (ts: number) => {
+      if (ts - lastTime >= MS_PER_FRAME) {
+        lastTime = ts;
+        el.style.backgroundPositionX = `${FRAME_POS[step % 10]}px`;
+        if (step === TOTAL_STEPS - 1) {
+          setShowClash(true);
+          setTimeout(() => setShowClash(false), 520);
         }
-        rafId = requestAnimationFrame(tick);
-      };
+        step++;
+        if (step >= TOTAL_STEPS) {
+          setShowConfetti(true);
+          return;
+        }
+      }
       rafId = requestAnimationFrame(tick);
     };
+    rafId = requestAnimationFrame(tick);
 
-    preloaded.forEach((img) => {
-      if (img.complete) { loaded++; if (loaded === FRAME_COUNT) runAnimation(); }
-      else img.onload = () => { loaded++; if (loaded === FRAME_COUNT) runAnimation(); };
-    });
-
-    return () => { if (rafId) cancelAnimationFrame(rafId); };
+    return () => cancelAnimationFrame(rafId);
   }, [showFistBumpOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFriendRemoved = (userId: string) => {
@@ -691,13 +678,18 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
                   } as React.CSSProperties}
                 />
               ))}
-              {/* Fistbump frame animation */}
-              <div className="relative w-28 h-28 mx-auto mb-5 select-none">
-                <img
-                  ref={fbImgRef}
-                  src="/fistbump1.png"
-                  alt="fist bump"
-                  className="w-full h-full object-contain dark:invert"
+              {/* Fistbump sprite animation */}
+              <div className="relative w-36 h-28 mx-auto mb-5 select-none">
+                <div
+                  ref={spriteDivRef}
+                  className="w-full h-full dark:invert"
+                  style={{
+                    backgroundImage: "url('/fistbump-sprite.png')",
+                    backgroundSize: "auto 112px",
+                    backgroundRepeat: "no-repeat",
+                    backgroundPositionX: "0px",
+                    backgroundPositionY: "center",
+                  }}
                 />
                 {/* Comic clash effect on frame 3 */}
                 {showClash && (
