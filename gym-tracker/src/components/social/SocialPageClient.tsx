@@ -441,13 +441,10 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     const FRAME_W_NAT = [164, 160, 156, 152, 148, 145, 142, 137, 133, 128];
     const SCALE = 112 / 131; // scale sprite to display height 112px
     const CONTAINER_W = 144; // w-36
-    const RIGHT_NUDGE = 8; // visual fine-tune to center in overlay card
-    // Center each frame in the container so both fists move equally toward center
+    // Place each frame so its center aligns with the container center
     const FRAME_POS = FRAME_X_NAT.map((x, i) => {
-      const scaledX = Math.round(x * SCALE);
-      const scaledW = Math.round(FRAME_W_NAT[i] * SCALE);
-      const centerOffset = Math.round((CONTAINER_W - scaledW) / 2);
-      return -scaledX + centerOffset + RIGHT_NUDGE;
+      const frameCenterScaled = Math.round((x + FRAME_W_NAT[i] / 2) * SCALE);
+      return Math.round(CONTAINER_W / 2) - frameCenterScaled;
     });
 
     const CYCLES = 3;
