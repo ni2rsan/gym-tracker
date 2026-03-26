@@ -404,6 +404,9 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const hasVisitedFeedRef = useRef(false);
   const router = useRouter();
 
+  // Scroll to top on view/tab change
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [view, tab]);
+
   // Mark feed as seen when feed tab is clicked — trigger overlay, refresh navbar badge
   // Clear highlights only after user has visited feed and then leaves
   useEffect(() => {
