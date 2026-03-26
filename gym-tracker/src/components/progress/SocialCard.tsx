@@ -190,9 +190,9 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       className="flex flex-col items-center focus:outline-none"
                     >
                       <div className="relative w-full aspect-square">
-                        <span className="sparkle" style={{ top: "22%", right: "22%" }}>✦</span>
-                        <span className="sparkle sparkle-d1" style={{ top: "38%", left: "20%" }}>✦</span>
-                        <span className="sparkle sparkle-d2" style={{ bottom: "20%", right: "24%" }}>✦</span>
+                        <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
+                        <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
+                        <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
                         <img
                           src={`/social/${badge.key}.png`}
                           alt={badge.label}
@@ -270,9 +270,9 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       className="flex flex-col items-center focus:outline-none"
                     >
                       <div className="relative w-full aspect-square">
-                        <span className="sparkle" style={{ top: "22%", right: "22%" }}>✦</span>
-                        <span className="sparkle sparkle-d1" style={{ top: "38%", left: "20%" }}>✦</span>
-                        <span className="sparkle sparkle-d2" style={{ bottom: "20%", right: "24%" }}>✦</span>
+                        <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
+                        <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
+                        <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
                         <img
                           src={`/social/${badge.key}.png`}
                           alt={badge.label}
