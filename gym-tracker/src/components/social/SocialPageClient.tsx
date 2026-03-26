@@ -404,8 +404,13 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const hasVisitedFeedRef = useRef(false);
   const router = useRouter();
 
-  // Scroll to top on mount and on view/tab change
-  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
+  // Scroll to top on mount (useLayoutEffect beats Next.js scroll restoration)
+  // Scroll to top on mount — rAF beats Next.js scroll restoration which runs after mount
+  useEffect(() => {
+    const id = requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  // Scroll to top on view/tab change
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [view, tab]);
 
   // Mark feed as seen when feed tab is clicked — trigger overlay, refresh navbar badge
