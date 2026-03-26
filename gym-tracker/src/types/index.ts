@@ -139,6 +139,7 @@ export interface NewFistBumpNotification {
 export interface SocialStats {
   totalFistBumpsReceived: number;
   totalWorkoutsTracked: number;
+  friendCount: number;
 }
 
 export interface UserRequestItem {

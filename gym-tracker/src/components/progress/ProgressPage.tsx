@@ -4,15 +4,18 @@ import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
 import { StreakHero } from "./StreakHero";
 import { VolumeCasketCard } from "./VolumeCasketCard";
+import { SocialCard } from "./SocialCard";
 import { MilestonesCard, PRPanel } from "@/components/planner/StreakCounter";
 
 interface ProgressPageProps {
   streakData: StreakData;
   prs: PRRecord[];
   cumulativeVolume: number;
+  friendCount: number;
+  fistbumpCount: number;
 }
 
-export function ProgressPage({ streakData, prs, cumulativeVolume }: ProgressPageProps) {
+export function ProgressPage({ streakData, prs, cumulativeVolume, friendCount, fistbumpCount }: ProgressPageProps) {
   return (
     <div className="space-y-3">
       {/* 1. Workouts */}
@@ -30,6 +33,9 @@ export function ProgressPage({ streakData, prs, cumulativeVolume }: ProgressPage
 
       {/* 4. Volume casket */}
       <VolumeCasketCard cumulativeVolume={cumulativeVolume} />
+
+      {/* 5. Social badges */}
+      <SocialCard friendCount={friendCount} fistbumpCount={fistbumpCount} />
     </div>
   );
 }
