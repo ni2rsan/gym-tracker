@@ -444,7 +444,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     // Place each frame so its center aligns with the container center
     const FRAME_POS = FRAME_X_NAT.map((x, i) => {
       const frameCenterScaled = Math.round((x + FRAME_W_NAT[i] / 2) * SCALE);
-      return Math.round(CONTAINER_W / 2) - frameCenterScaled;
+      return Math.round(CONTAINER_W / 2) - frameCenterScaled + 3;
     });
 
     const CYCLES = 3;
