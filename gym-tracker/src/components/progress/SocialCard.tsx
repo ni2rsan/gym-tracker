@@ -180,7 +180,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
               <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 Friends
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {FRIEND_BADGES.map((badge) => {
                   const achieved = friendCount >= badge.threshold;
                   return achieved ? (
@@ -260,7 +260,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
               <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
                 Fist Bumps
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {FISTBUMP_BADGES.map((badge) => {
                   const achieved = fistbumpCount >= badge.threshold;
                   return achieved ? (
