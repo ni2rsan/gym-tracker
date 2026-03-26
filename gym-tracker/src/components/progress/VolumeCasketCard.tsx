@@ -108,7 +108,7 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
           <>
             {/* Badge grid */}
             <div className="px-4 pt-3 pb-2">
-              <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 max-w-sm sm:max-w-md mx-auto">
+              <div className="grid grid-cols-5 sm:grid-cols-7 gap-3">
                 {VOLUME_BADGES.map((badge) => {
                   const achieved = cumulativeVolume >= badge.thresholdKg;
                   return achieved ? (
@@ -122,10 +122,10 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
                         alt={badge.label}
                         className="w-full aspect-square object-contain"
                       />
-                      <span className="text-[8px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-0.5">
+                      <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-0.5">
                         {badge.label}
                       </span>
-                      <span className="text-[7px] font-medium text-zinc-500 dark:text-zinc-400 leading-none mt-0.5 text-center">
+                      <span className="text-[8px] font-medium text-zinc-500 dark:text-zinc-400 leading-none mt-0.5 text-center">
                         {badge.title}
                       </span>
                     </button>
@@ -136,7 +136,7 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
                         alt={badge.label}
                         className="w-full aspect-square object-contain"
                       />
-                      <span className="text-[8px] font-bold text-zinc-400 uppercase leading-none mt-0.5">
+                      <span className="text-[9px] font-bold text-zinc-400 uppercase leading-none mt-0.5">
                         {badge.label}
                       </span>
                     </div>
