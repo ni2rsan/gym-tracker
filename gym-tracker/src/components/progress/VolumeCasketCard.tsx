@@ -108,7 +108,7 @@ export function VolumeCasketCard({ cumulativeVolume }: VolumeCasketCardProps) {
           <>
             {/* Badge grid */}
             <div className="px-4 pt-3 pb-2">
-              <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-13 gap-2">
+              <div className="grid grid-cols-5 sm:grid-cols-7 gap-2 max-w-sm sm:max-w-md mx-auto">
                 {VOLUME_BADGES.map((badge) => {
                   const achieved = cumulativeVolume >= badge.thresholdKg;
                   return achieved ? (
