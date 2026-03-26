@@ -404,7 +404,8 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
   const hasVisitedFeedRef = useRef(false);
   const router = useRouter();
 
-  // Scroll to top on view/tab change
+  // Scroll to top on mount and on view/tab change
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, []);
   useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [view, tab]);
 
   // Mark feed as seen when feed tab is clicked — trigger overlay, refresh navbar badge
@@ -444,7 +445,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
     // Place each frame so its center aligns with the container center
     const FRAME_POS = FRAME_X_NAT.map((x, i) => {
       const frameCenterScaled = Math.round((x + FRAME_W_NAT[i] / 2) * SCALE);
-      return Math.round(CONTAINER_W / 2) - frameCenterScaled + 3;
+      return Math.round(CONTAINER_W / 2) - frameCenterScaled + 6;
     });
 
     const CYCLES = 3;
