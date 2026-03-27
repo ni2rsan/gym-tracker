@@ -88,13 +88,13 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Background so canvas is never blank-white while loading */}
-            <div className="w-full h-64 mb-4 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+            <div className="w-full h-64 mb-4">
               <Canvas
                 shadows={false}
                 camera={{ position: [0, 0, 3], fov: 50 }}
                 style={{ width: "100%", height: "100%" }}
               >
-                <ModelScene autoRotateSpeed={2} showEnvironment={false} />
+                <ModelScene autoRotateSpeed={2} showEnvironment={true} />
               </Canvas>
             </div>
             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
@@ -126,7 +126,7 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
             className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full h-64 mb-4 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+            <div className="w-full h-64 mb-4">
               <Canvas
                 shadows={false}
                 camera={{ position: [0, 0, 3], fov: 50 }}
