@@ -63,7 +63,7 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
   const [introModelLoaded, setIntroModelLoaded] = useState(false);
 
   // Scoped to userId — different accounts on same browser each track independently
-  const introKey = `early-adopter-intro-seen-v3-${userId}`;
+  const introKey = `early-adopter-intro-seen-v4-${userId}`;
 
   useEffect(() => {
     try {
