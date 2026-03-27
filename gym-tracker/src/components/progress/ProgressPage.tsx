@@ -14,9 +14,10 @@ interface ProgressPageProps {
   cumulativeVolume: number;
   friendCount: number;
   fistbumpCount: number;
+  userId: string;
 }
 
-export function ProgressPage({ streakData, prs, cumulativeVolume, friendCount, fistbumpCount }: ProgressPageProps) {
+export function ProgressPage({ streakData, prs, cumulativeVolume, friendCount, fistbumpCount, userId }: ProgressPageProps) {
   return (
     <div className="space-y-3">
       {/* 1. Workouts */}
@@ -39,7 +40,7 @@ export function ProgressPage({ streakData, prs, cumulativeVolume, friendCount, f
       <SocialCard friendCount={friendCount} fistbumpCount={fistbumpCount} />
 
       {/* 6. Specials */}
-      <SpecialsCard />
+      <SpecialsCard userId={userId} />
     </div>
   );
 }
