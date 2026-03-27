@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
 
 // Preload immediately — GLB is cached before Canvas mounts
@@ -32,10 +32,11 @@ function EarlyAdopterModel() {
 function ModelScene({ autoRotateSpeed }: { autoRotateSpeed: number }) {
   return (
     <>
-      <ambientLight intensity={1.6} />
-      <directionalLight position={[3, 5, 3]} intensity={1} />
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[3, 5, 3]} intensity={0.8} />
       <Suspense fallback={null}>
         <EarlyAdopterModel />
+        <Environment preset="city" />
       </Suspense>
       <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
     </>
