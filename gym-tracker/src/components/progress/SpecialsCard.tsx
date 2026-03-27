@@ -54,7 +54,7 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
 
   // Key is scoped to userId so different accounts on the same browser don't share it
-  const introKey = `early-adopter-intro-seen-v2-${userId}`;
+  const introKey = `early-adopter-intro-seen-v3-${userId}`;
 
   useEffect(() => {
     try {
