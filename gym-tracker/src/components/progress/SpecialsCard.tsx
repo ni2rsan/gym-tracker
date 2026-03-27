@@ -2,11 +2,30 @@
 
 import { Suspense, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { OrbitControls, useGLTF, Bounds, Environment } from "@react-three/drei";
+
+// Preload immediately when this module is parsed — GLB is cached before Canvas mounts
+useGLTF.preload("/Early Adopter.glb");
 
 function EarlyAdopterModel() {
   const { scene } = useGLTF("/Early Adopter.glb");
-  return <primitive object={scene} scale={1.8} position={[0, -0.3, 0]} />;
+  return <primitive object={scene} />;
+}
+
+function ModelScene({ autoRotateSpeed }: { autoRotateSpeed: number }) {
+  return (
+    <>
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[5, 5, 5]} intensity={1.2} />
+      <Suspense fallback={null}>
+        <Bounds fit clip observe>
+          <EarlyAdopterModel />
+        </Bounds>
+        <Environment preset="city" />
+      </Suspense>
+      <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
+    </>
+  );
 }
 
 export function SpecialsCard() {
@@ -24,16 +43,9 @@ export function SpecialsCard() {
             className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 3D model in modal */}
-            <div className="w-48 h-48 mx-auto mb-4">
-              <Canvas camera={{ position: [0, 0, 4], fov: 40 }}>
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[5, 5, 5]} intensity={1.2} />
-                <Suspense fallback={null}>
-                  <EarlyAdopterModel />
-                  <Environment preset="city" />
-                </Suspense>
-                <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
+            <div className="w-full h-60 mb-4">
+              <Canvas camera={{ fov: 45 }}>
+                <ModelScene autoRotateSpeed={2} />
               </Canvas>
             </div>
             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
@@ -64,27 +76,20 @@ export function SpecialsCard() {
           </span>
         </div>
 
-        {/* Content */}
-        <div className="px-4 py-4 flex items-center gap-4">
-          {/* 3D model viewer */}
+        <div className="px-4 py-4">
+          {/* 3D model — centered, reasonable size, clickable */}
           <button
             onClick={() => setModalOpen(true)}
-            className="w-28 h-28 shrink-0 rounded-xl overflow-hidden bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 focus:outline-none cursor-pointer"
+            className="w-40 h-40 mx-auto block focus:outline-none cursor-pointer"
             aria-label="View Early Adopter badge"
           >
-            <Canvas camera={{ position: [0, 0, 4], fov: 40 }}>
-              <ambientLight intensity={0.8} />
-              <directionalLight position={[5, 5, 5]} intensity={1.2} />
-              <Suspense fallback={null}>
-                <EarlyAdopterModel />
-                <Environment preset="city" />
-              </Suspense>
-              <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1.5} />
+            <Canvas camera={{ fov: 45 }}>
+              <ModelScene autoRotateSpeed={1.5} />
             </Canvas>
           </button>
 
           {/* Text */}
-          <div className="flex-1 min-w-0">
+          <div className="mt-3 text-center">
             <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">
               Special · Early Adopter
             </p>
