@@ -173,12 +173,12 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
         {!collapsed && (
           <>
             {/* ── Friends section ── */}
-            <div className="px-2 pt-3 pb-2">
-              <div className="flex items-center gap-1.5 mb-2">
+            <div className="px-0 pt-3 pb-2">
+              <div className="flex items-center gap-1.5 mb-2 px-2">
                 <Users className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
                 <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Friends</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1">
                 {FRIEND_BADGES.map((badge) => {
                   const achieved = friendCount >= badge.threshold;
                   return achieved ? (
@@ -250,12 +250,12 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
             <div className="mx-4 border-t border-zinc-100 dark:border-zinc-800" />
 
             {/* ── Fistbumps section ── */}
-            <div className="px-2 pt-3 pb-2">
-              <div className="flex items-center gap-1.5 mb-2">
+            <div className="px-0 pt-3 pb-2">
+              <div className="flex items-center gap-1.5 mb-2 px-2">
                 <img src="/fistbump10.png" alt="" className="h-3.5 w-3.5 object-contain fb-icon" />
                 <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Fist Bumps</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1">
                 {FISTBUMP_BADGES.map((badge) => {
                   const achieved = fistbumpCount >= badge.threshold;
                   return achieved ? (
