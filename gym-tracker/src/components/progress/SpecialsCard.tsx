@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useMemo, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
@@ -10,7 +10,6 @@ useGLTF.preload("/Early Adopter.glb");
 
 function EarlyAdopterModel() {
   const { scene } = useGLTF("/Early Adopter.glb");
-
   const normalized = useMemo(() => {
     const clone = scene.clone(true);
     const box = new Box3().setFromObject(clone);
@@ -23,21 +22,30 @@ function EarlyAdopterModel() {
     clone.position.copy(center.multiplyScalar(-scale));
     return clone;
   }, [scene]);
-
   return <primitive object={normalized} />;
 }
 
-// showEnvironment=false skips the HDR download — model appears immediately from preloaded GLB
-function ModelScene({ autoRotateSpeed, showEnvironment }: { autoRotateSpeed: number; showEnvironment: boolean }) {
+// Signals the parent (DOM) when Suspense has fully resolved
+function LoadedSignal({ onLoaded }: { onLoaded: () => void }) {
+  useEffect(() => { onLoaded(); }, [onLoaded]);
+  return null;
+}
+
+function ModelScene({
+  autoRotateSpeed,
+  onLoaded,
+}: {
+  autoRotateSpeed: number;
+  onLoaded?: () => void;
+}) {
   return (
     <>
-      {/* Higher intensity lights when no environment map */}
-      <ambientLight intensity={showEnvironment ? 1.2 : 2.5} />
-      <directionalLight position={[3, 5, 3]} intensity={showEnvironment ? 0.8 : 2.0} />
-      <directionalLight position={[-3, 2, -3]} intensity={showEnvironment ? 0 : 1.0} />
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[3, 5, 3]} intensity={0.8} />
       <Suspense fallback={null}>
         <EarlyAdopterModel />
-        {showEnvironment && <Environment preset="city" />}
+        <Environment preset="city" />
+        {onLoaded && <LoadedSignal onLoaded={onLoaded} />}
       </Suspense>
       <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
     </>
@@ -52,15 +60,16 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   // null = not yet checked, false = show intro, true = already seen
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
+  const [introModelLoaded, setIntroModelLoaded] = useState(false);
 
-  // Key is scoped to userId so different accounts on the same browser don't share it
+  // Scoped to userId — different accounts on same browser each track independently
   const introKey = `early-adopter-intro-seen-v3-${userId}`;
 
   useEffect(() => {
     try {
       setIntroSeen(!!localStorage.getItem(introKey));
     } catch {
-      setIntroSeen(true); // if localStorage is blocked, skip the popup
+      setIntroSeen(true);
     }
   }, [introKey]);
 
@@ -69,16 +78,19 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
     setIntroSeen(true);
   };
 
+  const handleIntroLoaded = useCallback(() => setIntroModelLoaded(true), []);
+
   return (
     <>
       {/* One-time intro popup
-          Rendered (hidden) from the start so the Canvas warms up before it's shown.
-          No Environment here — GLB is preloaded so it appears immediately without the HDR download. */}
+          Rendered at opacity:0 from the start so Canvas actually initializes
+          and loads the Environment HDR in the background.
+          visibility:hidden would skip WebGL rendering entirely — opacity:0 does not. */}
       {introSeen !== true && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
           style={{
-            visibility: introSeen === false ? "visible" : "hidden",
+            opacity: introSeen === false ? 1 : 0,
             pointerEvents: introSeen === false ? "auto" : "none",
           }}
           onClick={dismissIntro}
@@ -87,15 +99,20 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
             className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Background so canvas is never blank-white while loading */}
-            <div className="w-full h-64 mb-4">
+            <div className="relative w-full h-64 mb-4">
               <Canvas
                 shadows={false}
                 camera={{ position: [0, 0, 3], fov: 50 }}
                 style={{ width: "100%", height: "100%" }}
               >
-                <ModelScene autoRotateSpeed={2} showEnvironment={true} />
+                <ModelScene autoRotateSpeed={2} onLoaded={handleIntroLoaded} />
               </Canvas>
+              {/* Spinner shown until model + Environment are fully loaded */}
+              {!introModelLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
               Special · Early Adopter
@@ -116,7 +133,7 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
         </div>
       )}
 
-      {/* Manual modal overlay — uses Environment for richer look since it's on demand */}
+      {/* Manual modal overlay */}
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
@@ -132,7 +149,8 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
                 camera={{ position: [0, 0, 3], fov: 50 }}
                 style={{ width: "100%", height: "100%" }}
               >
-                <ModelScene autoRotateSpeed={2} showEnvironment={true} />
+                {/* No onLoaded needed — Environment is already in drei's cache from the pre-warm */}
+                <ModelScene autoRotateSpeed={2} />
               </Canvas>
             </div>
             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
@@ -166,7 +184,7 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
               camera={{ position: [0, 0, 3], fov: 50 }}
               style={{ width: "100%", height: "100%" }}
             >
-              <ModelScene autoRotateSpeed={1.5} showEnvironment={true} />
+              <ModelScene autoRotateSpeed={1.5} />
             </Canvas>
             <div
               className="absolute inset-0 cursor-pointer"
