@@ -127,10 +127,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
             className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-24 h-24 mx-auto mb-3">
-              <span className="sparkle" style={{ top: 8, right: 12 }}>✦</span>
-              <span className="sparkle sparkle-d1" style={{ top: 28, left: 10 }}>✦</span>
-              <span className="sparkle sparkle-d2" style={{ bottom: 10, right: 14 }}>✦</span>
+            <div className="w-36 h-36 mx-auto mb-3">
               <img
                 src={`/social/${activeBadge.key}.png`}
                 alt={activeBadge.label}
@@ -181,14 +178,15 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                 <Users className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
                 <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Friends</span>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {FRIEND_BADGES.map((badge) => {
+              <div className="grid grid-cols-2 gap-3">
+                {FRIEND_BADGES.map((badge, i) => {
                   const achieved = friendCount >= badge.threshold;
+                  const isLastSolo = i === FRIEND_BADGES.length - 1 && FRIEND_BADGES.length % 2 === 1;
                   return achieved ? (
                     <button
                       key={badge.key}
                       onClick={() => setActiveBadge({ ...badge, count: friendCount })}
-                      className="flex flex-col items-center focus:outline-none"
+                      className={cn("flex flex-col items-center focus:outline-none", isLastSolo && "col-span-2 w-1/2 mx-auto")}
                     >
                       <div className="relative w-full aspect-square">
                         <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
@@ -204,7 +202,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       </span>
                     </button>
                   ) : (
-                    <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
+                    <div key={badge.key} className={cn("flex flex-col items-center opacity-25 grayscale", isLastSolo && "col-span-2 w-1/2 mx-auto")}>
                       <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
                       <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
                         {badge.label}
@@ -218,7 +216,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
             {/* Friends progress bar */}
             <div className="px-4 pb-3 pt-1">
               <div className="flex items-center gap-2">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                <div className="w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] shrink-0">
                   {lastFriend ? (
                     <img src={`/social/${lastFriend.key}.png`} alt={lastFriend.label} className="w-full h-full object-contain" />
                   ) : (
@@ -235,7 +233,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     }}
                   />
                 </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                <div className="w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] shrink-0">
                   {nextFriend ? (
                     <img src={`/social/${nextFriend.key}.png`} alt={nextFriend.label} className="w-full h-full object-contain opacity-40 grayscale" />
                   ) : (
@@ -295,7 +293,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
             {/* Fistbumps progress bar */}
             <div className="px-4 pb-4 pt-1">
               <div className="flex items-center gap-2">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                <div className="w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] shrink-0">
                   {lastFistbump ? (
                     <img src={`/social/${lastFistbump.key}.png`} alt={lastFistbump.label} className="w-full h-full object-contain" />
                   ) : (
@@ -312,7 +310,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     }}
                   />
                 </div>
-                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                <div className="w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] shrink-0">
                   {nextFistbump ? (
                     <img src={`/social/${nextFistbump.key}.png`} alt={nextFistbump.label} className="w-full h-full object-contain opacity-40 grayscale" />
                   ) : (
