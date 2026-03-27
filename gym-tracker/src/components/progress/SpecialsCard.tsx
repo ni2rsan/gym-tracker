@@ -1,25 +1,41 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Stage } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
+import { Box3, Vector3 } from "three";
 
 // Preload immediately — GLB is cached before Canvas mounts
 useGLTF.preload("/Early Adopter.glb");
 
 function EarlyAdopterModel() {
   const { scene } = useGLTF("/Early Adopter.glb");
-  return <primitive object={scene} />;
+
+  // Clone + normalize to a 2-unit bounding box so fixed camera always sees it fully
+  const normalized = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new Box3().setFromObject(clone);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim === 0) return clone;
+    const scale = 2 / maxDim;
+    clone.scale.setScalar(scale);
+    // Re-center after scaling
+    clone.position.copy(center.multiplyScalar(-scale));
+    return clone;
+  }, [scene]);
+
+  return <primitive object={normalized} />;
 }
 
 function ModelScene({ autoRotateSpeed }: { autoRotateSpeed: number }) {
   return (
     <>
+      <ambientLight intensity={1.6} />
+      <directionalLight position={[3, 5, 3]} intensity={1} />
       <Suspense fallback={null}>
-        {/* Stage auto-fits camera to model bounding box and handles lighting */}
-        <Stage adjustCamera={1.1} preset="rembrandt" environment="city">
-          <EarlyAdopterModel />
-        </Stage>
+        <EarlyAdopterModel />
       </Suspense>
       <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
     </>
@@ -42,7 +58,11 @@ export function SpecialsCard() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-full h-64 mb-4">
-              <Canvas>
+              <Canvas
+                shadows={false}
+                camera={{ position: [0, 0, 3], fov: 50 }}
+                style={{ width: "100%", height: "100%" }}
+              >
                 <ModelScene autoRotateSpeed={2} />
               </Canvas>
             </div>
@@ -64,7 +84,6 @@ export function SpecialsCard() {
 
       {/* Card */}
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
-        {/* Header */}
         <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
           <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
             Specials
@@ -72,14 +91,20 @@ export function SpecialsCard() {
         </div>
 
         <div className="px-4 py-4 flex items-center gap-4">
-          {/* 3D model — div wrapper so pointer events don't conflict with canvas */}
-          <div
-            className="w-28 h-28 shrink-0 cursor-pointer"
-            onClick={() => setModalOpen(true)}
-          >
-            <Canvas>
+          {/* Canvas wrapper — transparent overlay captures click without blocking OrbitControls drag */}
+          <div className="relative w-28 h-28 shrink-0">
+            <Canvas
+              shadows={false}
+              camera={{ position: [0, 0, 3], fov: 50 }}
+              style={{ width: "100%", height: "100%" }}
+            >
               <ModelScene autoRotateSpeed={1.5} />
             </Canvas>
+            {/* Invisible tap target on top — only triggers modal, doesn't block drag */}
+            <div
+              className="absolute inset-0 cursor-pointer"
+              onClick={() => setModalOpen(true)}
+            />
           </div>
 
           {/* Text */}
