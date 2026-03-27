@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SocialBadge {
@@ -175,158 +175,156 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
 
         {!collapsed && (
           <>
-            {/* ── Badge grid: always side-by-side, 3 friends | 3 fistbumps ── */}
-            <div className="flex divide-x divide-zinc-100 dark:divide-zinc-800 px-0 pt-3 pb-2">
-              {/* Friends badges */}
-              <div className="flex-1 px-3">
-                <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-                  Friends
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {FRIEND_BADGES.map((badge) => {
-                    const achieved = friendCount >= badge.threshold;
-                    return achieved ? (
-                      <button
-                        key={badge.key}
-                        onClick={() => setActiveBadge({ ...badge, count: friendCount })}
-                        className="flex flex-col items-center focus:outline-none"
-                      >
-                        <div className="relative w-full aspect-square">
-                          <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
-                          <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
-                          <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
-                          <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full h-full object-contain" />
-                        </div>
-                        <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-0.5">
-                          {badge.label}
-                        </span>
-                        <span className="text-[8px] font-medium text-zinc-500 dark:text-zinc-400 leading-none mt-0.5 text-center">
-                          {badge.title}
-                        </span>
-                      </button>
-                    ) : (
-                      <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
-                        <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
-                        <span className="text-[9px] font-bold text-zinc-400 uppercase leading-none mt-0.5">
-                          {badge.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* ── Friends section ── */}
+            <div className="px-4 pt-3 pb-2">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Users className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Friends</span>
               </div>
-
-              {/* Fistbump badges */}
-              <div className="flex-1 px-3">
-                <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-                  Fist Bumps
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {FISTBUMP_BADGES.map((badge) => {
-                    const achieved = fistbumpCount >= badge.threshold;
-                    return achieved ? (
-                      <button
-                        key={badge.key}
-                        onClick={() => setActiveBadge({ ...badge, count: fistbumpCount })}
-                        className="flex flex-col items-center focus:outline-none"
-                      >
-                        <div className="relative w-full aspect-square">
-                          <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
-                          <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
-                          <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
-                          <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full h-full object-contain" />
-                        </div>
-                        <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-0.5">
-                          {badge.label}
-                        </span>
-                        <span className="text-[8px] font-medium text-zinc-500 dark:text-zinc-400 leading-none mt-0.5 text-center">
-                          {badge.title}
-                        </span>
-                      </button>
-                    ) : (
-                      <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
-                        <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
-                        <span className="text-[9px] font-bold text-zinc-400 uppercase leading-none mt-0.5">
-                          {badge.label}
-                        </span>
+              <div className="grid grid-cols-3 gap-3">
+                {FRIEND_BADGES.map((badge) => {
+                  const achieved = friendCount >= badge.threshold;
+                  return achieved ? (
+                    <button
+                      key={badge.key}
+                      onClick={() => setActiveBadge({ ...badge, count: friendCount })}
+                      className="flex flex-col items-center focus:outline-none"
+                    >
+                      <div className="relative w-full aspect-square">
+                        <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
+                        <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
+                        <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
+                        <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full h-full object-contain" />
                       </div>
-                    );
-                  })}
-                </div>
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-1">
+                        {badge.label}
+                      </span>
+                      <span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight mt-0.5 text-center">
+                        {badge.title}
+                      </span>
+                    </button>
+                  ) : (
+                    <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
+                      <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
+                        {badge.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* ── Progress bars: always full-width, stacked ── */}
-            <div className="border-t border-zinc-100 dark:border-zinc-800 px-4 pt-3 pb-4 space-y-3">
-              {/* Friends bar */}
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0">
-                    {lastFriend ? (
-                      <img src={`/social/${lastFriend.key}.png`} alt={lastFriend.label} className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
-                    )}
-                  </div>
-                  <div className="flex-1 h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700 ease-out"
-                      style={{
-                        width: `${friendPct}%`,
-                        background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
-                        boxShadow: friendPct > 0 ? "0 0 8px rgba(245,158,11,0.6)" : "none",
-                      }}
-                    />
-                  </div>
-                  <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0">
-                    {nextFriend ? (
-                      <img src={`/social/${nextFriend.key}.png`} alt={nextFriend.label} className="w-full h-full object-contain opacity-40 grayscale" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-[9px] font-black text-amber-500 uppercase">MAX</span>
-                      </div>
-                    )}
-                  </div>
+            {/* Friends progress bar */}
+            <div className="px-4 pb-3 pt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                  {lastFriend ? (
+                    <img src={`/social/${lastFriend.key}.png`} alt={lastFriend.label} className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                  )}
                 </div>
-                <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tabular-nums">
-                  {friendCount} {friendCount === 1 ? "friend" : "friends"}
-                </p>
+                <div className="flex-1 h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{
+                      width: `${friendPct}%`,
+                      background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
+                      boxShadow: friendPct > 0 ? "0 0 8px rgba(245,158,11,0.6)" : "none",
+                    }}
+                  />
+                </div>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                  {nextFriend ? (
+                    <img src={`/social/${nextFriend.key}.png`} alt={nextFriend.label} className="w-full h-full object-contain opacity-40 grayscale" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-[9px] font-black text-amber-500 uppercase">MAX</span>
+                    </div>
+                  )}
+                </div>
               </div>
+              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tabular-nums">
+                {friendCount} {friendCount === 1 ? "friend" : "friends"}
+              </p>
+            </div>
 
-              {/* Fistbumps bar */}
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0">
-                    {lastFistbump ? (
-                      <img src={`/social/${lastFistbump.key}.png`} alt={lastFistbump.label} className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
-                    )}
-                  </div>
-                  <div className="flex-1 h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700 ease-out"
-                      style={{
-                        width: `${fistbumpPct}%`,
-                        background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
-                        boxShadow: fistbumpPct > 0 ? "0 0 8px rgba(245,158,11,0.6)" : "none",
-                      }}
-                    />
-                  </div>
-                  <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0">
-                    {nextFistbump ? (
-                      <img src={`/social/${nextFistbump.key}.png`} alt={nextFistbump.label} className="w-full h-full object-contain opacity-40 grayscale" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-[9px] font-black text-amber-500 uppercase">MAX</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tabular-nums">
-                  {fistbumpCount} {fistbumpCount === 1 ? "fist bump" : "fist bumps"} received
-                </p>
+            <div className="mx-4 border-t border-zinc-100 dark:border-zinc-800" />
+
+            {/* ── Fistbumps section ── */}
+            <div className="px-4 pt-3 pb-2">
+              <div className="flex items-center gap-1.5 mb-2">
+                <img src="/fistbump10.png" alt="" className="h-3.5 w-3.5 object-contain fb-icon" />
+                <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Fist Bumps</span>
               </div>
+              <div className="grid grid-cols-3 gap-3">
+                {FISTBUMP_BADGES.map((badge) => {
+                  const achieved = fistbumpCount >= badge.threshold;
+                  return achieved ? (
+                    <button
+                      key={badge.key}
+                      onClick={() => setActiveBadge({ ...badge, count: fistbumpCount })}
+                      className="flex flex-col items-center focus:outline-none"
+                    >
+                      <div className="relative w-full aspect-square">
+                        <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
+                        <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
+                        <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
+                        <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full h-full object-contain" />
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase leading-none mt-1">
+                        {badge.label}
+                      </span>
+                      <span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight mt-0.5 text-center">
+                        {badge.title}
+                      </span>
+                    </button>
+                  ) : (
+                    <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
+                      <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
+                        {badge.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Fistbumps progress bar */}
+            <div className="px-4 pb-4 pt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                  {lastFistbump ? (
+                    <img src={`/social/${lastFistbump.key}.png`} alt={lastFistbump.label} className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-zinc-100 dark:bg-zinc-800" />
+                  )}
+                </div>
+                <div className="flex-1 h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700 ease-out"
+                    style={{
+                      width: `${fistbumpPct}%`,
+                      background: "linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%)",
+                      boxShadow: fistbumpPct > 0 ? "0 0 8px rgba(245,158,11,0.6)" : "none",
+                    }}
+                  />
+                </div>
+                <div className="w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+                  {nextFistbump ? (
+                    <img src={`/social/${nextFistbump.key}.png`} alt={nextFistbump.label} className="w-full h-full object-contain opacity-40 grayscale" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-[9px] font-black text-amber-500 uppercase">MAX</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-center text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 font-medium tabular-nums">
+                {fistbumpCount} {fistbumpCount === 1 ? "fist bump" : "fist bumps"} received
+              </p>
             </div>
           </>
         )}
