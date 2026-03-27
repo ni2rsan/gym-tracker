@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
@@ -43,12 +43,63 @@ function ModelScene({ autoRotateSpeed }: { autoRotateSpeed: number }) {
   );
 }
 
+const INTRO_KEY = "early-adopter-intro-seen";
+
 export function SpecialsCard() {
   const [modalOpen, setModalOpen] = useState(false);
+  // null = not yet checked (avoids SSR mismatch), false = show intro, true = already seen
+  const [introSeen, setIntroSeen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setIntroSeen(!!localStorage.getItem(INTRO_KEY));
+  }, []);
+
+  const dismissIntro = () => {
+    localStorage.setItem(INTRO_KEY, "1");
+    setIntroSeen(true);
+  };
 
   return (
     <>
-      {/* Modal overlay */}
+      {/* One-time intro popup */}
+      {introSeen === false && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+          onClick={dismissIntro}
+        >
+          <div
+            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full h-64 mb-4">
+              <Canvas
+                shadows={false}
+                camera={{ position: [0, 0, 3], fov: 50 }}
+                style={{ width: "100%", height: "100%" }}
+              >
+                <ModelScene autoRotateSpeed={2} />
+              </Canvas>
+            </div>
+            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
+              Special · Early Adopter
+            </p>
+            <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug mb-2">
+              OG
+            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              You were here before the hype. Before the updates. Before anyone else knew what this was. You believed early. That makes you one of us forever.
+            </p>
+            <button
+              onClick={dismissIntro}
+              className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Manual modal overlay */}
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
