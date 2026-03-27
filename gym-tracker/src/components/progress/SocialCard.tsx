@@ -187,7 +187,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       onClick={() => setActiveBadge({ ...badge, count: friendCount })}
                       className="flex flex-col items-center focus:outline-none"
                     >
-                      <div className="relative w-full aspect-square">
+                      <div className="relative w-full aspect-square scale-[1.15]">
                         <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
                         <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
                         <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
@@ -202,7 +202,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     </button>
                   ) : (
                     <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
-                      <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
+                      <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain scale-[1.15]" />
                       <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
                         {badge.label}
                       </span>
@@ -264,7 +264,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       onClick={() => setActiveBadge({ ...badge, count: fistbumpCount })}
                       className="flex flex-col items-center focus:outline-none"
                     >
-                      <div className="relative w-full aspect-square">
+                      <div className="relative w-full aspect-square scale-[1.15]">
                         <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
                         <span className="sparkle sparkle-d1" style={{ top: "44%", left: "28%" }}>✦</span>
                         <span className="sparkle sparkle-d2" style={{ bottom: "28%", right: "32%" }}>✦</span>
@@ -279,7 +279,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                     </button>
                   ) : (
                     <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
-                      <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
+                      <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain scale-[1.15]" />
                       <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
                         {badge.label}
                       </span>
