@@ -40,7 +40,7 @@ const EXERCISE_IMAGES = new Set([
   "BADMINTON",
 ]);
 
-const FALLBACK_ICONS: Record<MuscleGroup, React.ElementType> = {
+const FALLBACK_ICONS: Record<MuscleGroup, typeof Dumbbell> = {
   UPPER_BODY: Dumbbell,
   LOWER_BODY: Dumbbell,
   BODYWEIGHT: Dumbbell,
