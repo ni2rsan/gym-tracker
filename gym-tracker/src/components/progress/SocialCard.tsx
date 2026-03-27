@@ -173,20 +173,19 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
         {!collapsed && (
           <>
             {/* ── Friends section ── */}
-            <div className="px-4 pt-3 pb-2">
+            <div className="px-2 pt-3 pb-2">
               <div className="flex items-center gap-1.5 mb-2">
                 <Users className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
                 <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Friends</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {FRIEND_BADGES.map((badge, i) => {
+              <div className="grid grid-cols-3 gap-2">
+                {FRIEND_BADGES.map((badge) => {
                   const achieved = friendCount >= badge.threshold;
-                  const isLastSolo = i === FRIEND_BADGES.length - 1 && FRIEND_BADGES.length % 2 === 1;
                   return achieved ? (
                     <button
                       key={badge.key}
                       onClick={() => setActiveBadge({ ...badge, count: friendCount })}
-                      className={cn("flex flex-col items-center focus:outline-none", isLastSolo && "col-span-2 w-1/2 mx-auto")}
+                      className="flex flex-col items-center focus:outline-none"
                     >
                       <div className="relative w-full aspect-square">
                         <span className="sparkle" style={{ top: "30%", right: "30%" }}>✦</span>
@@ -202,7 +201,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
                       </span>
                     </button>
                   ) : (
-                    <div key={badge.key} className={cn("flex flex-col items-center opacity-25 grayscale", isLastSolo && "col-span-2 w-1/2 mx-auto")}>
+                    <div key={badge.key} className="flex flex-col items-center opacity-25 grayscale">
                       <img src={`/social/${badge.key}.png`} alt={badge.label} className="w-full aspect-square object-contain" />
                       <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
                         {badge.label}
@@ -251,12 +250,12 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
             <div className="mx-4 border-t border-zinc-100 dark:border-zinc-800" />
 
             {/* ── Fistbumps section ── */}
-            <div className="px-4 pt-3 pb-2">
+            <div className="px-2 pt-3 pb-2">
               <div className="flex items-center gap-1.5 mb-2">
                 <img src="/fistbump10.png" alt="" className="h-3.5 w-3.5 object-contain fb-icon" />
                 <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Fist Bumps</span>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {FISTBUMP_BADGES.map((badge) => {
                   const achieved = fistbumpCount >= badge.threshold;
                   return achieved ? (
