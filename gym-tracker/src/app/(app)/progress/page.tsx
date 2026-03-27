@@ -32,6 +32,7 @@ export default async function Progress() {
         cumulativeVolume={cumulativeVolume}
         friendCount={socialStats.friendCount}
         fistbumpCount={socialStats.totalFistBumpsReceived}
+        userId={userId}
       />
     </div>
   );
