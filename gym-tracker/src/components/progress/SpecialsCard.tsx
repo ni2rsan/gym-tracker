@@ -43,7 +43,7 @@ function ModelScene({ autoRotateSpeed }: { autoRotateSpeed: number }) {
   );
 }
 
-const INTRO_KEY = "early-adopter-intro-seen";
+const INTRO_KEY = "early-adopter-intro-seen-v1";
 
 export function SpecialsCard() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,10 +61,11 @@ export function SpecialsCard() {
 
   return (
     <>
-      {/* One-time intro popup */}
-      {introSeen === false && (
+      {/* One-time intro popup — pre-mounted while introSeen is null so Canvas warms up before it's shown */}
+      {introSeen !== true && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+          style={{ visibility: introSeen === false ? "visible" : "hidden", pointerEvents: introSeen === false ? "auto" : "none" }}
           onClick={dismissIntro}
         >
           <div
