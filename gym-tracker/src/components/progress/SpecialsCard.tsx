@@ -76,11 +76,11 @@ export function SpecialsCard() {
           </span>
         </div>
 
-        <div className="px-4 py-4">
-          {/* 3D model — centered, reasonable size, clickable */}
+        <div className="px-4 py-4 flex items-center gap-4">
+          {/* 3D model — no box wrapper, just the canvas */}
           <button
             onClick={() => setModalOpen(true)}
-            className="w-40 h-40 mx-auto block focus:outline-none cursor-pointer"
+            className="w-28 h-28 shrink-0 focus:outline-none cursor-pointer"
             aria-label="View Early Adopter badge"
           >
             <Canvas camera={{ fov: 45 }}>
@@ -89,7 +89,7 @@ export function SpecialsCard() {
           </button>
 
           {/* Text */}
-          <div className="mt-3 text-center">
+          <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">
               Special · Early Adopter
             </p>
