@@ -5,6 +5,7 @@ import type { PRRecord } from "@/types";
 import { StreakHero } from "./StreakHero";
 import { VolumeCasketCard } from "./VolumeCasketCard";
 import { SocialCard } from "./SocialCard";
+import { SpecialsCard } from "./SpecialsCard";
 import { MilestonesCard, PRPanel } from "@/components/planner/StreakCounter";
 
 interface ProgressPageProps {
@@ -36,6 +37,9 @@ export function ProgressPage({ streakData, prs, cumulativeVolume, friendCount, f
 
       {/* 5. Social badges */}
       <SocialCard friendCount={friendCount} fistbumpCount={fistbumpCount} />
+
+      {/* 6. Specials */}
+      <SpecialsCard />
     </div>
   );
 }
