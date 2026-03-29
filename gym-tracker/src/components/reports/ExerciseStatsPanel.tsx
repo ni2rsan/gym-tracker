@@ -37,16 +37,16 @@ function SetBar({
 
   return (
     <div className="flex items-center gap-1 h-3.5">
-      <div className="flex-1 h-1.5 bg-slate-700/60 rounded-full overflow-hidden min-w-0">
+      <div className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-600 rounded-full overflow-hidden min-w-0">
         <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[9px] text-slate-300 tabular-nums shrink-0 w-[26px] text-right leading-none">
+      <span className="text-[9px] text-zinc-600 dark:text-zinc-300 tabular-nums shrink-0 w-[26px] text-right leading-none">
         {display}{unit}
       </span>
       <span
         className={cn(
           "text-[8px] font-bold tabular-nums shrink-0 w-[18px] text-left leading-none",
-          hasDiff ? (diffGood ? "text-emerald-400" : "text-rose-400") : "invisible"
+          hasDiff ? (diffGood ? "text-emerald-500 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400") : "invisible"
         )}
       >
         {hasDiff
@@ -115,8 +115,11 @@ function ExerciseChart({
       </div>
 
       {/* Workout columns — scrollable when many */}
-      <div className="overflow-x-auto -mx-1 px-1">
-        <div className="flex gap-2" style={{ minWidth: `${filtered.length * 108}px` }}>
+      <div className="overflow-x-auto">
+        <div
+          className="flex divide-x divide-zinc-200 dark:divide-zinc-700"
+          style={{ minWidth: `${filtered.length * 96}px` }}
+        >
           {filtered.map((workout, wIdx) => {
             const prev = wIdx > 0 ? filtered[wIdx - 1] : null;
             const sets = [...workout.sets]
@@ -131,10 +134,10 @@ function ExerciseChart({
             return (
               <div
                 key={workout.date}
-                className="flex-1 rounded-xl bg-[#0c1222] p-2 space-y-2 min-w-0"
+                className="flex-1 min-w-0 space-y-2 px-3 first:pl-0 last:pr-0"
               >
                 {/* Date */}
-                <p className="text-center text-[9px] font-semibold text-slate-400 uppercase tracking-wide truncate">
+                <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide truncate">
                   {formatDate(workout.date)}
                 </p>
 
@@ -145,7 +148,7 @@ function ExerciseChart({
 
                   return (
                     <div key={sIdx} className="space-y-0.5">
-                      <div className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">
+                      <div className="text-[8px] text-zinc-400 dark:text-zinc-500 font-semibold uppercase tracking-widest">
                         S{sIdx + 1}
                       </div>
                       {set ? (
@@ -154,7 +157,7 @@ function ExerciseChart({
                             value={set.reps}
                             maxValue={maxReps}
                             unit="r"
-                            color="bg-blue-500"
+                            color="bg-blue-400 dark:bg-blue-500"
                             diff={prevSet != null ? set.reps - prevSet.reps : null}
                             positiveIsGood={true}
                           />
@@ -163,7 +166,7 @@ function ExerciseChart({
                               value={set.weightKg}
                               maxValue={maxKg}
                               unit="kg"
-                              color="bg-amber-500"
+                              color="bg-amber-400 dark:bg-amber-500"
                               diff={
                                 prevSet != null &&
                                 set.weightKg != null &&
@@ -176,7 +179,7 @@ function ExerciseChart({
                           )}
                         </>
                       ) : (
-                        <div className="text-[9px] text-slate-700 h-3.5">—</div>
+                        <div className="text-[9px] text-zinc-300 dark:text-zinc-600 h-3.5">—</div>
                       )}
                     </div>
                   );
