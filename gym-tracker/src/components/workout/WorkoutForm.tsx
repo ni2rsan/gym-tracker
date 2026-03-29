@@ -632,12 +632,16 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     (ex) => plannedExerciseIdSet.has(ex.id) && !dueGroupMuscles.has(ex.muscleGroup)
   );
 
-  // Exercises in non-due groups are read-only whenever due groups exist (any date)
+  const addedExerciseIds = new Set(addedExercises.map((ex) => ex.id));
+
+  // Exercises in non-due groups are read-only whenever due groups exist,
+  // EXCEPT individually added exercises which are always editable
   const readOnlyIds = new Set(
     exercises
       .filter(
         (ex) =>
           !savedTodayIds.has(ex.id) &&
+          !addedExerciseIds.has(ex.id) &&
           dueGroupMuscles.size > 0 &&
           !dueGroupMuscles.has(ex.muscleGroup)
       )
@@ -981,9 +985,9 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
             </div>
           )}
 
-          {/* Non-due standalone groups (collapsed) */}
+          {/* Non-due standalone groups — always collapsed when due groups exist */}
           {standaloneGroups.filter((mg) => !dueGroupMuscles.has(mg)).map((mg) => (
-            <div key={`${selectedDate}-${mg}`} id={`section-${mg}`}>
+            <div key={`${selectedDate}-${mg}-${dueGroupMuscles.size}`} id={`section-${mg}`}>
               <ExerciseGroup
                 muscleGroup={mg}
                 exercises={exercisesByGroup[mg]}
@@ -992,7 +996,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onTogglePin={handleTogglePin}
                 onRemove={handleRemoveClick}
                 onHide={handleHideClick}
-                defaultOpen={isGroupDefaultOpen(mg)}
+                defaultOpen={dueGroupMuscles.size > 0 ? false : isGroupDefaultOpen(mg)}
                 onSave={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 ? () => handleSaveGroup(mg) : undefined}
                 isSaving={savingGroups.has(mg)}
                 lastSaved={lastSavedByGroup[mg] ?? null}
