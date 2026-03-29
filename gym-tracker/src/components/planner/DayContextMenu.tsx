@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Pencil, Trash2, Activity, Plus, Dumbbell } from "lucide-react";
+import { X, Pencil, Trash2, Activity, Plus, Dumbbell, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BLOCK_LABELS } from "@/constants/exercises";
 import type { BlockType } from "@/constants/exercises";
@@ -19,6 +19,8 @@ import type { WorkoutExerciseSummary } from "@/lib/services/workoutService";
 import type { PlannedBlock } from "./WorkoutCalendar";
 import { BlockBadge } from "./BlockDot";
 import { AddBlockModal } from "./AddBlockModal";
+import { ExercisePicker } from "./ExercisePicker";
+import type { PlannedExerciseInfo } from "@/actions/planner";
 
 interface DayContextMenuProps {
   date: string;
@@ -40,6 +42,9 @@ interface DayContextMenuProps {
   streakBySeriesId?: Record<string, number>;
   /** SORRY tokens remaining this month */
   sorryRemaining?: number;
+  /** Currently-planned individual exercises for this date */
+  plannedExercises?: PlannedExerciseInfo[];
+  onPlannedExercisesChanged?: (date: string, exercises: PlannedExerciseInfo[]) => void;
 }
 
 function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
@@ -67,12 +72,14 @@ export function DayContextMenu({
   onBlockSorryRevoked,
   streakBySeriesId = {},
   sorryRemaining = 3,
+  plannedExercises = [],
+  onPlannedExercisesChanged,
 }: DayContextMenuProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const [activeBlock, setActiveBlock] = useState<PlannedBlock>(blocks.find((b) => !b.seriesId) ?? blocks[0]);
-  const [editMode, setEditMode] = useState<"block" | "series" | null>(null);
+  const [editMode, setEditMode] = useState<"block" | "series" | "exercises" | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<"block" | "series" | "workout" | null>(null);
   const [confirmSorryToken, setConfirmSorryToken] = useState(false);
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutExerciseSummary[]>([]);
@@ -230,6 +237,19 @@ export function DayContextMenu({
       }
     });
   };
+
+  if (editMode === "exercises") {
+    return (
+      <ExercisePicker
+        date={date}
+        plannedExercises={plannedExercises}
+        onClose={() => { setEditMode(null); onClose(); }}
+        onPlannedChanged={(updated) => {
+          onPlannedExercisesChanged?.(date, updated);
+        }}
+      />
+    );
+  }
 
   if (editMode === "block" || editMode === "series") {
     return (
@@ -515,10 +535,24 @@ export function DayContextMenu({
           </div>
         )}
 
+        {/* Plan individual exercises */}
+        <button
+          onClick={() => setEditMode("exercises")}
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
+        >
+          <ListPlus className="h-4 w-4 text-zinc-400" />
+          Plan exercises
+          {plannedExercises.length > 0 && (
+            <span className="ml-auto text-xs font-semibold text-emerald-500">
+              {plannedExercises.length} planned
+            </span>
+          )}
+        </button>
+
         {/* Add another block */}
         <button
           onClick={onAddBlock}
-          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
         >
           <Plus className="h-4 w-4 text-zinc-400" />
           Add another block

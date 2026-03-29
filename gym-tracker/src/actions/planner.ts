@@ -263,3 +263,65 @@ export async function setSorryTokenMax(newMax: number): Promise<ActionResult> {
     return { success: false, error: "Failed to update SORRY token limit." };
   }
 }
+
+// ─── Planned individual exercises ─────────────────────────────────────────
+
+export type PlannedExerciseInfo = {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  muscleGroup: string;
+  isBodyweight: boolean;
+};
+
+/** Fetch all planned exercises for a date range (used by workout form) */
+export async function getPlannedExercisesForRange(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<Record<string, PlannedExerciseInfo[]>>> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!DateSchema.safeParse(startDate).success || !DateSchema.safeParse(endDate).success) {
+      return { success: false, error: "Invalid date range." };
+    }
+    const rows = await plannerService.getPlannedExercisesInRange(userId, startDate, endDate);
+    const byDate: Record<string, PlannedExerciseInfo[]> = {};
+    for (const { date, exercises } of rows) {
+      byDate[date] = exercises;
+    }
+    return { success: true, data: byDate };
+  } catch (e) {
+    console.error("getPlannedExercisesForRange error:", e);
+    return { success: false, error: "Failed to load planned exercises." };
+  }
+}
+
+/** Add an individual exercise to a date's plan */
+export async function addPlannedExercise(
+  date: string,
+  exerciseId: string
+): Promise<ActionResult<PlannedExerciseInfo>> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!DateSchema.safeParse(date).success) return { success: false, error: "Invalid date." };
+    const entry = await plannerService.addPlannedExercise(userId, date, exerciseId);
+    revalidatePath("/planner");
+    return { success: true, data: entry };
+  } catch (e) {
+    console.error("addPlannedExercise error:", e);
+    return { success: false, error: "Failed to add exercise." };
+  }
+}
+
+/** Remove an individual planned exercise */
+export async function removePlannedExercise(id: string): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    await plannerService.removePlannedExercise(userId, id);
+    revalidatePath("/planner");
+    return { success: true };
+  } catch (e) {
+    console.error("removePlannedExercise error:", e);
+    return { success: false, error: "Failed to remove exercise." };
+  }
+}

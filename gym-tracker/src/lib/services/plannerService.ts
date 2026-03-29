@@ -680,3 +680,72 @@ export async function updateSeriesWithReset(
     data: { streakResetDate: new Date(todayStr + "T12:00:00") },
   });
 }
+
+// ─── Planned individual exercises ─────────────────────────────────────────
+
+export type PlannedExerciseEntry = {
+  id: string;
+  exerciseId: string;
+  exerciseName: string;
+  muscleGroup: string;
+  isBodyweight: boolean;
+};
+
+export async function getPlannedExercisesInRange(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ date: string; exercises: PlannedExerciseEntry[] }[]> {
+  const rows = await prisma.plannedExercise.findMany({
+    where: {
+      userId,
+      date: {
+        gte: new Date(startDate + "T12:00:00"),
+        lte: new Date(endDate + "T12:00:00"),
+      },
+    },
+    include: {
+      exercise: { select: { name: true, muscleGroup: true, isBodyweight: true } },
+    },
+    orderBy: { date: "asc" },
+  });
+
+  const byDate = new Map<string, PlannedExerciseEntry[]>();
+  for (const row of rows) {
+    const d = row.date;
+    const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    if (!byDate.has(iso)) byDate.set(iso, []);
+    byDate.get(iso)!.push({
+      id: row.id,
+      exerciseId: row.exerciseId,
+      exerciseName: row.exercise.name,
+      muscleGroup: row.exercise.muscleGroup,
+      isBodyweight: row.exercise.isBodyweight,
+    });
+  }
+  return [...byDate.entries()].map(([date, exercises]) => ({ date, exercises }));
+}
+
+export async function addPlannedExercise(
+  userId: string,
+  date: string,
+  exerciseId: string
+): Promise<PlannedExerciseEntry> {
+  const row = await prisma.plannedExercise.upsert({
+    where: { userId_date_exerciseId: { userId, date: new Date(date + "T12:00:00"), exerciseId } },
+    create: { userId, date: new Date(date + "T12:00:00"), exerciseId },
+    update: {},
+    include: { exercise: { select: { name: true, muscleGroup: true, isBodyweight: true } } },
+  });
+  return {
+    id: row.id,
+    exerciseId: row.exerciseId,
+    exerciseName: row.exercise.name,
+    muscleGroup: row.exercise.muscleGroup,
+    isBodyweight: row.exercise.isBodyweight,
+  };
+}
+
+export async function removePlannedExercise(userId: string, id: string): Promise<void> {
+  await prisma.plannedExercise.deleteMany({ where: { id, userId } });
+}

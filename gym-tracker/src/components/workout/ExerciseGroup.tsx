@@ -30,6 +30,8 @@ interface ExerciseGroupProps {
   onRestoreFromLayout?: (exerciseId: string) => void;
   /** When true, removes outer border/rounding (for use inside a parent container) */
   isNested?: boolean;
+  /** Exercise IDs that were individually planned for the selected date */
+  plannedExerciseIds?: Set<string>;
 }
 
 export function ExerciseGroup({
@@ -54,6 +56,7 @@ export function ExerciseGroup({
   removedFromLayout = [],
   onRestoreFromLayout,
   isNested = false,
+  plannedExerciseIds,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [removedOpen, setRemovedOpen] = useState(false);
@@ -94,6 +97,11 @@ export function ExerciseGroup({
           <span className={cn("text-xs font-normal opacity-60")}>
             {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
           </span>
+          {plannedExerciseIds && plannedExerciseIds.size > 0 && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+              {plannedExerciseIds.size} planned
+            </span>
+          )}
         </span>
         <span className="flex items-center gap-1.5">
           {onAdd && (
@@ -147,6 +155,7 @@ export function ExerciseGroup({
                   onDeleteTracking={() => onDeleteTracking?.(exercise.id)}
                   isSkipped={skippedIds?.has(exercise.id)}
                   onSkipChange={onSkipChange}
+                  isPlanned={plannedExerciseIds?.has(exercise.id)}
                 />
               ))}
             </div>
