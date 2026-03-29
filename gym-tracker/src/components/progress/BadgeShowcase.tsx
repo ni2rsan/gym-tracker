@@ -56,10 +56,10 @@ export function BadgeShowcase({ badges, cumulativeVolume }: BadgeShowcaseProps) 
         <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-              Next Badge
+              Nächstes Badge
             </span>
             <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              {unlocked.length} / {totalBadges} unlocked
+              {unlocked.length} / {totalBadges} freigeschaltet
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -89,7 +89,7 @@ export function BadgeShowcase({ badges, cumulativeVolume }: BadgeShowcaseProps) 
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
         <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
           <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-            Achievements
+            Badge-Vitrine
           </span>
         </div>
         <div className="p-3 space-y-4">
@@ -113,11 +113,11 @@ export function BadgeShowcase({ badges, cumulativeVolume }: BadgeShowcaseProps) 
         {cumulativeVolume > 0 && (
           <div className="px-4 py-3 border-t border-zinc-100 dark:border-zinc-800 text-center">
             <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
-              Total moved:{" "}
+              Gesamt bewegt:{" "}
               <span className="font-bold text-zinc-600 dark:text-zinc-300 tabular-nums">
                 {cumulativeVolume >= 1000
-                  ? `${(cumulativeVolume / 1000).toFixed(1)} tonnes`
-                  : `${Math.round(cumulativeVolume).toLocaleString("en")} kg`}
+                  ? `${(cumulativeVolume / 1000).toFixed(1)} Tonnen`
+                  : `${Math.round(cumulativeVolume).toLocaleString("de-DE")} kg`}
               </span>
             </span>
           </div>
