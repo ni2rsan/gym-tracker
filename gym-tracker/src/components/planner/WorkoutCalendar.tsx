@@ -20,6 +20,7 @@ export interface PlannedBlock {
   blockType: string;
   seriesId: string | null;
   sorryExcused: boolean;
+  isAutoPromoted: boolean;
 }
 
 type View = "month" | "week" | "year" | "all";
@@ -194,6 +195,21 @@ export function WorkoutCalendar({
     setPlannedExercisesByDate(prev => ({ ...prev, [date]: exercises }));
   };
 
+  const handleAutoPromotedBlockCreated = (date: string, blockId: string, blockType: string) => {
+    const newBlock: PlannedBlock = { id: blockId, date, blockType, seriesId: null, sorryExcused: false, isAutoPromoted: true };
+    setWorkouts(prev => [...prev, newBlock]);
+    // Also update context menu blocks so it reflects the new state immediately
+    setContextMenu(prev => prev ? { ...prev, blocks: [...prev.blocks, newBlock] } : prev);
+  };
+
+  const handleAutoPromotedBlockDeleted = (date: string, muscleGroup: string) => {
+    setWorkouts(prev => prev.filter(b => !(b.date === date && b.blockType === muscleGroup && b.isAutoPromoted)));
+    setContextMenu(prev => prev
+      ? { ...prev, blocks: prev.blocks.filter(b => !(b.blockType === muscleGroup && b.isAutoPromoted)) }
+      : prev
+    );
+  };
+
   const headerLabel = view === "month"
     ? `${MONTH_NAMES[month]} ${year}`
     : view === "week"
@@ -356,6 +372,8 @@ export function WorkoutCalendar({
           sorryRemaining={streakData.sorryRemaining}
           plannedExercises={plannedExercisesByDate[contextMenu.date] ?? []}
           onPlannedExercisesChanged={handlePlannedExercisesChanged}
+          onAutoPromotedBlockCreated={handleAutoPromotedBlockCreated}
+          onAutoPromotedBlockDeleted={handleAutoPromotedBlockDeleted}
         />
       )}
     </div>

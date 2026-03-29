@@ -39,6 +39,7 @@ export async function getPlannedWorkoutsInRange(
       blockType: true,
       seriesId: true,
       sorryExcused: true,
+      isAutoPromoted: true,
     },
   });
 }
@@ -116,6 +117,31 @@ export async function createOneOffBlock(
 ) {
   return prisma.plannedWorkout.create({
     data: { userId, date: new Date(date + "T12:00:00"), blockType },
+  });
+}
+
+export async function createAutoPromotedBlock(
+  userId: string,
+  date: string,
+  blockType: BlockTypeEnum
+) {
+  // Upsert: if a real block already exists for this date+blockType, do nothing
+  const existing = await prisma.plannedWorkout.findFirst({
+    where: { userId, date: new Date(date + "T12:00:00"), blockType },
+  });
+  if (existing) return existing;
+  return prisma.plannedWorkout.create({
+    data: { userId, date: new Date(date + "T12:00:00"), blockType, isAutoPromoted: true },
+  });
+}
+
+export async function deleteAutoPromotedBlock(
+  userId: string,
+  date: string,
+  blockType: BlockTypeEnum
+) {
+  await prisma.plannedWorkout.deleteMany({
+    where: { userId, date: new Date(date + "T12:00:00"), blockType, isAutoPromoted: true },
   });
 }
 

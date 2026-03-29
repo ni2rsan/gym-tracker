@@ -45,6 +45,10 @@ interface DayContextMenuProps {
   /** Currently-planned individual exercises for this date */
   plannedExercises?: PlannedExerciseInfo[];
   onPlannedExercisesChanged?: (date: string, exercises: PlannedExerciseInfo[]) => void;
+  /** Called when an auto-promoted block is created for this date */
+  onAutoPromotedBlockCreated?: (date: string, blockId: string, blockType: string) => void;
+  /** Called when an auto-promoted block is deleted for this date */
+  onAutoPromotedBlockDeleted?: (date: string, muscleGroup: string) => void;
 }
 
 function isBlockTracked(groups: Set<string> | undefined, blockType: string): boolean {
@@ -74,6 +78,8 @@ export function DayContextMenu({
   sorryRemaining = 3,
   plannedExercises = [],
   onPlannedExercisesChanged,
+  onAutoPromotedBlockCreated,
+  onAutoPromotedBlockDeleted,
 }: DayContextMenuProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -239,9 +245,14 @@ export function DayContextMenu({
   };
 
   if (editMode === "exercises") {
-    // Compute which muscle groups are already covered by planned blocks
+    // Compute which muscle groups are already covered by REAL (non-auto-promoted) blocks
     const blockedMuscleGroups = new Set<string>();
+    const autoPromotedGroups = new Set<string>();
     for (const b of blocks) {
+      if (b.isAutoPromoted) {
+        autoPromotedGroups.add(b.blockType);
+        continue;
+      }
       if (b.blockType === "FULL_BODY") {
         blockedMuscleGroups.add("UPPER_BODY");
         blockedMuscleGroups.add("LOWER_BODY");
@@ -254,9 +265,17 @@ export function DayContextMenu({
         date={date}
         plannedExercises={plannedExercises}
         blockedMuscleGroups={blockedMuscleGroups}
+        autoPromotedGroups={autoPromotedGroups}
         onClose={() => { setEditMode(null); onClose(); }}
         onPlannedChanged={(updated) => {
           onPlannedExercisesChanged?.(date, updated);
+        }}
+        onAutoPromotionChanged={(muscleGroup, created, blockId) => {
+          if (created && blockId) {
+            onAutoPromotedBlockCreated?.(date, blockId, muscleGroup);
+          } else {
+            onAutoPromotedBlockDeleted?.(date, muscleGroup);
+          }
         }}
       />
     );

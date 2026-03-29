@@ -27,6 +27,7 @@ export type PlannerBlockInfo = {
   id: string;
   blockType: string;
   sorryExcused: boolean;
+  isAutoPromoted: boolean;
 };
 
 export async function getBlocksForRange(
@@ -47,7 +48,7 @@ export async function getBlocksForRange(
       const d = block.date;
       const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
       if (!blocksByDate[iso]) blocksByDate[iso] = [];
-      blocksByDate[iso].push({ id: block.id, blockType: block.blockType, sorryExcused: block.sorryExcused });
+      blocksByDate[iso].push({ id: block.id, blockType: block.blockType, sorryExcused: block.sorryExcused, isAutoPromoted: block.isAutoPromoted });
     }
     return { success: true, data: { blocksByDate, sorryRemaining: Math.max(0, 3 - sorryData.usedCount) } };
   } catch (e) {
@@ -323,5 +324,51 @@ export async function removePlannedExercise(id: string): Promise<ActionResult> {
   } catch (e) {
     console.error("removePlannedExercise error:", e);
     return { success: false, error: "Failed to remove exercise." };
+  }
+}
+
+// ─── Auto-promoted blocks ──────────────────────────────────────────────────
+
+/** Create an auto-promoted block when added exercises reach the promotion threshold */
+export async function createAutoPromotedBlock(
+  date: string,
+  blockType: string
+): Promise<ActionResult<PlannerBlockInfo>> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!DateSchema.safeParse(date).success) return { success: false, error: "Invalid date." };
+    const parsed = BlockTypeSchema.safeParse(blockType);
+    if (!parsed.success) return { success: false, error: "Invalid block type." };
+    const block = await plannerService.createAutoPromotedBlock(userId, date, parsed.data);
+    return {
+      success: true,
+      data: {
+        id: block.id,
+        blockType: block.blockType,
+        sorryExcused: block.sorryExcused,
+        isAutoPromoted: block.isAutoPromoted,
+      },
+    };
+  } catch (e) {
+    console.error("createAutoPromotedBlock error:", e);
+    return { success: false, error: "Failed to create auto-promoted block." };
+  }
+}
+
+/** Delete an auto-promoted block when added exercises drop below the promotion threshold */
+export async function deleteAutoPromotedBlock(
+  date: string,
+  blockType: string
+): Promise<ActionResult> {
+  try {
+    const userId = await getCurrentUserId();
+    if (!DateSchema.safeParse(date).success) return { success: false, error: "Invalid date." };
+    const parsed = BlockTypeSchema.safeParse(blockType);
+    if (!parsed.success) return { success: false, error: "Invalid block type." };
+    await plannerService.deleteAutoPromotedBlock(userId, date, parsed.data);
+    return { success: true };
+  } catch (e) {
+    console.error("deleteAutoPromotedBlock error:", e);
+    return { success: false, error: "Failed to delete auto-promoted block." };
   }
 }
