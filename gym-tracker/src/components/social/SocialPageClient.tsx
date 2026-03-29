@@ -815,7 +815,7 @@ export function SocialPageClient({ friendsWithStats, feed, pendingReceived, pend
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Friends</div>
         </div>
         <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-3 text-center">
-          <img src="/fistbumpicon.png" alt="" className="h-6 w-6 object-contain mx-auto mb-1 fb-icon" />
+          <img src="/fistbumpicon.png" alt="" className="h-4 w-4 object-contain mx-auto mb-1 fb-icon" />
           <div className="text-xl font-bold text-zinc-900 dark:text-white tabular-nums">{socialStats.totalFistBumpsReceived}</div>
           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">Fist bumps</div>
         </div>
