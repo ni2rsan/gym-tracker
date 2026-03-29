@@ -2,10 +2,36 @@
 
 import { useState } from "react";
 import { ChevronDown, Trophy } from "lucide-react";
+import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 import { cn, formatDate } from "@/lib/utils";
 import type { ExerciseStatCard } from "@/lib/services/reportService";
 import type { MuscleGroup } from "@/types";
+
+function MiniBarChart({ history, isBodyweight }: {
+  history: ExerciseStatCard["history"];
+  isBodyweight: boolean;
+}) {
+  const chartData = history
+    .map((h) => ({ v: isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0) }))
+    .filter((d) => d.v > 0);
+  if (chartData.length < 2) return null;
+  return (
+    <ResponsiveContainer width="100%" height={36}>
+      <BarChart data={chartData} barCategoryGap={2} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+        <Bar dataKey="v" radius={[2, 2, 0, 0]}>
+          {chartData.map((_, i) => (
+            <Cell
+              key={i}
+              fill={i === chartData.length - 1 ? "#f59e0b" : "#d4d4d8"}
+              className="dark:fill-zinc-600"
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
 
 const GROUP_LABELS: Record<string, string> = {
   UPPER_BODY: "Upper Body",
@@ -141,6 +167,12 @@ export function ExerciseStatsPanel({ cards }: ExerciseStatsPanelProps) {
                       {isExpanded && (
                         <div className="px-4 pb-3 pl-14">
                           <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-xl px-3 py-2.5 space-y-1.5">
+                            {/* Mini progress chart */}
+                            {card.history.length >= 2 && (
+                              <div className="pb-1">
+                                <MiniBarChart history={card.history} isBodyweight={card.isBodyweight} />
+                              </div>
+                            )}
                             <div className="flex justify-between text-xs">
                               <span className="text-zinc-500 dark:text-zinc-400">Total sets</span>
                               <span className="font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">
