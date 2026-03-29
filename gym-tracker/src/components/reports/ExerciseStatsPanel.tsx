@@ -74,7 +74,7 @@ function ExerciseChart({
         ? (h.weightKg % 1 === 0 ? `${h.weightKg}` : h.weightKg.toFixed(1))
         : "";
       const label = unit === "kg" && h.weightKg !== null
-        ? `${weightStr}${h.reps != null ? `×${h.reps}` : ""}`
+        ? `${h.reps != null ? `${h.reps}×` : ""}${weightStr}kg`
         : h.reps != null ? `${h.reps}` : "";
       return { v, date: h.date, label, sets: h.sets };
     })
@@ -89,10 +89,11 @@ function ExerciseChart({
   const maxVal = Math.max(...values);
   const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.35);
 
-  // One consistent color; amber only for the record (max value) bar
-  const getColor = (pt: ChartPoint, isSelected: boolean) => {
+  // Amber only on the most recent occurrence of maxVal (latest record), not all ties
+  const prIndex = filtered.reduce((last, pt, i) => pt.v === maxVal ? i : last, -1);
+  const getColor = (index: number, isSelected: boolean) => {
     if (isSelected) return "#f8fafc";
-    if (pt.v === maxVal) return "#f59e0b"; // amber — record bar
+    if (index === prIndex) return "#f59e0b"; // amber — latest record bar only
     return "#3b82f6"; // blue — all other bars
   };
 
@@ -149,7 +150,7 @@ function ExerciseChart({
               {filtered.map((pt, i) => (
                 <Cell
                   key={i}
-                  fill={getColor(pt, selectedPoint?.date === pt.date)}
+                  fill={getColor(i, selectedPoint?.date === pt.date)}
                 />
               ))}
               <LabelList
