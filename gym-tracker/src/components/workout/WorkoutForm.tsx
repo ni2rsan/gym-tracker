@@ -18,7 +18,9 @@ import {
   getWorkoutsForRange,
   deleteWorkoutSessionByDate,
   deleteExerciseTracking,
+  getExercisesComparisonBatch,
 } from "@/actions/workout";
+import { computeSetDiffs, computeOutcome, isAssistedExercise } from "@/lib/workoutDiff";
 import { togglePin, getExercises, getHiddenExercises, hideExercise, unhideExercise } from "@/actions/exercise";
 import {
   getBlocksForRange,
@@ -358,12 +360,14 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           exerciseId: ex.id,
           sets: workoutData[ex.id] ?? [],
         }));
+      const savedExercises = exercises.filter((ex) => !skippedIds.has(ex.id));
       const result = await saveWorkout({ date: selectedDate, exercises: exerciseInputs });
       if (result.success) {
         setLastSavedAll(new Date());
-        refreshSavedIds(workoutData, exercises.filter((ex) => !skippedIds.has(ex.id)));
+        refreshSavedIds(workoutData, savedExercises);
         refreshRangeData();
         setToast({ message: "Workout saved ✓", type: "success" });
+        await applyComparisonResults(savedExercises, selectedDate);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -373,6 +377,43 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [isSavingFullBody, setIsSavingFullBody] = useState(false);
   const [isSavingAdded, setIsSavingAdded] = useState(false);
   const [lastSavedAdded, setLastSavedAdded] = useState<Date | null>(null);
+
+  // Comparison data after bulk saves
+  type ExOutcomeEntry = {
+    outcome: "positive" | "negative" | "pr" | null;
+    diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
+  };
+  const [comparisonData, setComparisonData] = useState<Record<string, ExOutcomeEntry>>({});
+  const [showSessionSummary, setShowSessionSummary] = useState(false);
+
+  const applyComparisonResults = async (exList: ExerciseWithSettings[], date: string) => {
+    const batchInput = exList.map((ex) => ({
+      id: ex.id,
+      isBodyweight: ex.isBodyweight,
+      isAssisted: isAssistedExercise(ex.name),
+    }));
+    const batchResult = await getExercisesComparisonBatch(batchInput, date);
+    if (!batchResult.success || !batchResult.data) return;
+    const newData: Record<string, ExOutcomeEntry> = {};
+    for (const ex of exList) {
+      const comp = batchResult.data[ex.id];
+      if (!comp) continue;
+      const { prevSets, isPR } = comp;
+      const currentSets = workoutData[ex.id] ?? [];
+      const diffs = computeSetDiffs(prevSets, currentSets);
+      const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
+      const outcome: ExOutcomeEntry["outcome"] = isPR ? "pr" : allPositive ? "positive" : allNegative ? "negative" : null;
+      const diffDataMap: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }> = {};
+      for (const d of diffs) {
+        if (!d.isNewSet && !d.isDropped) {
+          diffDataMap[d.setNumber] = { diffReps: d.diffReps, diffKg: d.diffKg, isPRSet: false };
+        }
+      }
+      newData[ex.id] = { outcome, diffData: Object.keys(diffDataMap).length > 0 ? diffDataMap : undefined };
+    }
+    setComparisonData((prev) => ({ ...prev, ...newData }));
+    setShowSessionSummary(true);
+  };
 
   const handleSaveFullBody = () => {
     setIsSavingFullBody(true);
@@ -389,6 +430,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         refreshSavedIds(workoutData, fullBodyExercises);
         refreshRangeData();
         setToast({ message: "Full Body saved ✓", type: "success" });
+        await applyComparisonResults(fullBodyExercises, selectedDate);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -410,6 +452,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         refreshSavedIds(workoutData, groupExercises);
         refreshRangeData();
         setToast({ message: `${MUSCLE_GROUP_LABELS[mg]} saved ✓`, type: "success" });
+        await applyComparisonResults(groupExercises, selectedDate);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -430,9 +473,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       const result = await saveWorkout({ date: selectedDate, exercises: exerciseInputs });
       if (result.success) {
         setLastSavedAdded(new Date());
+        const savedAdded = exList.filter((ex) => !skippedIds.has(ex.id));
         refreshSavedIds(workoutData, exList);
         refreshRangeData();
         setToast({ message: "Added exercises saved ✓", type: "success" });
+        await applyComparisonResults(savedAdded, selectedDate);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -918,6 +963,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onRestoreFromLayout={handleRestoreFromGroup}
                   plannedExerciseIds={plannedExerciseIdsForGroup("UPPER_BODY")}
                   isNested
+                  outcomeData={comparisonData}
                 />
                 <ExerciseGroup
                   muscleGroup="LOWER_BODY"
@@ -941,6 +987,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onRestoreFromLayout={handleRestoreFromGroup}
                   plannedExerciseIds={plannedExerciseIdsForGroup("LOWER_BODY")}
                   isNested
+                  outcomeData={comparisonData}
                 />
               </div>
             </div>
@@ -971,6 +1018,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 removedFromLayout={hiddenByGroup[mg] ?? []}
                 onRestoreFromLayout={handleRestoreFromGroup}
                 plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
+                outcomeData={comparisonData}
               />
             </div>
           ))}
@@ -1000,6 +1048,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 removedFromLayout={hiddenByGroup[mg] ?? []}
                 onRestoreFromLayout={handleRestoreFromGroup}
                 plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
+                outcomeData={comparisonData}
               />
             </div>
           ))}
@@ -1026,6 +1075,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onSkipChange={handleSkipChange}
                 removedFromLayout={[]}
                 groupLabel="Added Exercises"
+                outcomeData={comparisonData}
               />
             </div>
           )}
@@ -1055,6 +1105,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 removedFromLayout={hiddenByGroup[mg] ?? []}
                 onRestoreFromLayout={handleRestoreFromGroup}
                 plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
+                outcomeData={comparisonData}
               />
             </div>
           ))}
@@ -1113,6 +1164,58 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
+
+      {/* Session summary overlay — shown after bulk save */}
+      {showSessionSummary && (() => {
+        const outcomes = Object.values(comparisonData);
+        const prCount = outcomes.filter((o) => o.outcome === "pr").length;
+        const improvedCount = outcomes.filter((o) => o.outcome === "positive").length;
+        const declinedCount = outcomes.filter((o) => o.outcome === "negative").length;
+        const doneCount = outcomes.filter((o) => o.outcome !== null).length;
+        return (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
+            <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-xl overflow-hidden">
+              <div className="px-5 py-4 text-center border-b border-zinc-100 dark:border-zinc-800">
+                <p className="text-base font-bold text-zinc-900 dark:text-white">🏁 Saved!</p>
+              </div>
+              <div className="px-5 py-4 space-y-2.5">
+                {doneCount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-500 dark:text-zinc-400">Exercises compared</span>
+                    <span className="font-semibold text-zinc-900 dark:text-white">{doneCount}</span>
+                  </div>
+                )}
+                {prCount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-amber-600 dark:text-amber-400">🏆 New PRs</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">{prCount}</span>
+                  </div>
+                )}
+                {improvedCount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-emerald-600 dark:text-emerald-400">💪 Improved</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{improvedCount}</span>
+                  </div>
+                )}
+                {declinedCount > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-red-500 dark:text-red-400">🔻 Declined</span>
+                    <span className="font-semibold text-red-500 dark:text-red-400">{declinedCount}</span>
+                  </div>
+                )}
+              </div>
+              <div className="px-5 pb-5">
+                <button
+                  onClick={() => setShowSessionSummary(false)}
+                  className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Tracking mode overlay */}
       {trackingScope !== null &&

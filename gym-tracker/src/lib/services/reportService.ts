@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { MuscleGroup } from "@/generated/prisma/client";
 import { getRangeStart } from "@/lib/utils";
+import { isAssistedExercise } from "@/lib/workoutDiff";
 import type { TimeRange, MetricPoint, ExerciseProgressPoint, PRRecord } from "@/types";
 
 export async function getWeightTrendData(userId: string, range: TimeRange): Promise<MetricPoint[]> {
@@ -48,9 +49,6 @@ export async function getWeightTrendData(userId: string, range: TimeRange): Prom
     }));
 }
 
-function isAssistedExercise(name: string): boolean {
-  return name.toUpperCase().startsWith("ASSISTED");
-}
 
 export async function getExerciseProgressData(
   userId: string,
@@ -167,10 +165,10 @@ export async function getPersonalRecords(userId: string): Promise<PRRecord[]> {
       },
       include: { session: { select: { date: true } } },
       orderBy: exercise.isBodyweight
-        ? [{ reps: "desc" }, { recordedAt: "desc" }]
+        ? [{ reps: "desc" }, { recordedAt: "asc" }]
         : assisted
-          ? [{ weightKg: "asc" }, { reps: "desc" }, { recordedAt: "desc" }]
-          : [{ weightKg: "desc" }, { reps: "desc" }, { recordedAt: "desc" }],
+          ? [{ weightKg: "asc" }, { reps: "desc" }, { recordedAt: "asc" }]
+          : [{ weightKg: "desc" }, { reps: "desc" }, { recordedAt: "asc" }],
       take: 1,
     });
 

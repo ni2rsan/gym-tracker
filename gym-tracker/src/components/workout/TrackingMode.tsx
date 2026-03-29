@@ -5,9 +5,11 @@ import { X, ArrowLeft, Plus, Minus, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
-import { saveWorkout, deleteExerciseTracking } from "@/actions/workout";
+import { saveWorkout, deleteExerciseTracking, getExerciseComparisonData } from "@/actions/workout";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
+import { computeSetDiffs, computeOutcome, isAssistedExercise } from "@/lib/workoutDiff";
+import type { PrevSet } from "@/lib/workoutDiff";
 import type { ExerciseWithSettings, SetData, MuscleGroup } from "@/types";
 import { GuideModal } from "@/components/guide/GuideModal";
 import { trackingIconSteps, trackingExerciseSteps } from "@/components/guide/trackingSteps";
@@ -119,6 +121,22 @@ export function TrackingMode({
 
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
+
+  // Comparison overlay (shown after each save)
+  const [comparisonOverlay, setComparisonOverlay] = useState<{
+    exercise: ExerciseWithSettings;
+    prevSets: PrevSet[];
+    currentSets: SetData[];
+    isPR: boolean;
+  } | null>(null);
+
+  // Per-exercise outcome badges
+  const [exerciseOutcomes, setExerciseOutcomes] = useState<
+    Record<string, { allPositive: boolean; allNegative: boolean; isPR: boolean }>
+  >({});
+
+  // Finish summary overlay
+  const [showFinishSummary, setShowFinishSummary] = useState(false);
 
   // Guide modals (shown once ever per context)
   const [showIconGuide, setShowIconGuide] = useState(false);
@@ -238,14 +256,29 @@ export function TrackingMode({
     openExercise(ex);
   };
 
+  const afterSaveComparison = async (ex: ExerciseWithSettings, savedSets: SetData[]) => {
+    const assisted = isAssistedExercise(ex.name);
+    const compResult = await getExerciseComparisonData(ex.id, date, ex.isBodyweight, assisted);
+    if (compResult.success && compResult.data) {
+      const { prevSets, isPR } = compResult.data;
+      const diffs = computeSetDiffs(prevSets, savedSets);
+      const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
+      setExerciseOutcomes((prev) => ({ ...prev, [ex.id]: { allPositive, allNegative, isPR } }));
+      setComparisonOverlay({ exercise: ex, prevSets, currentSets: savedSets, isPR });
+    } else {
+      setView({ kind: "icons" });
+    }
+  };
+
   const handleSave = (ex: ExerciseWithSettings) => {
     startTransition(async () => {
       const result = await saveWorkout({ date, exercises: [{ exerciseId: ex.id, sets }] });
       if (result.success) {
+        const savedSets = [...sets];
         setCompletedIds((prev) => new Set(prev).add(ex.id));
-        setSessionSavedSets((prev) => ({ ...prev, [ex.id]: sets }));
-        onExerciseSaved(ex.id, sets);
-        setView({ kind: "icons" });
+        setSessionSavedSets((prev) => ({ ...prev, [ex.id]: savedSets }));
+        onExerciseSaved(ex.id, savedSets);
+        await afterSaveComparison(ex, savedSets);
       } else {
         setSaveError(result.error ?? "Failed to save");
       }
@@ -256,10 +289,11 @@ export function TrackingMode({
     startTransition(async () => {
       const result = await saveWorkout({ date, exercises: [{ exerciseId: ex.id, sets }] });
       if (result.success) {
+        const savedSets = [...sets];
         setCompletedIds((prev) => new Set(prev).add(ex.id));
-        setSessionSavedSets((prev) => ({ ...prev, [ex.id]: sets }));
-        onExerciseSaved(ex.id, sets);
-        setView({ kind: "icons" });
+        setSessionSavedSets((prev) => ({ ...prev, [ex.id]: savedSets }));
+        onExerciseSaved(ex.id, savedSets);
+        await afterSaveComparison(ex, savedSets);
       } else {
         setSaveError(result.error ?? "Failed to save");
       }
@@ -293,7 +327,7 @@ export function TrackingMode({
         setSessionSavedSets((prev) => ({ ...prev, [ex.id]: completedSets }));
         onExerciseSaved(ex.id, completedSets);
         setShowSavePartialWarning(false);
-        setView({ kind: "icons" });
+        await afterSaveComparison(ex, completedSets);
       } else {
         setSaveError(result.error ?? "Failed to save");
         setShowSavePartialWarning(false);
@@ -362,8 +396,23 @@ export function TrackingMode({
           >
             <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
             {done && !skipped && (
-              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
+              <span className="absolute -top-0.5 -left-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
                 <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
+              </span>
+            )}
+            {done && !skipped && exerciseOutcomes[ex.id]?.isPR && (
+              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-amber-400 border-2 border-white dark:border-zinc-950 flex items-center justify-center" style={{ fontSize: "9px" }}>
+                🏆
+              </span>
+            )}
+            {done && !skipped && !exerciseOutcomes[ex.id]?.isPR && exerciseOutcomes[ex.id]?.allPositive && (
+              <span className="absolute -bottom-1 -left-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
+                <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>+</span>
+              </span>
+            )}
+            {done && !skipped && !exerciseOutcomes[ex.id]?.isPR && exerciseOutcomes[ex.id]?.allNegative && (
+              <span className="absolute -bottom-1 -left-0.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
+                <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>−</span>
               </span>
             )}
           </button>
@@ -502,7 +551,7 @@ export function TrackingMode({
         {/* Finish button */}
         <div className="px-5 pb-8">
           <button
-            onClick={onExit}
+            onClick={() => setShowFinishSummary(true)}
             className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
           >
             Finish
@@ -521,6 +570,166 @@ export function TrackingMode({
           onStepChange={setIconGuideStep}
           zClass="z-[80]"
         />
+
+        {/* Comparison overlay — shown after each exercise save */}
+        {comparisonOverlay && (() => {
+          const { exercise: cex, prevSets, currentSets, isPR } = comparisonOverlay;
+          const diffs = computeSetDiffs(prevSets, currentSets);
+          const { allPositive, allNegative } = computeOutcome(diffs, cex.isBodyweight);
+          const isFirstTime = prevSets.length === 0;
+          return (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
+              <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <ExerciseIcon name={cex.name} muscleGroup={cex.muscleGroup} className="h-5 w-5" />
+                    <div>
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-white leading-tight">
+                        {cex.name.charAt(0) + cex.name.slice(1).toLowerCase()}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
+                        {MUSCLE_GROUP_LABELS[cex.muscleGroup]}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setComparisonOverlay(null); setView({ kind: "icons" }); }}
+                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                {/* PR banner */}
+                {isPR && (
+                  <div className="mx-4 mt-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-3 py-2 text-center text-xs font-bold text-amber-700 dark:text-amber-400 shrink-0">
+                    🏆 New Personal Record! 🏆
+                  </div>
+                )}
+                {/* Set comparison table */}
+                <div className="px-4 py-3 overflow-y-auto">
+                  {isFirstTime ? (
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center py-2">First time tracking this exercise!</p>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-4 gap-1 mb-1.5">
+                        {["S#", "Prev", "Today", "Diff"].map((h) => (
+                          <span key={h} className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide text-center">{h}</span>
+                        ))}
+                      </div>
+                      <div className="space-y-1">
+                        {diffs.map((d) => {
+                          const prevLabel = d.isNewSet ? "—" :
+                            cex.isBodyweight ? `${d.prevReps}r` :
+                            `${d.prevReps}r · ${d.prevKg}kg`;
+                          const currLabel = d.isDropped ? "—" :
+                            cex.isBodyweight ? `${d.currReps}r` :
+                            `${d.currReps}r · ${d.currKg}kg`;
+                          const diffLabel = d.isNewSet ? (
+                            <span className="text-zinc-400 text-[9px]">new</span>
+                          ) : d.isDropped ? (
+                            <span className="text-zinc-400 text-[9px]">—</span>
+                          ) : (() => {
+                            const parts: string[] = [];
+                            if (d.diffReps !== null && d.diffReps !== 0) parts.push(`${d.diffReps > 0 ? "▲+" : "▼"}${d.diffReps}r`);
+                            if (!cex.isBodyweight && d.diffKg !== null && d.diffKg !== 0) parts.push(`${d.diffKg > 0 ? "▲+" : "▼"}${d.diffKg}kg`);
+                            if (parts.length === 0) return <span className="text-zinc-300 dark:text-zinc-600 text-[9px]">=</span>;
+                            const isPos = (d.diffReps ?? 0) >= 0 && (d.diffKg ?? 0) >= 0;
+                            return <span className={`text-[9px] font-medium ${isPos ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>{parts.join(" ")}</span>;
+                          })();
+                          return (
+                            <div key={d.setNumber} className={cn("grid grid-cols-4 gap-1 items-center", d.isDropped && "opacity-50")}>
+                              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center font-medium">S{d.setNumber}</span>
+                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 text-center">{prevLabel}</span>
+                              <span className="text-[10px] text-zinc-800 dark:text-zinc-200 text-center font-medium">{currLabel}</span>
+                              <span className="text-center">{diffLabel}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                  {!isFirstTime && allPositive && (
+                    <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 text-center font-medium">💪 Great work! You keep making progress</p>
+                  )}
+                  {!isFirstTime && allNegative && (
+                    <p className="mt-3 text-xs text-red-500 dark:text-red-400 text-center font-medium">🔥 Hang in there! Keep fighting. You got this.</p>
+                  )}
+                </div>
+                {/* Close */}
+                <div className="px-4 pb-4 shrink-0">
+                  <button
+                    onClick={() => { setComparisonOverlay(null); setView({ kind: "icons" }); }}
+                    className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Finish summary overlay */}
+        {showFinishSummary && (() => {
+          const prCount = Object.values(exerciseOutcomes).filter((o) => o.isPR).length;
+          const improvedCount = Object.values(exerciseOutcomes).filter((o) => !o.isPR && o.allPositive).length;
+          const declinedCount = Object.values(exerciseOutcomes).filter((o) => o.allNegative).length;
+          const doneCount = Object.keys(exerciseOutcomes).length;
+          const totalVolume = Object.entries(sessionSavedSets).reduce((acc, [, savedSets]) => {
+            return acc + savedSets.reduce((sum, s) => {
+              const kg = s.weightKg !== "" && s.weightKg != null ? Number(s.weightKg) : 0;
+              return sum + (kg * Number(s.reps));
+            }, 0);
+          }, 0);
+          return (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
+              <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-xl overflow-hidden">
+                <div className="px-5 py-4 text-center border-b border-zinc-100 dark:border-zinc-800">
+                  <p className="text-base font-bold text-zinc-900 dark:text-white">🏁 Session Complete</p>
+                </div>
+                <div className="px-5 py-4 space-y-2.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-500 dark:text-zinc-400">Exercises done</span>
+                    <span className="font-semibold text-zinc-900 dark:text-white">{doneCount}</span>
+                  </div>
+                  {prCount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-amber-600 dark:text-amber-400">🏆 New PRs</span>
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">{prCount}</span>
+                    </div>
+                  )}
+                  {improvedCount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-emerald-600 dark:text-emerald-400">💪 Improved</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{improvedCount}</span>
+                    </div>
+                  )}
+                  {declinedCount > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-red-500 dark:text-red-400">🔻 Declined</span>
+                      <span className="font-semibold text-red-500 dark:text-red-400">{declinedCount}</span>
+                    </div>
+                  )}
+                  {totalVolume > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-zinc-500 dark:text-zinc-400">📦 Total volume</span>
+                      <span className="font-semibold text-zinc-900 dark:text-white">{totalVolume.toLocaleString()} kg</span>
+                    </div>
+                  )}
+                </div>
+                <div className="px-5 pb-5">
+                  <button
+                    onClick={onExit}
+                    className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
+                  >
+                    Finish
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Summary overlay (automated mode — tap done icon) */}
         {summaryOverlay && (() => {

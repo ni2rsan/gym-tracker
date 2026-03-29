@@ -157,6 +157,49 @@ export async function getWorkoutsForRange(
   }
 }
 
+export async function getExerciseComparisonData(
+  exerciseId: string,
+  date: string,
+  isBodyweight: boolean,
+  isAssisted: boolean
+): Promise<ActionResult<workoutService.ExerciseTrackingComparison>> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const userId = await getCurrentUserId();
+    const data = await workoutService.getExerciseTrackingComparison(
+      userId, exerciseId, parsed.data, isBodyweight, isAssisted
+    );
+    return { success: true, data };
+  } catch (error) {
+    console.error("getExerciseComparisonData error:", error);
+    return { success: false, error: "Failed to load comparison data." };
+  }
+}
+
+export async function getExercisesComparisonBatch(
+  exercises: Array<{ id: string; isBodyweight: boolean; isAssisted: boolean }>,
+  date: string
+): Promise<ActionResult<Record<string, workoutService.ExerciseTrackingComparison>>> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const userId = await getCurrentUserId();
+    const results = await Promise.all(
+      exercises.map(async (ex) => {
+        const comparison = await workoutService.getExerciseTrackingComparison(
+          userId, ex.id, parsed.data, ex.isBodyweight, ex.isAssisted
+        );
+        return [ex.id, comparison] as const;
+      })
+    );
+    return { success: true, data: Object.fromEntries(results) };
+  } catch (error) {
+    console.error("getExercisesComparisonBatch error:", error);
+    return { success: false, error: "Failed to load comparison data." };
+  }
+}
+
 export async function changeWorkoutSessionDate(sessionId: string, newDate: string): Promise<ActionResult> {
   try {
     const sessionParsed = z.string().cuid().safeParse(sessionId);
