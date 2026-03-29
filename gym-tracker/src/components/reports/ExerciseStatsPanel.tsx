@@ -2,55 +2,61 @@
 
 import { useState } from "react";
 import { ChevronDown, Trophy } from "lucide-react";
-import { BarChart, Bar, Cell, ResponsiveContainer, YAxis, LabelList } from "recharts";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 import { cn, formatDate } from "@/lib/utils";
 import type { ExerciseStatCard } from "@/lib/services/reportService";
 import type { MuscleGroup } from "@/types";
 
-type ChartFilter = 7 | 30 | "all";
+type ChartFilter = 2 | 3 | 7;
 
-type ChartPoint = {
-  v: number;
-  date: string;
-  label: string;
-  sets: ExerciseStatCard["history"][0]["sets"];
-};
+const MAX_SETS = 3;
 
-function SetDetailPanel({
-  point,
+function SetBar({
+  value,
+  maxValue,
   unit,
-  onClose,
+  color,
+  diff,
+  positiveIsGood,
 }: {
-  point: ChartPoint;
+  value: number | null;
+  maxValue: number;
   unit: string;
-  onClose: () => void;
+  color: string;
+  diff: number | null;
+  positiveIsGood: boolean;
 }) {
+  if (value == null) return <div className="h-3.5" />;
+  const pct = maxValue > 0 ? Math.max(6, (value / maxValue) * 100) : 6;
+  const display =
+    unit === "kg"
+      ? value % 1 === 0 ? `${value}` : value.toFixed(1)
+      : `${value}`;
+  const hasDiff = diff !== null && diff !== 0;
+  const diffGood = hasDiff && (positiveIsGood ? diff! > 0 : diff! < 0);
+
   return (
-    <div className="mt-2 rounded-xl bg-[#0f172a] p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">
-          {formatDate(point.date)}
-        </span>
-        <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xs">✕</button>
+    <div className="flex items-center gap-1 h-3.5">
+      <div className="flex-1 h-1.5 bg-slate-700/60 rounded-full overflow-hidden min-w-0">
+        <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
       </div>
-      <div className="space-y-1">
-        {point.sets.map((s) => (
-          <div key={s.setNumber} className="flex items-center gap-2 text-xs">
-            <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-[10px] font-bold shrink-0">
-              {s.setNumber}
-            </span>
-            <span className="text-white font-semibold tabular-nums">
-              {unit === "kg" && s.weightKg !== null
-                ? `${s.weightKg % 1 === 0 ? s.weightKg : s.weightKg.toFixed(1)} kg`
-                : `${s.reps} reps`}
-            </span>
-            {unit === "kg" && s.weightKg !== null && (
-              <span className="text-slate-400">× {s.reps} reps</span>
-            )}
-          </div>
-        ))}
-      </div>
+      <span className="text-[9px] text-slate-300 tabular-nums shrink-0 w-[26px] text-right leading-none">
+        {display}{unit}
+      </span>
+      <span
+        className={cn(
+          "text-[8px] font-bold tabular-nums shrink-0 w-[18px] text-left leading-none",
+          hasDiff ? (diffGood ? "text-emerald-400" : "text-rose-400") : "invisible"
+        )}
+      >
+        {hasDiff
+          ? `${diff! > 0 ? "+" : ""}${
+              unit === "kg"
+                ? diff! % 1 === 0 ? diff : diff!.toFixed(1)
+                : diff
+            }`
+          : "0"}
+      </span>
     </div>
   );
 }
@@ -64,54 +70,37 @@ function ExerciseChart({
   isBodyweight: boolean;
   isAssisted: boolean;
 }) {
-  const [filter, setFilter] = useState<ChartFilter>(30);
-  const [selectedPoint, setSelectedPoint] = useState<ChartPoint | null>(null);
+  const [filter, setFilter] = useState<ChartFilter>(2);
 
-  const unit = isBodyweight ? "reps" : "kg";
+  const allData = history.filter((h) => h.sets.length > 0);
+  const filtered = allData.slice(-filter);
 
-  const allData: ChartPoint[] = history
-    .map((h) => {
-      const v = isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0);
-      const weightStr = h.weightKg !== null
-        ? (h.weightKg % 1 === 0 ? `${h.weightKg}` : h.weightKg.toFixed(1))
-        : "";
-      const label = unit === "kg" && h.weightKg !== null
-        ? `${h.reps != null ? `${h.reps}×` : ""}${weightStr}kg`
-        : h.reps != null ? `${h.reps}` : "";
-      return { v, date: h.date, label, sets: h.sets };
-    })
-    .filter((d) => d.v > 0);
+  if (filtered.length < 1) return null;
 
-  const filtered = filter === "all" ? allData : allData.slice(-filter);
-
-  if (filtered.length < 2) return null;
-
-  const values = filtered.map((d) => d.v);
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
-  const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.35);
-
-  // For assisted exercises lower is better — PR is the lowest value; otherwise highest
-  const prVal = isAssisted ? minVal : maxVal;
-  const prIndex = filtered.reduce((last, pt, i) => pt.v === prVal ? i : last, -1);
-  const getColor = (index: number, isSelected: boolean) => {
-    if (isSelected) return "#f8fafc";
-    if (index === prIndex) return "#f59e0b"; // amber — latest record bar only
-    return "#3b82f6"; // blue — all other bars
-  };
+  // Global max across all shown workouts for consistent bar scale
+  const allReps = filtered.flatMap((h) =>
+    h.sets.slice(0, MAX_SETS).map((s) => s.reps)
+  );
+  const allKg = isBodyweight
+    ? []
+    : filtered.flatMap((h) =>
+        h.sets.slice(0, MAX_SETS).map((s) => s.weightKg ?? 0)
+      );
+  const maxReps = Math.max(...allReps, 1);
+  const maxKg = isBodyweight ? 1 : Math.max(...allKg, 1);
 
   return (
     <div className="space-y-2">
-      {/* Header row */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-          Progress ({unit}) · tap bar for sets
+          Sets · last workouts
         </span>
         <div className="flex gap-1">
-          {([7, 30, "all"] as ChartFilter[]).map((f) => (
+          {([2, 3, 7] as ChartFilter[]).map((f) => (
             <button
               key={f}
-              onClick={() => { setFilter(f); setSelectedPoint(null); }}
+              onClick={() => setFilter(f)}
               className={cn(
                 "text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition-colors",
                 filter === f
@@ -119,61 +108,84 @@ function ExerciseChart({
                   : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
               )}
             >
-              {f === "all" ? "All" : `${f}`}
+              {f}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="rounded-xl bg-[#0c1222] px-1 pt-3 pb-1">
-        <ResponsiveContainer width="100%" height={100}>
-          <BarChart
-            data={filtered}
-            barCategoryGap={4}
-            margin={{ top: 16, right: 4, bottom: 0, left: 0 }}
-            onClick={(data: Record<string, unknown>) => {
-              const payload = (data?.activePayload as { payload: ChartPoint }[] | undefined)?.[0]?.payload;
-              if (payload) setSelectedPoint((prev) => prev?.date === payload.date ? null : payload);
-            }}
-          >
-            <YAxis
-              dataKey="v"
-              domain={[domainMin, "auto"]}
-              tick={{ fontSize: 8, fill: "#475569" }}
-              tickFormatter={(v: number) =>
-                v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`
-              }
-              width={24}
-              axisLine={false}
-              tickLine={false}
-              tickCount={3}
-            />
-            <Bar dataKey="v" radius={[3, 3, 0, 0]} cursor="pointer">
-              {filtered.map((pt, i) => (
-                <Cell
-                  key={i}
-                  fill={getColor(i, selectedPoint?.date === pt.date)}
-                />
-              ))}
-              <LabelList
-                dataKey="label"
-                position="top"
-                style={{ fontSize: "8px", fill: "#94a3b8", fontWeight: 600 }}
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      {/* Workout columns — scrollable when many */}
+      <div className="overflow-x-auto -mx-1 px-1">
+        <div className="flex gap-2" style={{ minWidth: `${filtered.length * 108}px` }}>
+          {filtered.map((workout, wIdx) => {
+            const prev = wIdx > 0 ? filtered[wIdx - 1] : null;
+            const sets = [...workout.sets]
+              .sort((a, b) => a.setNumber - b.setNumber)
+              .slice(0, MAX_SETS);
+            const prevSets = prev
+              ? [...prev.sets]
+                  .sort((a, b) => a.setNumber - b.setNumber)
+                  .slice(0, MAX_SETS)
+              : null;
 
-      {/* Sets detail panel */}
-      {selectedPoint && selectedPoint.sets.length > 0 && (
-        <SetDetailPanel
-          point={selectedPoint}
-          unit={unit}
-          onClose={() => setSelectedPoint(null)}
-        />
-      )}
+            return (
+              <div
+                key={workout.date}
+                className="flex-1 rounded-xl bg-[#0c1222] p-2 space-y-2 min-w-0"
+              >
+                {/* Date */}
+                <p className="text-center text-[9px] font-semibold text-slate-400 uppercase tracking-wide truncate">
+                  {formatDate(workout.date)}
+                </p>
+
+                {/* Set rows */}
+                {Array.from({ length: MAX_SETS }, (_, sIdx) => {
+                  const set = sets[sIdx];
+                  const prevSet = prevSets?.[sIdx] ?? null;
+
+                  return (
+                    <div key={sIdx} className="space-y-0.5">
+                      <div className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">
+                        S{sIdx + 1}
+                      </div>
+                      {set ? (
+                        <>
+                          <SetBar
+                            value={set.reps}
+                            maxValue={maxReps}
+                            unit="r"
+                            color="bg-blue-500"
+                            diff={prevSet != null ? set.reps - prevSet.reps : null}
+                            positiveIsGood={true}
+                          />
+                          {!isBodyweight && (
+                            <SetBar
+                              value={set.weightKg}
+                              maxValue={maxKg}
+                              unit="kg"
+                              color="bg-amber-500"
+                              diff={
+                                prevSet != null &&
+                                set.weightKg != null &&
+                                prevSet.weightKg != null
+                                  ? set.weightKg - prevSet.weightKg
+                                  : null
+                              }
+                              positiveIsGood={!isAssisted}
+                            />
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-[9px] text-slate-700 h-3.5">—</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -313,7 +325,7 @@ export function ExerciseStatsPanel({ cards }: ExerciseStatsPanelProps) {
                         <div className="px-4 pb-3 pl-14">
                           <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-xl px-3 py-2.5 space-y-2">
                             {/* Progress chart with filter */}
-                            {card.history.length >= 2 && (
+                            {card.history.length >= 1 && (
                               <ExerciseChart
                                 history={card.history}
                                 isBodyweight={card.isBodyweight}
