@@ -22,6 +22,7 @@ import {
 import { togglePin, getExercises, getHiddenExercises, hideExercise, unhideExercise } from "@/actions/exercise";
 import {
   getBlocksForRange,
+  getPlannedExercisesForRange,
   excuseMissedDay,
   revokeSorryExcuse,
 } from "@/actions/planner";
@@ -64,6 +65,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [rangeData, setRangeData] = useState<WorkoutDayData[]>([]);
   const [isRangeLoading, setIsRangeLoading] = useState(false);
   const [plannerData, setPlannerData] = useState<{ blocksByDate: Record<string, PlannerBlockInfo[]>; sorryRemaining: number } | null>(null);
+  const [plannedExercisesByDate, setPlannedExercisesByDate] = useState<Record<string, { exerciseId: string }[]>>({});
   const [sorryConfirm, setSorryConfirm] = useState(false);
 
   const [trackingScope, setTrackingScope] = useState<"all" | "FULL_BODY" | MuscleGroup | null>(null);
@@ -145,15 +147,17 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     );
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load range data for calendar dots + planner blocks
+  // Load range data for calendar dots + planner blocks + planned exercises
   useEffect(() => {
     setIsRangeLoading(true);
     Promise.all([
       getWorkoutsForRange(rangeStart, rangeEnd),
       getBlocksForRange(rangeStart, rangeEnd),
-    ]).then(([workoutResult, plannerResult]) => {
+      getPlannedExercisesForRange(rangeStart, rangeEnd),
+    ]).then(([workoutResult, plannerResult, plannedExResult]) => {
       if (workoutResult.success && workoutResult.data) setRangeData(workoutResult.data);
       if (plannerResult.success && plannerResult.data) setPlannerData(plannerResult.data);
+      if (plannedExResult.success && plannedExResult.data) setPlannedExercisesByDate(plannedExResult.data);
       setIsRangeLoading(false);
     });
   }, [rangeStart, rangeEnd]);
@@ -269,9 +273,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     Promise.all([
       getWorkoutsForRange(rangeStart, rangeEnd),
       getBlocksForRange(rangeStart, rangeEnd),
-    ]).then(([workoutResult, plannerResult]) => {
+      getPlannedExercisesForRange(rangeStart, rangeEnd),
+    ]).then(([workoutResult, plannerResult, plannedExResult]) => {
       if (workoutResult.success && workoutResult.data) setRangeData(workoutResult.data);
       if (plannerResult.success && plannerResult.data) setPlannerData(plannerResult.data);
+      if (plannedExResult.success && plannedExResult.data) setPlannedExercisesByDate(plannedExResult.data);
     });
   };
 
@@ -577,6 +583,27 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const isGroupEditable = (mg: MuscleGroup) =>
     dueGroupMuscles.has(mg) || dueGroupMuscles.size === 0;
 
+  // Planned individual exercises for the selected date
+  const plannedExForDate = plannedExercisesByDate[selectedDate] ?? [];
+  const plannedExerciseIdSet = new Set(plannedExForDate.map((p) => p.exerciseId));
+
+  // Groups that have individually planned exercises
+  const groupsWithPlannedExercises = new Set(
+    exercises
+      .filter((ex) => plannedExerciseIdSet.has(ex.id))
+      .map((ex) => ex.muscleGroup)
+  );
+
+  // defaultOpen: open if due (block-planned), OR has individually planned exercises,
+  // OR nothing is planned at all (free day with no exercises planned either)
+  const nothingPlanned = dueGroupMuscles.size === 0 && groupsWithPlannedExercises.size === 0;
+  const isGroupDefaultOpen = (mg: MuscleGroup) =>
+    dueGroupMuscles.has(mg) || groupsWithPlannedExercises.has(mg) || nothingPlanned;
+
+  // Per-group planned exercise IDs (for badge + card highlight)
+  const plannedExerciseIdsForGroup = (mg: MuscleGroup): Set<string> =>
+    new Set(exercises.filter((ex) => ex.muscleGroup === mg && plannedExerciseIdSet.has(ex.id)).map((ex) => ex.id));
+
   // Exercises in non-due groups are read-only whenever due groups exist (any date)
   const readOnlyIds = new Set(
     exercises
@@ -841,6 +868,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onSkipChange={handleSkipChange}
                   removedFromLayout={hiddenByGroup["UPPER_BODY"] ?? []}
                   onRestoreFromLayout={handleRestoreFromGroup}
+                  plannedExerciseIds={plannedExerciseIdsForGroup("UPPER_BODY")}
                   isNested
                 />
                 <ExerciseGroup
@@ -863,6 +891,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   onSkipChange={handleSkipChange}
                   removedFromLayout={hiddenByGroup["LOWER_BODY"] ?? []}
                   onRestoreFromLayout={handleRestoreFromGroup}
+                  plannedExerciseIds={plannedExerciseIdsForGroup("LOWER_BODY")}
                   isNested
                 />
               </div>
@@ -880,7 +909,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onTogglePin={handleTogglePin}
                 onRemove={handleRemoveClick}
                 onHide={handleHideClick}
-                defaultOpen={isGroupEditable(mg)}
+                defaultOpen={isGroupDefaultOpen(mg)}
                 onSave={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 ? () => handleSaveGroup(mg) : undefined}
                 isSaving={savingGroups.has(mg)}
                 lastSaved={lastSavedByGroup[mg] ?? null}
@@ -893,6 +922,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onSkipChange={handleSkipChange}
                 removedFromLayout={hiddenByGroup[mg] ?? []}
                 onRestoreFromLayout={handleRestoreFromGroup}
+                plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
               />
             </div>
           ))}

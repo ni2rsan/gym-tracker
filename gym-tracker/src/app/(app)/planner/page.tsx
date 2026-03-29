@@ -1,5 +1,5 @@
 import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getPlannedWorkoutsInRange, getTrackedGroupsByDate, getStreakData } from "@/lib/services/plannerService";
+import { getPlannedWorkoutsInRange, getTrackedGroupsByDate, getStreakData, getPlannedExercisesInRange } from "@/lib/services/plannerService";
 import { WorkoutCalendar } from "@/components/planner/WorkoutCalendar";
 import { PlannerGuide } from "@/components/guide/PlannerGuide";
 
@@ -22,10 +22,11 @@ export default async function PlannerPage({
   const startDate = new Date(year, month - 3, 1).toISOString().split("T")[0];
   const endDate = new Date(year + 1, month + 1, 0).toISOString().split("T")[0];
 
-  const [plannedWorkouts, trackedGroupsByDate, streakData] = await Promise.all([
+  const [plannedWorkouts, trackedGroupsByDate, streakData, plannedExerciseRows] = await Promise.all([
     getPlannedWorkoutsInRange(userId, startDate, endDate),
     getTrackedGroupsByDate(userId, startDate, endDate),
     getStreakData(userId),
+    getPlannedExercisesInRange(userId, startDate, endDate),
   ]);
 
   const serialized = plannedWorkouts.map((pw) => ({
@@ -35,6 +36,11 @@ export default async function PlannerPage({
     seriesId: pw.seriesId,
     sorryExcused: pw.sorryExcused,
   }));
+
+  const initialPlannedExercises = plannedExerciseRows.reduce<Record<string, typeof plannedExerciseRows[0]["exercises"]>>(
+    (acc, { date, exercises }) => { acc[date] = exercises; return acc; },
+    {}
+  );
 
   return (
     <>
@@ -52,6 +58,7 @@ export default async function PlannerPage({
           initialYear={year}
           initialMonth={month}
           initialStreakData={streakData}
+          initialPlannedExercises={initialPlannedExercises}
         />
       </div>
     </>

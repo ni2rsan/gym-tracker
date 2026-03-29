@@ -12,6 +12,7 @@ import { DayContextMenu } from "./DayContextMenu";
 import { StreakCounter } from "./StreakCounter";
 import { getStreakDataAction } from "@/actions/planner";
 import type { StreakData } from "@/lib/services/plannerService";
+import type { PlannedExerciseInfo } from "@/actions/planner";
 
 export interface PlannedBlock {
   id: string;
@@ -34,6 +35,7 @@ interface WorkoutCalendarProps {
   initialYear: number;
   initialMonth: number; // 0-indexed
   initialStreakData: StreakData;
+  initialPlannedExercises?: Record<string, PlannedExerciseInfo[]>;
 }
 
 
@@ -43,6 +45,7 @@ export function WorkoutCalendar({
   initialYear,
   initialMonth,
   initialStreakData,
+  initialPlannedExercises = {},
 }: WorkoutCalendarProps) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -54,6 +57,7 @@ export function WorkoutCalendar({
     Object.fromEntries(Object.entries(initialTrackedGroups).map(([k, v]) => [k, new Set(v)]))
   );
   const [streakData, setStreakData] = useState<StreakData>(initialStreakData);
+  const [plannedExercisesByDate, setPlannedExercisesByDate] = useState<Record<string, PlannedExerciseInfo[]>>(initialPlannedExercises);
   const [, startStreakTransition] = useTransition();
 
   // Modal state
@@ -184,6 +188,10 @@ export function WorkoutCalendar({
   const handleBlockSorryRevoked = (date: string) => {
     setWorkouts(prev => prev.map(b => b.date === date ? { ...b, sorryExcused: false } : b));
     refreshStreak();
+  };
+
+  const handlePlannedExercisesChanged = (date: string, exercises: PlannedExerciseInfo[]) => {
+    setPlannedExercisesByDate(prev => ({ ...prev, [date]: exercises }));
   };
 
   const headerLabel = view === "month"
@@ -346,6 +354,8 @@ export function WorkoutCalendar({
           onBlockSorryRevoked={handleBlockSorryRevoked}
           streakBySeriesId={streakBySeriesId}
           sorryRemaining={streakData.sorryRemaining}
+          plannedExercises={plannedExercisesByDate[contextMenu.date] ?? []}
+          onPlannedExercisesChanged={handlePlannedExercisesChanged}
         />
       )}
     </div>

@@ -20,6 +20,7 @@ interface ExerciseCardProps {
   onDeleteTracking?: () => void;
   isSkipped?: boolean;
   onSkipChange?: (id: string, skipped: boolean) => void;
+  isPlanned?: boolean;
 }
 
 export function ExerciseCard({
@@ -33,6 +34,7 @@ export function ExerciseCard({
   isTracked = false,
   onDeleteTracking,
   isSkipped = false,
+  isPlanned = false,
   onSkipChange,
 }: ExerciseCardProps) {
   const isCardio = exercise.muscleGroup === "CARDIO";
@@ -65,6 +67,11 @@ export function ExerciseCard({
           </span>
         )}
       </div>
+      {isPlanned && !isTracked && (
+        <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold uppercase tracking-wide shrink-0">
+          Planned
+        </span>
+      )}
       {isTracked && (
         <span className="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-amber-300 flex items-center justify-center shrink-0">
           <span className="text-white font-black leading-none" style={{ fontSize: "9px" }}>✓</span>

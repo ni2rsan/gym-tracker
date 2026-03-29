@@ -2,34 +2,114 @@
 
 import { useState } from "react";
 import { ChevronDown, Trophy } from "lucide-react";
-import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, Cell, ResponsiveContainer, YAxis, Tooltip } from "recharts";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 import { cn, formatDate } from "@/lib/utils";
 import type { ExerciseStatCard } from "@/lib/services/reportService";
 import type { MuscleGroup } from "@/types";
 
-function MiniBarChart({ history, isBodyweight }: {
+type ChartFilter = 7 | 30 | "all";
+
+function ExerciseChart({
+  history,
+  isBodyweight,
+}: {
   history: ExerciseStatCard["history"];
   isBodyweight: boolean;
 }) {
-  const chartData = history
-    .map((h) => ({ v: isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0) }))
+  const [filter, setFilter] = useState<ChartFilter>(30);
+
+  const unit = isBodyweight ? "reps" : "kg";
+
+  const allData = history
+    .map((h) => ({
+      v: isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0),
+      date: h.date,
+    }))
     .filter((d) => d.v > 0);
-  if (chartData.length < 2) return null;
+
+  const filtered =
+    filter === "all" ? allData : allData.slice(-filter);
+
+  if (filtered.length < 2) return null;
+
+  const values = filtered.map((d) => d.v);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  // Add a bit of padding below min so bars don't start at the very bottom edge
+  const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.3);
+
   return (
-    <ResponsiveContainer width="100%" height={36}>
-      <BarChart data={chartData} barCategoryGap={2} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
-        <Bar dataKey="v" radius={[2, 2, 0, 0]}>
-          {chartData.map((_, i) => (
-            <Cell
-              key={i}
-              fill={i === chartData.length - 1 ? "#f59e0b" : "#d4d4d8"}
-              className="dark:fill-zinc-600"
-            />
+    <div className="space-y-2">
+      {/* Header row: label + filter pills */}
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+          Progress ({unit})
+        </span>
+        <div className="flex gap-1">
+          {([7, 30, "all"] as ChartFilter[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition-colors",
+                filter === f
+                  ? "bg-blue-600 text-white"
+                  : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+              )}
+            >
+              {f === "all" ? "All" : `${f}`}
+            </button>
           ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <ResponsiveContainer width="100%" height={90}>
+        <BarChart
+          data={filtered}
+          barCategoryGap={3}
+          margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
+        >
+          <YAxis
+            dataKey="v"
+            domain={[domainMin, "auto"]}
+            tick={{ fontSize: 9, fill: "#71717a" }}
+            tickFormatter={(v: number) =>
+              v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`
+            }
+            width={28}
+            axisLine={false}
+            tickLine={false}
+            tickCount={3}
+          />
+          <Tooltip
+            cursor={{ fill: "rgba(59,130,246,0.08)" }}
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const item = payload[0].payload as { v: number; date: string };
+              return (
+                <div className="bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] px-2 py-1 rounded-lg shadow-lg">
+                  <span className="font-semibold tabular-nums">
+                    {item.v} {unit}
+                  </span>
+                  <span className="text-zinc-400 ml-1.5">{formatDate(item.date)}</span>
+                </div>
+              );
+            }}
+          />
+          <Bar dataKey="v" radius={[3, 3, 0, 0]}>
+            {filtered.map((_, i) => (
+              <Cell
+                key={i}
+                fill={i === filtered.length - 1 ? "#1d4ed8" : "#3b82f6"}
+                opacity={i === filtered.length - 1 ? 1 : 0.55 + (i / filtered.length) * 0.35}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -166,45 +246,48 @@ export function ExerciseStatsPanel({ cards }: ExerciseStatsPanelProps) {
                       {/* Expanded detail */}
                       {isExpanded && (
                         <div className="px-4 pb-3 pl-14">
-                          <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-xl px-3 py-2.5 space-y-1.5">
-                            {/* Mini progress chart */}
+                          <div className="bg-zinc-50 dark:bg-zinc-800/60 rounded-xl px-3 py-2.5 space-y-2">
+                            {/* Progress chart with filter */}
                             {card.history.length >= 2 && (
-                              <div className="pb-1">
-                                <MiniBarChart history={card.history} isBodyweight={card.isBodyweight} />
-                              </div>
+                              <ExerciseChart
+                                history={card.history}
+                                isBodyweight={card.isBodyweight}
+                              />
                             )}
-                            <div className="flex justify-between text-xs">
-                              <span className="text-zinc-500 dark:text-zinc-400">Total sets</span>
-                              <span className="font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">
-                                {card.totalSets}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-zinc-500 dark:text-zinc-400">In workouts</span>
-                              <span className="font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">
-                                {card.totalWorkouts}
-                              </span>
-                            </div>
-                            {(card.prWeightKg !== null || card.prReps !== null) && (
-                              <div className="flex justify-between text-xs pt-0.5 border-t border-zinc-200 dark:border-zinc-700">
-                                <span className="text-zinc-500 dark:text-zinc-400">Personal record</span>
-                                <span className="font-semibold text-amber-500 tabular-nums">
-                                  {card.isBodyweight
-                                    ? `${card.prReps} reps`
-                                    : card.prWeightKg !== null
-                                      ? `${card.prWeightKg.toFixed(1)} kg × ${card.prReps}`
-                                      : "—"}
-                                </span>
-                              </div>
-                            )}
-                            {card.prDate && (
+                            <div className="space-y-1.5 pt-0.5">
                               <div className="flex justify-between text-xs">
-                                <span className="text-zinc-500 dark:text-zinc-400">PR date</span>
-                                <span className="text-zinc-400 dark:text-zinc-500">
-                                  {formatDate(card.prDate)}
+                                <span className="text-zinc-500 dark:text-zinc-400">Total sets</span>
+                                <span className="font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">
+                                  {card.totalSets}
                                 </span>
                               </div>
-                            )}
+                              <div className="flex justify-between text-xs">
+                                <span className="text-zinc-500 dark:text-zinc-400">In workouts</span>
+                                <span className="font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums">
+                                  {card.totalWorkouts}
+                                </span>
+                              </div>
+                              {(card.prWeightKg !== null || card.prReps !== null) && (
+                                <div className="flex justify-between text-xs pt-0.5 border-t border-zinc-200 dark:border-zinc-700">
+                                  <span className="text-zinc-500 dark:text-zinc-400">Personal record</span>
+                                  <span className="font-semibold text-amber-500 tabular-nums">
+                                    {card.isBodyweight
+                                      ? `${card.prReps} reps`
+                                      : card.prWeightKg !== null
+                                        ? `${card.prWeightKg.toFixed(1)} kg × ${card.prReps}`
+                                        : "—"}
+                                  </span>
+                                </div>
+                              )}
+                              {card.prDate && (
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-zinc-500 dark:text-zinc-400">PR date</span>
+                                  <span className="text-zinc-400 dark:text-zinc-500">
+                                    {formatDate(card.prDate)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
