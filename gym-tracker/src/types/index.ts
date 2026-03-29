@@ -97,6 +97,8 @@ export interface FriendProfileData {
   bestStreak: number;
   milestonesUnlocked: number[];
   totalWorkoutsThisMonth: number;
+  totalWorkoutsAllTime: number;
+  joinedAt: string; // ISO date string
   heightCm: number | null;
   weight: number | null;
   bodyFatPct: number | null;
@@ -113,6 +115,18 @@ export interface FriendProfileData {
   };
 }
 
+export interface FeedExerciseSet {
+  setNumber: number;
+  reps: number;
+  weightKg: number | null;
+}
+
+export interface FeedExercise {
+  exerciseName: string;
+  muscleGroup: string;
+  sets: FeedExerciseSet[];
+}
+
 export interface WorkoutFeedEntry {
   sessionId: string;
   userId: string;
@@ -127,6 +141,7 @@ export interface WorkoutFeedEntry {
   isOwnWorkout: boolean;
   fistBumps: { userId: string; name: string | null; username: string | null }[];
   myFistBump: boolean;
+  exercises: FeedExercise[];
 }
 
 export interface NewFistBumpNotification {

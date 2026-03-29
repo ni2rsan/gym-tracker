@@ -235,14 +235,15 @@ export async function getFriendProfileData(
 
   const friendUser = await prisma.user.findUnique({
     where: { id: friendId },
-    select: { username: true, name: true, image: true, profileImageBase64: true, heightCm: true },
+    select: { username: true, name: true, image: true, profileImageBase64: true, heightCm: true, createdAt: true },
   });
   if (!friendUser) return null;
 
-  const [visibility, streakData, myOverrideRow] = await Promise.all([
+  const [visibility, streakData, myOverrideRow, totalWorkoutsAllTime] = await Promise.all([
     resolveFriendVisibility(viewerId, friendId),
     getStreakData(friendId),
     getFriendPrivacyOverride(viewerId, friendId),
+    prisma.workoutSession.count({ where: { userId: friendId } }),
   ]);
 
   const [metrics, prs] = await Promise.all([
@@ -260,6 +261,8 @@ export async function getFriendProfileData(
     bestStreak: streakData.bestStreak,
     milestonesUnlocked,
     totalWorkoutsThisMonth: streakData.totalWorkoutsThisMonth,
+    totalWorkoutsAllTime,
+    joinedAt: friendUser.createdAt.toISOString().split("T")[0],
     heightCm: friendUser.heightCm ?? null,
     weight: visibility.canSeeWeight && metrics?.weightKg ? Number(metrics.weightKg) : null,
     bodyFatPct: visibility.canSeeBodyFat && metrics?.bodyFatPct ? Number(metrics.bodyFatPct) : null,
@@ -505,9 +508,12 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
       sets: {
         select: {
           exerciseId: true,
+          setNumber: true,
+          reps: true,
           weightKg: true,
-          exercise: { select: { muscleGroup: true } },
+          exercise: { select: { name: true, muscleGroup: true } },
         },
+        orderBy: { setNumber: "asc" },
       },
       user: {
         select: { id: true, username: true, name: true, image: true, profileImageBase64: true },
@@ -617,6 +623,17 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
     const canSeePRs = prVisibilityMap.get(session.userId) ?? false;
     const rawPrCount = prCountMap.get(session.id) ?? 0;
 
+    // Build per-exercise breakdown preserving insertion order
+    const exerciseMap = new Map<string, { exerciseName: string; muscleGroup: string; sets: { setNumber: number; reps: number; weightKg: number | null }[] }>();
+    for (const s of session.sets) {
+      const key = s.exerciseId;
+      if (!exerciseMap.has(key)) {
+        exerciseMap.set(key, { exerciseName: s.exercise.name, muscleGroup: s.exercise.muscleGroup, sets: [] });
+      }
+      exerciseMap.get(key)!.sets.push({ setNumber: s.setNumber, reps: s.reps, weightKg: s.weightKg !== null ? Number(s.weightKg) : null });
+    }
+    const exercises = Array.from(exerciseMap.values());
+
     return {
       sessionId: session.id,
       userId: session.userId,
@@ -631,6 +648,7 @@ export async function getFriendsFeed(viewerId: string, days = 14): Promise<Worko
       isOwnWorkout: session.userId === viewerId,
       fistBumps: fistBumpMap.get(session.id) ?? [],
       myFistBump: (fistBumpMap.get(session.id) ?? []).some((b) => b.userId === viewerId),
+      exercises,
     };
   });
 }
