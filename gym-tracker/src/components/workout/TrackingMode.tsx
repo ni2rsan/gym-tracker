@@ -397,8 +397,8 @@ export function TrackingMode({
           >
             <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
             {done && !skipped && (
-              <span className="absolute -top-0.5 -left-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
-                <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
+              <span className="absolute -top-0.5 -left-0.5 w-5 h-5 rounded-full bg-amber-500 ring-2 ring-amber-300 flex items-center justify-center">
+                <span className="text-white font-black leading-none" style={{ fontSize: "9px" }}>✓</span>
               </span>
             )}
             {done && !skipped && exerciseOutcomes[ex.id]?.isPR && (
@@ -631,9 +631,10 @@ export function TrackingMode({
                           ) : d.isDropped ? (
                             <span className="text-zinc-400 text-[9px]">—</span>
                           ) : (() => {
+                            const fmt = (v: number) => parseFloat(v.toFixed(1));
                             const parts: string[] = [];
-                            if (d.diffReps !== null && d.diffReps !== 0) parts.push(`${d.diffReps > 0 ? "▲+" : "▼"}${d.diffReps}r`);
-                            if (!cex.isBodyweight && d.diffKg !== null && d.diffKg !== 0) parts.push(`${d.diffKg > 0 ? "▲+" : "▼"}${d.diffKg}kg`);
+                            if (d.diffReps !== null && d.diffReps !== 0) parts.push(`${d.diffReps > 0 ? "▲+" : "▼"}${fmt(d.diffReps)}r`);
+                            if (!cex.isBodyweight && d.diffKg !== null && d.diffKg !== 0) parts.push(`${d.diffKg > 0 ? "▲+" : "▼"}${fmt(d.diffKg)}kg`);
                             if (parts.length === 0) return <span className="text-zinc-300 dark:text-zinc-600 text-[9px]">=</span>;
                             const isPos = (d.diffReps ?? 0) >= 0 && (d.diffKg ?? 0) >= 0;
                             return <span className={`text-[9px] font-medium ${isPos ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>{parts.join(" ")}</span>;

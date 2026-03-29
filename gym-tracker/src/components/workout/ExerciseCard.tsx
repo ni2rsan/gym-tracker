@@ -287,7 +287,7 @@ export function ExerciseCard({
                   {exercise.isBodyweight ? `${set.reps}` : `${set.reps}`}
                   {diff.diffReps !== null && diff.diffReps !== 0 && (
                     <span className={cn("text-[9px] ml-0.5", diff.diffReps > 0 ? "text-emerald-500" : "text-red-500")}>
-                      {diff.diffReps > 0 ? `▲+${diff.diffReps}` : `▼${diff.diffReps}`}
+                      {diff.diffReps > 0 ? `▲+${parseFloat(diff.diffReps.toFixed(1))}` : `▼${parseFloat(diff.diffReps.toFixed(1))}`}
                     </span>
                   )}
                 </span>
@@ -296,7 +296,7 @@ export function ExerciseCard({
                     {set.weightKg || 0}
                     {diff.diffKg !== null && diff.diffKg !== 0 && (
                       <span className={cn("text-[9px] ml-0.5", diff.diffKg > 0 ? "text-emerald-500" : "text-red-500")}>
-                        {diff.diffKg > 0 ? `▲+${diff.diffKg}` : `▼${diff.diffKg}`}
+                        {diff.diffKg > 0 ? `▲+${parseFloat(diff.diffKg.toFixed(1))}` : `▼${parseFloat(diff.diffKg.toFixed(1))}`}
                       </span>
                     )}
                   </span>
