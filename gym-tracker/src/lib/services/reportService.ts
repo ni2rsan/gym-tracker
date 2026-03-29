@@ -216,7 +216,12 @@ export type ExerciseStatCard = {
   totalSets: number;
   totalWorkouts: number;
   // Chronological history for mini chart (ascending, capped at 30 sessions)
-  history: { date: string; weightKg: number | null; reps: number | null }[];
+  history: {
+    date: string;
+    weightKg: number | null;
+    reps: number | null;
+    sets: { setNumber: number; reps: number; weightKg: number | null }[];
+  }[];
 };
 
 type RawSet = {
@@ -370,11 +375,23 @@ export async function getExerciseStatCards(userId: string): Promise<ExerciseStat
       totalSets,
       totalWorkouts: ex.sessionDates.length,
       // sessionMaxes is desc — reverse for chronological order, cap at 30
-      history: [...sessionMaxes].reverse().slice(-30).map((s) => ({
-        date: s.date,
-        weightKg: s.maxWeight,
-        reps: s.maxReps || null,
-      })),
+      history: [...sessionMaxes].reverse().slice(-30).map((s) => {
+        // Deduplicate sets for this session (latest recordedAt per setNumber)
+        const rawSets = ex.byDate.get(s.date) ?? [];
+        const deduped = new Map<number, RawSet>();
+        for (const rs of [...rawSets].sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime())) {
+          if (!deduped.has(rs.setNumber)) deduped.set(rs.setNumber, rs);
+        }
+        const sessionSets = [...deduped.values()]
+          .sort((a, b) => a.setNumber - b.setNumber)
+          .map((rs) => ({ setNumber: rs.setNumber, reps: rs.reps, weightKg: rs.weightKg }));
+        return {
+          date: s.date,
+          weightKg: s.maxWeight,
+          reps: s.maxReps || null,
+          sets: sessionSets,
+        };
+      }),
     });
   }
 

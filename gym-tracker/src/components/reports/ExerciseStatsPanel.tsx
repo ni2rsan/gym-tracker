@@ -2,13 +2,58 @@
 
 import { useState } from "react";
 import { ChevronDown, Trophy } from "lucide-react";
-import { BarChart, Bar, Cell, ResponsiveContainer, YAxis, Tooltip } from "recharts";
+import { BarChart, Bar, Cell, ResponsiveContainer, YAxis, LabelList } from "recharts";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 import { cn, formatDate } from "@/lib/utils";
 import type { ExerciseStatCard } from "@/lib/services/reportService";
 import type { MuscleGroup } from "@/types";
 
 type ChartFilter = 7 | 30 | "all";
+
+type ChartPoint = {
+  v: number;
+  date: string;
+  label: string;
+  sets: ExerciseStatCard["history"][0]["sets"];
+};
+
+function SetDetailPanel({
+  point,
+  unit,
+  onClose,
+}: {
+  point: ChartPoint;
+  unit: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-2 rounded-xl bg-[#0f172a] p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">
+          {formatDate(point.date)}
+        </span>
+        <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xs">✕</button>
+      </div>
+      <div className="space-y-1">
+        {point.sets.map((s) => (
+          <div key={s.setNumber} className="flex items-center gap-2 text-xs">
+            <span className="w-5 h-5 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-[10px] font-bold shrink-0">
+              {s.setNumber}
+            </span>
+            <span className="text-white font-semibold tabular-nums">
+              {unit === "kg" && s.weightKg !== null
+                ? `${s.weightKg % 1 === 0 ? s.weightKg : s.weightKg.toFixed(1)} kg`
+                : `${s.reps} reps`}
+            </span>
+            {unit === "kg" && s.weightKg !== null && (
+              <span className="text-slate-400">× {s.reps} reps</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ExerciseChart({
   history,
@@ -18,43 +63,58 @@ function ExerciseChart({
   isBodyweight: boolean;
 }) {
   const [filter, setFilter] = useState<ChartFilter>(30);
+  const [selectedPoint, setSelectedPoint] = useState<ChartPoint | null>(null);
 
   const unit = isBodyweight ? "reps" : "kg";
 
-  const allData = history
-    .map((h) => ({
-      v: isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0),
-      date: h.date,
-    }))
+  const allData: ChartPoint[] = history
+    .map((h) => {
+      const v = isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0);
+      const label = unit === "kg" && h.weightKg !== null
+        ? (h.weightKg % 1 === 0 ? `${h.weightKg}` : h.weightKg.toFixed(1))
+        : h.reps != null ? `${h.reps}` : "";
+      return { v, date: h.date, label, sets: h.sets };
+    })
     .filter((d) => d.v > 0);
 
-  const filtered =
-    filter === "all" ? allData : allData.slice(-filter);
+  const filtered = filter === "all" ? allData : allData.slice(-filter);
 
   if (filtered.length < 2) return null;
 
   const values = filtered.map((d) => d.v);
   const minVal = Math.min(...values);
   const maxVal = Math.max(...values);
-  // Add a bit of padding below min so bars don't start at the very bottom edge
-  const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.3);
+  const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.35);
+
+  // Navy palette: older bars #1e3a5f → most recent #e2e8f0 (light pop on dark)
+  const getColor = (i: number, total: number) => {
+    if (i === total - 1) return "#e2e8f0"; // most recent: bright slate-200
+    // gradient from deep navy (#0f172a) → medium navy (#1e3a8a)
+    const t = i / Math.max(total - 2, 1);
+    return i % 2 === 0 ? "#1e3a8a" : "#1d4ed8";
+    void t;
+  };
+  const getOpacity = (i: number, total: number) => {
+    if (i === total - 1) return 1;
+    return 0.45 + (i / (total - 1)) * 0.4;
+  };
 
   return (
     <div className="space-y-2">
-      {/* Header row: label + filter pills */}
+      {/* Header row */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-          Progress ({unit})
+          Progress ({unit}) · tap bar for sets
         </span>
         <div className="flex gap-1">
           {([7, 30, "all"] as ChartFilter[]).map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => { setFilter(f); setSelectedPoint(null); }}
               className={cn(
                 "text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition-colors",
                 filter === f
-                  ? "bg-blue-600 text-white"
+                  ? "bg-[#1e3a8a] text-white"
                   : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
               )}
             >
@@ -65,50 +125,55 @@ function ExerciseChart({
       </div>
 
       {/* Chart */}
-      <ResponsiveContainer width="100%" height={90}>
-        <BarChart
-          data={filtered}
-          barCategoryGap={3}
-          margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
-        >
-          <YAxis
-            dataKey="v"
-            domain={[domainMin, "auto"]}
-            tick={{ fontSize: 9, fill: "#71717a" }}
-            tickFormatter={(v: number) =>
-              v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`
-            }
-            width={28}
-            axisLine={false}
-            tickLine={false}
-            tickCount={3}
-          />
-          <Tooltip
-            cursor={{ fill: "rgba(59,130,246,0.08)" }}
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const item = payload[0].payload as { v: number; date: string };
-              return (
-                <div className="bg-zinc-900 dark:bg-zinc-700 text-white text-[11px] px-2 py-1 rounded-lg shadow-lg">
-                  <span className="font-semibold tabular-nums">
-                    {item.v} {unit}
-                  </span>
-                  <span className="text-zinc-400 ml-1.5">{formatDate(item.date)}</span>
-                </div>
-              );
+      <div className="rounded-xl bg-[#0c1222] px-1 pt-3 pb-1">
+        <ResponsiveContainer width="100%" height={100}>
+          <BarChart
+            data={filtered}
+            barCategoryGap={4}
+            margin={{ top: 16, right: 4, bottom: 0, left: 0 }}
+            onClick={(data: Record<string, unknown>) => {
+              const payload = (data?.activePayload as { payload: ChartPoint }[] | undefined)?.[0]?.payload;
+              if (payload) setSelectedPoint((prev) => prev?.date === payload.date ? null : payload);
             }}
-          />
-          <Bar dataKey="v" radius={[3, 3, 0, 0]}>
-            {filtered.map((_, i) => (
-              <Cell
-                key={i}
-                fill={i === filtered.length - 1 ? "#1d4ed8" : "#3b82f6"}
-                opacity={i === filtered.length - 1 ? 1 : 0.55 + (i / filtered.length) * 0.35}
+          >
+            <YAxis
+              dataKey="v"
+              domain={[domainMin, "auto"]}
+              tick={{ fontSize: 8, fill: "#475569" }}
+              tickFormatter={(v: number) =>
+                v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`
+              }
+              width={24}
+              axisLine={false}
+              tickLine={false}
+              tickCount={3}
+            />
+            <Bar dataKey="v" radius={[3, 3, 0, 0]} cursor="pointer">
+              {filtered.map((pt, i) => (
+                <Cell
+                  key={i}
+                  fill={selectedPoint?.date === pt.date ? "#f8fafc" : getColor(i, filtered.length)}
+                  opacity={getOpacity(i, filtered.length)}
+                />
+              ))}
+              <LabelList
+                dataKey="label"
+                position="top"
+                style={{ fontSize: "8px", fill: "#94a3b8", fontWeight: 600 }}
               />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Sets detail panel */}
+      {selectedPoint && selectedPoint.sets.length > 0 && (
+        <SetDetailPanel
+          point={selectedPoint}
+          unit={unit}
+          onClose={() => setSelectedPoint(null)}
+        />
+      )}
     </div>
   );
 }

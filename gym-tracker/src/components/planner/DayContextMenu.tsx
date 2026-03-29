@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Pencil, Trash2, Activity, Plus, Dumbbell, ListPlus } from "lucide-react";
+import { X, Pencil, Trash2, Activity, Plus, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BLOCK_LABELS } from "@/constants/exercises";
+import { BLOCK_LABELS, BLOCK_COLORS } from "@/constants/exercises";
 import type { BlockType } from "@/constants/exercises";
 import {
   deleteBlock,
@@ -183,12 +183,7 @@ export function DayContextMenu({
     });
   };
 
-  const handleTrackSection = () => {
-    onClose();
-    router.push(`/workout?date=${date}&section=${activeBlock.blockType}`);
-  };
-
-  const handleTrackFull = () => {
+  const handleTrackWorkout = () => {
     onClose();
     router.push(`/workout?date=${date}`);
   };
@@ -239,10 +234,21 @@ export function DayContextMenu({
   };
 
   if (editMode === "exercises") {
+    // Compute which muscle groups are already covered by planned blocks
+    const blockedMuscleGroups = new Set<string>();
+    for (const b of blocks) {
+      if (b.blockType === "FULL_BODY") {
+        blockedMuscleGroups.add("UPPER_BODY");
+        blockedMuscleGroups.add("LOWER_BODY");
+      } else {
+        blockedMuscleGroups.add(b.blockType);
+      }
+    }
     return (
       <ExercisePicker
         date={date}
         plannedExercises={plannedExercises}
+        blockedMuscleGroups={blockedMuscleGroups}
         onClose={() => { setEditMode(null); onClose(); }}
         onPlannedChanged={(updated) => {
           onPlannedExercisesChanged?.(date, updated);
@@ -541,7 +547,7 @@ export function DayContextMenu({
           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
         >
           <ListPlus className="h-4 w-4 text-zinc-400" />
-          Plan exercises
+          Add exercises
           {plannedExercises.length > 0 && (
             <span className="ml-auto text-xs font-semibold text-emerald-500">
               {plannedExercises.length} planned
@@ -560,22 +566,37 @@ export function DayContextMenu({
 
         {/* TRACK — only for today and past */}
         {!isFuture && (
-          <>
+          <div className="border-t border-zinc-100 dark:border-zinc-800">
+            {/* Block type strip */}
+            {blocks.length > 0 && (
+              <div className="px-4 pt-2.5 pb-1 flex flex-wrap gap-1.5">
+                {blocks.map((b) => (
+                  <span
+                    key={b.id}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-zinc-700 dark:text-zinc-200",
+                      BLOCK_COLORS[b.blockType as BlockType] ?? "bg-zinc-200"
+                    )}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-current opacity-60" />
+                    {BLOCK_LABELS[b.blockType as BlockType] ?? b.blockType}
+                  </span>
+                ))}
+                {plannedExercises.length > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+                    +{plannedExercises.length} added
+                  </span>
+                )}
+              </div>
+            )}
             <button
-              onClick={handleTrackSection}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
+              onClick={handleTrackWorkout}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left"
             >
               <Activity className="h-4 w-4" />
-              Track {BLOCK_LABELS[activeBlock.blockType as BlockType] ?? activeBlock.blockType} →
+              Track Workout →
             </button>
-            <button
-              onClick={handleTrackFull}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left"
-            >
-              <Dumbbell className="h-4 w-4" />
-              Open full workout tracker →
-            </button>
-          </>
+          </div>
         )}
 
         {/* Delete tracked workout */}
