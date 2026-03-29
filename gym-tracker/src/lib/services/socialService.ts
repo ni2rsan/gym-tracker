@@ -240,12 +240,13 @@ export async function getFriendProfileData(
   });
   if (!friendUser) return null;
 
-  const [visibility, streakData, myOverrideRow, totalWorkoutsAllTime, cumulativeVolume] = await Promise.all([
+  const [visibility, streakData, myOverrideRow, totalWorkoutsAllTime, cumulativeVolume, friendSocialStats] = await Promise.all([
     resolveFriendVisibility(viewerId, friendId),
     getStreakData(friendId),
     getFriendPrivacyOverride(viewerId, friendId),
     prisma.workoutSession.count({ where: { userId: friendId } }),
     getCumulativeVolume(friendId),
+    getSocialStats(friendId),
   ]);
 
   const [metrics, prs] = await Promise.all([
@@ -277,6 +278,9 @@ export async function getFriendProfileData(
     totalWorkoutsThisMonth: streakData.totalWorkoutsThisMonth,
     totalWorkoutsAllTime,
     joinedAt: friendUser.createdAt.toISOString().split("T")[0],
+    friendCount: friendSocialStats.friendCount,
+    fistbumpCount: friendSocialStats.totalFistBumpsReceived,
+    cumulativeVolume,
     heightCm: friendUser.heightCm ?? null,
     weight: visibility.canSeeWeight && metrics?.weightKg ? Number(metrics.weightKg) : null,
     bodyFatPct: visibility.canSeeBodyFat && metrics?.bodyFatPct ? Number(metrics.bodyFatPct) : null,
