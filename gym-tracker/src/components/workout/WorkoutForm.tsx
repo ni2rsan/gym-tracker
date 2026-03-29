@@ -369,6 +369,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   };
 
   const [isSavingFullBody, setIsSavingFullBody] = useState(false);
+  const [isSavingAdded, setIsSavingAdded] = useState(false);
+  const [lastSavedAdded, setLastSavedAdded] = useState<Date | null>(null);
 
   const handleSaveFullBody = () => {
     setIsSavingFullBody(true);
@@ -414,6 +416,25 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         next.delete(mg);
         return next;
       });
+    });
+  };
+
+  const handleSaveAddedExercises = (exList: ExerciseWithSettings[]) => {
+    setIsSavingAdded(true);
+    startTransition(async () => {
+      const exerciseInputs = exList
+        .filter((ex) => !skippedIds.has(ex.id))
+        .map((ex) => ({ exerciseId: ex.id, sets: workoutData[ex.id] ?? [] }));
+      const result = await saveWorkout({ date: selectedDate, exercises: exerciseInputs });
+      if (result.success) {
+        setLastSavedAdded(new Date());
+        refreshSavedIds(workoutData, exList);
+        refreshRangeData();
+        setToast({ message: "Added exercises saved ✓", type: "success" });
+      } else {
+        setToast({ message: result.error ?? "Failed to save", type: "error" });
+      }
+      setIsSavingAdded(false);
     });
   };
 
@@ -603,6 +624,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   // Per-group planned exercise IDs (for badge + card highlight)
   const plannedExerciseIdsForGroup = (mg: MuscleGroup): Set<string> =>
     new Set(exercises.filter((ex) => ex.muscleGroup === mg && plannedExerciseIdSet.has(ex.id)).map((ex) => ex.id));
+
+  // "Added Exercises" — planned individually AND not covered by any due block group
+  const addedExercises = exercises.filter(
+    (ex) => plannedExerciseIdSet.has(ex.id) && !dueGroupMuscles.has(ex.muscleGroup)
+  );
 
   // Exercises in non-due groups are read-only whenever due groups exist (any date)
   const readOnlyIds = new Set(
@@ -926,6 +952,32 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               />
             </div>
           ))}
+
+          {/* Added Exercises section — exercises individually added via planner, not covered by a block */}
+          {addedExercises.length > 0 && (
+            <div key={`${selectedDate}-added`} id="section-added">
+              <ExerciseGroup
+                muscleGroup={"UPPER_BODY" as MuscleGroup}
+                exercises={addedExercises}
+                workoutData={workoutData}
+                onSetsChange={handleSetsChange}
+                onTogglePin={handleTogglePin}
+                onRemove={handleRemoveClick}
+                onHide={handleHideClick}
+                defaultOpen={true}
+                onSave={addedExercises.length > 0 ? () => handleSaveAddedExercises(addedExercises) : undefined}
+                isSaving={isSavingAdded}
+                lastSaved={lastSavedAdded}
+                readOnlyIds={readOnlyIds}
+                trackedIds={savedTodayIds}
+                onDeleteTracking={handleDeleteExerciseTracking}
+                skippedIds={skippedIds}
+                onSkipChange={handleSkipChange}
+                removedFromLayout={[]}
+                groupLabel="Added Exercises"
+              />
+            </div>
+          )}
 
           {/* Bottom bar */}
           <div className="flex items-center gap-3 pt-1 border-t border-zinc-200 dark:border-zinc-800">

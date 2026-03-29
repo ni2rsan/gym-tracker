@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Save, Plus, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
@@ -32,6 +32,8 @@ interface ExerciseGroupProps {
   isNested?: boolean;
   /** Exercise IDs that were individually planned for the selected date */
   plannedExerciseIds?: Set<string>;
+  /** Override the group label (e.g. "Added Exercises") */
+  groupLabel?: string;
 }
 
 export function ExerciseGroup({
@@ -57,9 +59,20 @@ export function ExerciseGroup({
   onRestoreFromLayout,
   isNested = false,
   plannedExerciseIds,
+  groupLabel,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [removedOpen, setRemovedOpen] = useState(false);
+
+  // When async planner data loads and defaultOpen changes true→false, collapse the group.
+  // Don't auto-open if user has manually closed it.
+  const prevDefault = useRef(defaultOpen);
+  useEffect(() => {
+    if (!defaultOpen && prevDefault.current) {
+      setOpen(false);
+    }
+    prevDefault.current = defaultOpen;
+  }, [defaultOpen]);
 
   if (exercises.length === 0 && !onAdd && removedFromLayout.length === 0) return null;
 
@@ -93,7 +106,7 @@ export function ExerciseGroup({
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
-          <span>{MUSCLE_GROUP_LABELS[muscleGroup]}</span>
+          <span>{groupLabel ?? MUSCLE_GROUP_LABELS[muscleGroup]}</span>
           <span className={cn("text-xs font-normal opacity-60")}>
             {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
           </span>
@@ -175,7 +188,7 @@ export function ExerciseGroup({
                 className="ml-auto flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
               >
                 <Save className="h-3 w-3" />
-                Save {MUSCLE_GROUP_LABELS[muscleGroup]}
+                Save {groupLabel ?? MUSCLE_GROUP_LABELS[muscleGroup]}
               </button>
             </div>
           )}

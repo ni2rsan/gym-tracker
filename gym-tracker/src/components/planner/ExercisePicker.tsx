@@ -21,11 +21,13 @@ interface ExercisePickerProps {
   date: string;
   /** Already-planned exercises for this date */
   plannedExercises: PlannedExerciseInfo[];
+  /** Muscle groups already covered by planned workout blocks (these exercises are disabled) */
+  blockedMuscleGroups?: Set<string>;
   onClose: () => void;
   onPlannedChanged: (updated: PlannedExerciseInfo[]) => void;
 }
 
-export function ExercisePicker({ date, plannedExercises, onClose, onPlannedChanged }: ExercisePickerProps) {
+export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = new Set(), onClose, onPlannedChanged }: ExercisePickerProps) {
   const [query, setQuery] = useState("");
   const [exercises, setExercises] = useState<{ id: string; name: string; muscleGroup: string; isBodyweight: boolean }[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(true);
@@ -111,7 +113,7 @@ export function ExercisePicker({ date, plannedExercises, onClose, onPlannedChang
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
           <div>
-            <p className="text-sm font-semibold text-zinc-900 dark:text-white">Plan exercises</p>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white">Add exercises</p>
             <p suppressHydrationWarning className="text-xs text-zinc-400 dark:text-zinc-500">{dateLabel}</p>
           </div>
           <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
@@ -182,18 +184,21 @@ export function ExercisePicker({ date, plannedExercises, onClose, onPlannedChang
                   <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
                     {groupExs.map((ex) => {
                       const isPlanned = plannedIds.has(ex.id);
+                      const isBlocked = blockedMuscleGroups.has(ex.muscleGroup);
                       const isThisPending = pendingId === ex.id;
                       return (
                         <button
                           key={ex.id}
-                          onClick={() => handleToggle(ex)}
-                          disabled={isThisPending || (!!pendingId && !isThisPending)}
+                          onClick={() => !isBlocked && handleToggle(ex)}
+                          disabled={isBlocked || isThisPending || (!!pendingId && !isThisPending)}
                           className={cn(
                             "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                            isPlanned
-                              ? "bg-emerald-50 dark:bg-emerald-900/10"
-                              : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50",
-                            "disabled:opacity-60"
+                            isBlocked
+                              ? "opacity-35 cursor-not-allowed"
+                              : isPlanned
+                                ? "bg-emerald-50 dark:bg-emerald-900/10"
+                                : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50",
+                            !isBlocked && "disabled:opacity-60"
                           )}
                         >
                           <div className="w-6 h-6 shrink-0">
@@ -205,14 +210,16 @@ export function ExercisePicker({ date, plannedExercises, onClose, onPlannedChang
                           </div>
                           <span className={cn(
                             "flex-1 text-sm capitalize",
-                            isPlanned
+                            isPlanned && !isBlocked
                               ? "font-semibold text-emerald-700 dark:text-emerald-300"
                               : "text-zinc-700 dark:text-zinc-300"
                           )}>
                             {ex.name.toLowerCase()}
                           </span>
                           <div className="w-5 h-5 shrink-0 flex items-center justify-center">
-                            {isThisPending ? (
+                            {isBlocked ? (
+                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide">block</span>
+                            ) : isThisPending ? (
                               <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
                             ) : isPlanned ? (
                               <Check className="h-4 w-4 text-emerald-500" />
