@@ -1,13 +1,67 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo, Suspense } from "react";
 import { Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { Box3, Vector3 } from "three";
 import { cn } from "@/lib/utils";
 import { upsertFriendPrivacyOverride } from "@/actions/social";
 import { Toast } from "@/components/ui/Toast";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
+import { RARITY_COLORS } from "@/constants/badges";
+import type { BadgeCategory } from "@/constants/badges";
 import type { FriendProfileData, PRRecord } from "@/types";
 import type { MuscleGroup } from "@/types";
+
+useGLTF.preload("/Early Adopter.glb");
+useGLTF.preload("/The Architect.glb");
+
+const CATEGORY_ORDER: BadgeCategory[] = ["streak", "consistency", "strength", "volume", "special"];
+const CATEGORY_LABELS: Record<BadgeCategory, string> = {
+  streak: "Streak",
+  consistency: "Consistency",
+  strength: "Strength",
+  volume: "Volume",
+  special: "Special",
+};
+
+function NormalizedModel({ path }: { path: string }) {
+  const { scene } = useGLTF(path);
+  const normalized = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new Box3().setFromObject(clone);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim === 0) return clone;
+    const scale = 2 / maxDim;
+    clone.scale.setScalar(scale);
+    clone.position.copy(center.multiplyScalar(-scale));
+    return clone;
+  }, [scene]);
+  return <primitive object={normalized} />;
+}
+
+function CompactBadge3D({ path, title, tag }: { path: string; title: string; tag: string }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="w-12 h-12 shrink-0">
+        <Canvas shadows={false} camera={{ position: [0, 0, 3], fov: 50 }} style={{ width: "100%", height: "100%" }}>
+          <ambientLight intensity={1.2} />
+          <directionalLight position={[3, 5, 3]} intensity={0.8} />
+          <Suspense fallback={null}>
+            <NormalizedModel path={path} />
+            <Environment preset="city" />
+          </Suspense>
+          <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
+        </Canvas>
+      </div>
+      <span className="text-[8px] font-bold text-amber-500 uppercase tracking-wide leading-none">{tag}</span>
+      <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 leading-none">{title}</span>
+    </div>
+  );
+}
 
 const GROUP_META: Record<string, { label: string; color: string; dot: string }> = {
   UPPER_BODY: { label: "Upper Body",  color: "text-blue-600 dark:text-blue-400",   dot: "bg-blue-400"   },
@@ -83,35 +137,6 @@ function PRSection({ prs }: { prs: PRRecord[] }) {
   );
 }
 
-const MILESTONES = [
-  { days: 10,  emoji: "🥉", label: "10 days" },
-  { days: 30,  emoji: "🥈", label: "30 days" },
-  { days: 50,  emoji: "🥇", label: "50 days" },
-  { days: 75,  emoji: "💎", label: "75 days" },
-  { days: 100, emoji: "👑", label: "100 days" },
-];
-
-function MilestoneBadge({ days, emoji, label, unlocked }: { days: number; emoji: string; label: string; unlocked: boolean }) {
-  const [imgError, setImgError] = useState(false);
-  return (
-    <div className={`flex flex-col items-center gap-0.5 ${unlocked ? "" : "opacity-30"}`}>
-      <div className="w-9 h-9 flex items-center justify-center">
-        {imgError ? (
-          <span className="text-xl">{emoji}</span>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/milestones/${days}.png`}
-            alt={`${days}d milestone`}
-            className="w-full h-full object-contain"
-            onError={() => setImgError(true)}
-          />
-        )}
-      </div>
-      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">{label}</span>
-    </div>
-  );
-}
 
 type ToastState = { message: string; type: "success" | "error" } | null;
 
@@ -258,24 +283,60 @@ export function FriendProfileView({
           </div>
         )}
 
-        {/* Milestones — compact row */}
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
-          <div className="flex items-center gap-2 mb-2.5">
-            <Crown className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Achievements</span>
-          </div>
-          <div className="flex justify-between">
-            {MILESTONES.map((m) => (
-              <MilestoneBadge
-                key={m.days}
-                days={m.days}
-                emoji={m.emoji}
-                label={m.label}
-                unlocked={data.milestonesUnlocked.includes(m.days)}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Achievements — unlocked badges only */}
+        {(() => {
+          const unlockedBadges = data.badges?.filter((b) => b.unlocked) ?? [];
+          const hasAny = unlockedBadges.length > 0 || true; // always show for 3D specials
+          if (!hasAny) return null;
+          return (
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+                <Crown className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Achievements</span>
+              </div>
+              {unlockedBadges.length > 0 && (
+                <div className="px-3 py-3 space-y-3">
+                  {CATEGORY_ORDER.map((cat) => {
+                    const catBadges = unlockedBadges.filter((b) => b.category === cat);
+                    if (catBadges.length === 0) return null;
+                    const colors = RARITY_COLORS; // used per badge
+                    return (
+                      <div key={cat}>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">{CATEGORY_LABELS[cat]}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {catBadges.map((badge) => {
+                            const c = colors[badge.rarity];
+                            return (
+                              <div
+                                key={badge.key}
+                                className={cn("flex flex-col items-center gap-0.5 rounded-lg p-1.5 border w-14", c.bg, c.border)}
+                              >
+                                <span className="text-lg leading-none">{badge.icon}</span>
+                                <span className={cn("text-[8px] font-semibold leading-tight text-center line-clamp-2", c.text)}>
+                                  {badge.name}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {/* 3D specials row */}
+              <div className={cn("px-3 pb-3 pt-3", unlockedBadges.length > 0 && "border-t border-zinc-100 dark:border-zinc-800")}>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">Special</p>
+                <div className="flex gap-4">
+                  <CompactBadge3D path="/Early Adopter.glb" title="Early Adopter" tag="Special" />
+                  {data.isAdmin && (
+                    <CompactBadge3D path="/The Architect.glb" title="The Architect" tag="Admin" />
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* PRs */}
         {data.visibility.canSeePRs && data.prs.length > 0 && (

@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getStreakData } from "@/lib/services/plannerService";
 import { getPersonalRecords } from "@/lib/services/reportService";
 import { getLatestBodyMetric } from "@/lib/services/metricsService";
+import { getCumulativeVolume, computeBadges } from "@/lib/services/progressService";
 import type { FriendSummary, FriendProfileData, WorkoutFeedEntry, NewFistBumpNotification, SocialStats } from "@/types";
 
 const MILESTONES = [10, 30, 50, 75, 100];
@@ -239,19 +240,32 @@ export async function getFriendProfileData(
   });
   if (!friendUser) return null;
 
-  const [visibility, streakData, myOverrideRow, totalWorkoutsAllTime] = await Promise.all([
+  const [visibility, streakData, myOverrideRow, totalWorkoutsAllTime, cumulativeVolume] = await Promise.all([
     resolveFriendVisibility(viewerId, friendId),
     getStreakData(friendId),
     getFriendPrivacyOverride(viewerId, friendId),
     prisma.workoutSession.count({ where: { userId: friendId } }),
+    getCumulativeVolume(friendId),
   ]);
 
   const [metrics, prs] = await Promise.all([
     visibility.canSeeWeight || visibility.canSeeBodyFat ? getLatestBodyMetric(friendId) : null,
-    visibility.canSeePRs ? getPersonalRecords(friendId) : [],
+    getPersonalRecords(friendId),
   ]);
 
   const milestonesUnlocked = MILESTONES.filter((m) => streakData.bestStreak >= m);
+
+  const badges = computeBadges({
+    bestStreak: streakData.bestStreak,
+    plannedLast30: streakData.plannedLast30,
+    completedLast30: streakData.completedLast30,
+    thisWeekWorkouts: streakData.thisWeekWorkouts,
+    prs,
+    cumulativeVolume,
+    totalWorkouts: streakData.totalTracked,
+    recentWorkoutDates: streakData.last30DaysWorkouts,
+    last30DaysWorkouts: streakData.last30DaysWorkouts,
+  });
 
   return {
     username: friendUser.username ?? friendUser.name ?? friendId,
@@ -266,6 +280,8 @@ export async function getFriendProfileData(
     heightCm: friendUser.heightCm ?? null,
     weight: visibility.canSeeWeight && metrics?.weightKg ? Number(metrics.weightKg) : null,
     bodyFatPct: visibility.canSeeBodyFat && metrics?.bodyFatPct ? Number(metrics.bodyFatPct) : null,
+    badges,
+    isAdmin: friendId === "cmmp9a6ad000001nmo6ypuixp",
     prs: visibility.canSeePRs ? prs : [],
     visibility,
     myOverride: {
