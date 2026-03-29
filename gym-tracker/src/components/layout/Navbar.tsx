@@ -173,7 +173,7 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
       </header>
 
       {/* ── Mobile bottom tab bar ────────────────────────────────────────────── */}
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950" style={{ paddingBottom: "env(safe-area-inset-bottom)", transform: "translateZ(0)" }}>
         <div className="grid grid-cols-6 h-16">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
