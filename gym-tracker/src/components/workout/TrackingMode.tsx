@@ -265,6 +265,7 @@ export function TrackingMode({
       const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
       setExerciseOutcomes((prev) => ({ ...prev, [ex.id]: { allPositive, allNegative, isPR } }));
       setComparisonOverlay({ exercise: ex, prevSets, currentSets: savedSets, isPR });
+      setView({ kind: "icons" });
     } else {
       setView({ kind: "icons" });
     }
