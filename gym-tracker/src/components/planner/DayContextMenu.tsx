@@ -185,6 +185,11 @@ export function DayContextMenu({
 
   const handleTrackWorkout = () => {
     onClose();
+    router.push(`/workout?date=${date}&section=WORKOUT`);
+  };
+
+  const handleGoToTracker = () => {
+    onClose();
     router.push(`/workout?date=${date}`);
   };
 
@@ -550,7 +555,7 @@ export function DayContextMenu({
           Add exercises
           {plannedExercises.length > 0 && (
             <span className="ml-auto text-xs font-semibold text-emerald-500">
-              {plannedExercises.length} planned
+              {plannedExercises.length} added
             </span>
           )}
         </button>
@@ -594,7 +599,13 @@ export function DayContextMenu({
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left"
             >
               <Activity className="h-4 w-4" />
-              Track Workout →
+              Track Workout
+            </button>
+            <button
+              onClick={handleGoToTracker}
+              className="w-full flex items-center gap-3 px-4 py-2 text-xs text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800"
+            >
+              Go to Workout Tracker →
             </button>
           </div>
         )}
