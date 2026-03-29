@@ -21,6 +21,8 @@ interface ExerciseCardProps {
   isSkipped?: boolean;
   onSkipChange?: (id: string, skipped: boolean) => void;
   isPlanned?: boolean;
+  outcome?: "positive" | "negative" | "pr" | null;
+  diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
 }
 
 export function ExerciseCard({
@@ -36,6 +38,8 @@ export function ExerciseCard({
   isSkipped = false,
   isPlanned = false,
   onSkipChange,
+  outcome,
+  diffData,
 }: ExerciseCardProps) {
   const isCardio = exercise.muscleGroup === "CARDIO";
   const [, startTransition] = useTransition();
@@ -76,6 +80,15 @@ export function ExerciseCard({
         <span className="w-5 h-5 rounded-full bg-amber-500 ring-2 ring-amber-300 flex items-center justify-center shrink-0">
           <span className="text-white font-black leading-none" style={{ fontSize: "9px" }}>✓</span>
         </span>
+      )}
+      {outcome === "pr" && (
+        <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wide shrink-0">🏆 PR</span>
+      )}
+      {outcome === "positive" && (
+        <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold tracking-wide shrink-0">+</span>
+      )}
+      {outcome === "negative" && (
+        <span className="px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/30 text-red-500 dark:text-red-400 text-[9px] font-bold tracking-wide shrink-0">−</span>
       )}
       <button
         onClick={() => onTogglePin(exercise.id)}
@@ -254,16 +267,53 @@ export function ExerciseCard({
       </div>
 
       {/* Sets */}
-      <div className={cn("flex flex-col gap-2", locked && "opacity-50 pointer-events-none")}>
-        {sets.map((set, index) => (
-          <SetRow
-            key={set.setNumber}
-            setNumber={set.setNumber}
-            data={set}
-            isBodyweight={exercise.isBodyweight}
-            onChange={(updated) => updateSet(index, updated)}
-          />
-        ))}
+      <div className={cn("flex flex-col gap-2", locked && !diffData && "opacity-50 pointer-events-none")}>
+        {sets.map((set, index) => {
+          const diff = diffData?.[set.setNumber];
+          if (locked && diff) {
+            const isPRSet = diff.isPRSet;
+            return (
+              <div
+                key={set.setNumber}
+                className={cn(
+                  "flex items-center gap-1.5 px-1 rounded-lg",
+                  isPRSet && "ring-1 ring-amber-400"
+                )}
+              >
+                <span className="w-10 shrink-0 text-center text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+                  {isPRSet ? "🏆" : `S${set.setNumber}`}
+                </span>
+                <span className="flex-1 text-center text-sm text-zinc-700 dark:text-zinc-300">
+                  {exercise.isBodyweight ? `${set.reps}` : `${set.reps}`}
+                  {diff.diffReps !== null && diff.diffReps !== 0 && (
+                    <span className={cn("text-[9px] ml-0.5", diff.diffReps > 0 ? "text-emerald-500" : "text-red-500")}>
+                      {diff.diffReps > 0 ? `▲+${diff.diffReps}` : `▼${diff.diffReps}`}
+                    </span>
+                  )}
+                </span>
+                {!exercise.isBodyweight && (
+                  <span className="flex-1 text-center text-sm text-zinc-700 dark:text-zinc-300">
+                    {set.weightKg || 0}
+                    {diff.diffKg !== null && diff.diffKg !== 0 && (
+                      <span className={cn("text-[9px] ml-0.5", diff.diffKg > 0 ? "text-emerald-500" : "text-red-500")}>
+                        {diff.diffKg > 0 ? `▲+${diff.diffKg}` : `▼${diff.diffKg}`}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+            );
+          }
+          return (
+            <SetRow
+              key={set.setNumber}
+              setNumber={set.setNumber}
+              data={set}
+              isBodyweight={exercise.isBodyweight}
+              onChange={(updated) => updateSet(index, updated)}
+            />
+          );
+        })}
       </div>
 
       {/* Add / Remove set + Skip */}

@@ -34,6 +34,11 @@ interface ExerciseGroupProps {
   plannedExerciseIds?: Set<string>;
   /** Override the group label (e.g. "Added Exercises") */
   groupLabel?: string;
+  /** Per-exercise outcome data for diff display after save */
+  outcomeData?: Record<string, {
+    outcome: "positive" | "negative" | "pr" | null;
+    diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
+  }>;
 }
 
 export function ExerciseGroup({
@@ -60,6 +65,7 @@ export function ExerciseGroup({
   isNested = false,
   plannedExerciseIds,
   groupLabel,
+  outcomeData,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [removedOpen, setRemovedOpen] = useState(false);
@@ -164,6 +170,8 @@ export function ExerciseGroup({
                   isSkipped={skippedIds?.has(exercise.id)}
                   onSkipChange={onSkipChange}
                   isPlanned={plannedExerciseIds?.has(exercise.id)}
+                  outcome={outcomeData?.[exercise.id]?.outcome}
+                  diffData={outcomeData?.[exercise.id]?.diffData}
                 />
               ))}
             </div>

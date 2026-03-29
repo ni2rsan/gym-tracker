@@ -123,14 +123,17 @@ function PRSection({ prs }: { prs: PRRecord[] }) {
                   {meta.label}
                 </span>
               </div>
-              <div className="grid grid-cols-5 gap-1">
+              <div className="grid grid-cols-4 gap-1">
                 {grouped[group].map((pr) => (
                   <div key={pr.exerciseId} className="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-1.5 flex flex-col items-center gap-0.5 min-w-0">
                     <ExerciseIcon name={pr.exerciseName} muscleGroup={pr.muscleGroup as MuscleGroup} className="w-8 h-8" />
+                    <span className="text-[9px] text-zinc-500 dark:text-zinc-400 leading-tight line-clamp-1 text-center w-full">
+                      {pr.exerciseName.charAt(0) + pr.exerciseName.slice(1).toLowerCase()}
+                    </span>
                     <span className="text-[10px] font-bold text-zinc-900 dark:text-white tabular-nums leading-tight text-center">
                       {pr.muscleGroup === "BODYWEIGHT" || pr.maxWeightKg == null
                         ? `${pr.maxReps ?? pr.repsAtMaxWeight}r`
-                        : `${Number(pr.maxWeightKg).toFixed(1)}kg`}
+                        : `${Number(pr.maxWeightKg).toFixed(1)}kg × ${pr.repsAtMaxWeight}r`}
                     </span>
                   </div>
                 ))}

@@ -1,6 +1,7 @@
 // APPEND-ONLY: No update or delete operations are permitted on ExerciseSet rows.
 import { prisma } from "@/lib/prisma";
 import type { ExerciseInput } from "@/types";
+import type { PrevSet } from "@/lib/workoutDiff";
 
 export async function saveWorkoutSession(
   userId: string,
@@ -282,6 +283,117 @@ export async function getWorkoutsForDateRange(
       exercises: Object.values(exerciseMap),
     };
   });
+}
+
+export type ExerciseTrackingComparison = {
+  prevSets: PrevSet[];
+  isPR: boolean;
+};
+
+export async function getExerciseTrackingComparison(
+  userId: string,
+  exerciseId: string,
+  date: string, // "YYYY-MM-DD"
+  isBodyweight: boolean,
+  isAssisted: boolean
+): Promise<ExerciseTrackingComparison> {
+  const dateMidnight = new Date(date + "T12:00:00");
+
+  // 1. Previous session sets for this exercise (most recent session before today)
+  const prevSession = await prisma.workoutSession.findFirst({
+    where: {
+      userId,
+      date: { lt: dateMidnight },
+      sets: { some: { exerciseId } },
+    },
+    orderBy: { date: "desc" },
+    include: {
+      sets: {
+        where: { exerciseId },
+        orderBy: { recordedAt: "desc" },
+      },
+    },
+  });
+
+  let prevSets: PrevSet[] = [];
+  if (prevSession) {
+    const deduped = new Map<number, typeof prevSession.sets[0]>();
+    for (const s of prevSession.sets) {
+      if (!deduped.has(s.setNumber)) deduped.set(s.setNumber, s);
+    }
+    prevSets = [...deduped.values()]
+      .sort((a, b) => a.setNumber - b.setNumber)
+      .map((s) => ({
+        setNumber: s.setNumber,
+        reps: s.reps,
+        weightKg: s.weightKg !== null ? Number(s.weightKg) : null,
+      }));
+  }
+
+  // 2. All-time best before today
+  const allPriorSets = await prisma.exerciseSet.findMany({
+    where: {
+      exerciseId,
+      session: { userId, date: { lt: dateMidnight } },
+    },
+    select: { reps: true, weightKg: true },
+  });
+
+  let allTimeBestKg: number | null = null;
+  let allTimeBestReps = 0;
+  let allTimeBestMinKg: number | null = null;
+  for (const s of allPriorSets) {
+    const kg = s.weightKg !== null ? Number(s.weightKg) : null;
+    if (kg !== null) {
+      allTimeBestKg = allTimeBestKg === null ? kg : Math.max(allTimeBestKg, kg);
+      allTimeBestMinKg = allTimeBestMinKg === null ? kg : Math.min(allTimeBestMinKg, kg);
+    }
+    allTimeBestReps = Math.max(allTimeBestReps, s.reps);
+  }
+
+  // 3. Today's sets
+  const todaySession = await prisma.workoutSession.findFirst({
+    where: { userId, date: dateMidnight },
+    include: {
+      sets: {
+        where: { exerciseId },
+        orderBy: { recordedAt: "desc" },
+      },
+    },
+  });
+
+  let todayMaxKg: number | null = null;
+  let todayMaxReps = 0;
+  let todayMinKg: number | null = null;
+  if (todaySession) {
+    const deduped = new Map<number, typeof todaySession.sets[0]>();
+    for (const s of todaySession.sets) {
+      if (!deduped.has(s.setNumber)) deduped.set(s.setNumber, s);
+    }
+    for (const s of deduped.values()) {
+      const kg = s.weightKg !== null ? Number(s.weightKg) : null;
+      if (kg !== null) {
+        todayMaxKg = todayMaxKg === null ? kg : Math.max(todayMaxKg, kg);
+        todayMinKg = todayMinKg === null ? kg : Math.min(todayMinKg, kg);
+      }
+      todayMaxReps = Math.max(todayMaxReps, s.reps);
+    }
+  }
+
+  // 4. isPR logic
+  let isPR = false;
+  if (allPriorSets.length === 0) {
+    // First time doing this exercise = PR
+    isPR = (todaySession?.sets.length ?? 0) > 0;
+  } else if (isBodyweight) {
+    isPR = todayMaxReps > allTimeBestReps;
+  } else if (isAssisted) {
+    isPR = todayMinKg !== null && allTimeBestMinKg !== null && todayMinKg < allTimeBestMinKg;
+  } else {
+    isPR = todayMaxKg !== null && allTimeBestKg !== null && todayMaxKg > allTimeBestKg;
+  }
+
+  return { prevSets, isPR };
 }
 
 export async function getRecentWorkoutDates(userId: string, limit = 30): Promise<string[]> {
