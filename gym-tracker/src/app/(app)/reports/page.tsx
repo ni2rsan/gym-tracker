@@ -13,7 +13,7 @@ import { WithingsToast } from "@/components/reports/WithingsToast";
 import { ExerciseStatsPanel } from "@/components/reports/ExerciseStatsPanel";
 import type { TimeRange } from "@/types";
 
-export const metadata = { title: "Reports — Gym Tracker" };
+export const metadata = { title: "Stats — Gym Tracker" };
 export const dynamic = "force-dynamic";
 
 interface ReportsPageProps {
@@ -67,7 +67,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {/* Page header + time range */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Reports</h1>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Stats</h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
               Track your progress over time.
             </p>

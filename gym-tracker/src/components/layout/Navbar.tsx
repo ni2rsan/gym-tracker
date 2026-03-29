@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: "/planner",  label: "Planner",  icon: CalendarDays },
   { href: "/workout",  label: "Tracker",  icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: Trophy },
-  { href: "/reports",  label: "Reports",  icon: BarChart3 },
+  { href: "/reports",  label: "Stats",    icon: BarChart3 },
   { href: "/logs",     label: "Logs",     icon: ScrollText },
   { href: "/social",   label: "Social",   icon: Users },
 ];
