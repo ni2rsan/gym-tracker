@@ -70,8 +70,11 @@ function ExerciseChart({
   const allData: ChartPoint[] = history
     .map((h) => {
       const v = isBodyweight ? (h.reps ?? 0) : (h.weightKg ?? 0);
-      const label = unit === "kg" && h.weightKg !== null
+      const weightStr = h.weightKg !== null
         ? (h.weightKg % 1 === 0 ? `${h.weightKg}` : h.weightKg.toFixed(1))
+        : "";
+      const label = unit === "kg" && h.weightKg !== null
+        ? `${weightStr}${h.reps != null ? `×${h.reps}` : ""}`
         : h.reps != null ? `${h.reps}` : "";
       return { v, date: h.date, label, sets: h.sets };
     })
@@ -86,17 +89,11 @@ function ExerciseChart({
   const maxVal = Math.max(...values);
   const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.35);
 
-  // Navy palette: older bars #1e3a5f → most recent #e2e8f0 (light pop on dark)
-  const getColor = (i: number, total: number) => {
-    if (i === total - 1) return "#e2e8f0"; // most recent: bright slate-200
-    // gradient from deep navy (#0f172a) → medium navy (#1e3a8a)
-    const t = i / Math.max(total - 2, 1);
-    return i % 2 === 0 ? "#1e3a8a" : "#1d4ed8";
-    void t;
-  };
-  const getOpacity = (i: number, total: number) => {
-    if (i === total - 1) return 1;
-    return 0.45 + (i / (total - 1)) * 0.4;
+  // One consistent color; amber only for the record (max value) bar
+  const getColor = (pt: ChartPoint, isSelected: boolean) => {
+    if (isSelected) return "#f8fafc";
+    if (pt.v === maxVal) return "#f59e0b"; // amber — record bar
+    return "#3b82f6"; // blue — all other bars
   };
 
   return (
@@ -114,7 +111,7 @@ function ExerciseChart({
               className={cn(
                 "text-[10px] font-semibold px-1.5 py-0.5 rounded-md transition-colors",
                 filter === f
-                  ? "bg-[#1e3a8a] text-white"
+                  ? "bg-blue-500 text-white"
                   : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
               )}
             >
@@ -152,8 +149,7 @@ function ExerciseChart({
               {filtered.map((pt, i) => (
                 <Cell
                   key={i}
-                  fill={selectedPoint?.date === pt.date ? "#f8fafc" : getColor(i, filtered.length)}
-                  opacity={getOpacity(i, filtered.length)}
+                  fill={getColor(pt, selectedPoint?.date === pt.date)}
                 />
               ))}
               <LabelList
