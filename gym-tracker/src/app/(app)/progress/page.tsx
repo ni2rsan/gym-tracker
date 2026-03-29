@@ -1,6 +1,5 @@
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getStreakData } from "@/lib/services/plannerService";
-import { getPersonalRecords } from "@/lib/services/reportService";
 import { getCumulativeVolume } from "@/lib/services/progressService";
 import { getSocialStats } from "@/lib/services/socialService";
 import { ProgressPage } from "@/components/progress/ProgressPage";
@@ -11,9 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function Progress() {
   const userId = await getCurrentUserId();
 
-  const [streakData, prs, cumulativeVolume, socialStats] = await Promise.all([
+  const [streakData, cumulativeVolume, socialStats] = await Promise.all([
     getStreakData(userId),
-    getPersonalRecords(userId),
     getCumulativeVolume(userId),
     getSocialStats(userId),
   ]);
@@ -28,7 +26,6 @@ export default async function Progress() {
       </div>
       <ProgressPage
         streakData={streakData}
-        prs={prs}
         cumulativeVolume={cumulativeVolume}
         friendCount={socialStats.friendCount}
         fistbumpCount={socialStats.totalFistBumpsReceived}
