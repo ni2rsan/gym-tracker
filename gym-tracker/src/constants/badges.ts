@@ -59,8 +59,8 @@ export const RARITY_COLORS: Record<BadgeRarity, { bg: string; border: string; te
 
 export const CATEGORY_LABELS: Record<BadgeCategory, string> = {
   streak: "Streak",
-  consistency: "Konsistenz",
-  strength: "Kraft",
-  volume: "Volumen",
-  special: "Spezial",
+  consistency: "Consistency",
+  strength: "Strength",
+  volume: "Volume",
+  special: "Special",
 };
