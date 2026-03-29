@@ -1272,6 +1272,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   router.push("/planner");
                 }
               }}
+              onExerciseOutcome={(exerciseId, outcome) => {
+                const outcomeStr: "positive" | "negative" | "pr" | null =
+                  outcome.isPR ? "pr" : outcome.allPositive ? "positive" : outcome.allNegative ? "negative" : null;
+                setComparisonData((prev) => ({ ...prev, [exerciseId]: { outcome: outcomeStr } }));
+              }}
               onExerciseSaved={(exerciseId, sets) => {
                 setWorkoutData((prev) => ({ ...prev, [exerciseId]: sets }));
                 setSavedTodayIds((prev) => new Set(prev).add(exerciseId));

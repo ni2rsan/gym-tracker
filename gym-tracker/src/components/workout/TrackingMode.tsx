@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import { X, ArrowLeft, Plus, Minus, Eye, EyeOff } from "lucide-react";
+import { X, ArrowLeft, Plus, Minus, Eye, EyeOff, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
@@ -38,6 +38,7 @@ interface TrackingModeProps {
   onExit: () => void;
   onBack: () => void;
   onExerciseSaved: (exerciseId: string, sets: SetData[]) => void;
+  onExerciseOutcome?: (exerciseId: string, outcome: { allPositive: boolean; allNegative: boolean; isPR: boolean }) => void;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ export function TrackingMode({
   onExit,
   onBack,
   onExerciseSaved,
+  onExerciseOutcome,
 }: TrackingModeProps) {
   const [view, setView] = useState<TrackingView>({ kind: "icons" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(initialCompletedIds);
@@ -264,6 +266,7 @@ export function TrackingMode({
       const diffs = computeSetDiffs(prevSets, savedSets);
       const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
       setExerciseOutcomes((prev) => ({ ...prev, [ex.id]: { allPositive, allNegative, isPR } }));
+      onExerciseOutcome?.(ex.id, { allPositive, allNegative, isPR });
       setComparisonOverlay({ exercise: ex, prevSets, currentSets: savedSets, isPR });
       setView({ kind: "icons" });
     } else {
@@ -402,18 +405,16 @@ export function TrackingMode({
               </span>
             )}
             {done && !skipped && exerciseOutcomes[ex.id]?.isPR && (
-              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-amber-400 border-2 border-white dark:border-zinc-950 flex items-center justify-center" style={{ fontSize: "9px" }}>
-                🏆
+              <span className="absolute -top-0.5 -right-0.5 leading-none" style={{ fontSize: "13px" }}>🏆</span>
+            )}
+            {done && !skipped && exerciseOutcomes[ex.id]?.allPositive && (
+              <span className="absolute -bottom-1.5 -left-1">
+                <TrendingUp className="h-4 w-4 text-emerald-500 drop-shadow-sm" strokeWidth={2.5} />
               </span>
             )}
-            {done && !skipped && !exerciseOutcomes[ex.id]?.isPR && exerciseOutcomes[ex.id]?.allPositive && (
-              <span className="absolute -bottom-1 -left-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
-                <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>+</span>
-              </span>
-            )}
-            {done && !skipped && !exerciseOutcomes[ex.id]?.isPR && exerciseOutcomes[ex.id]?.allNegative && (
-              <span className="absolute -bottom-1 -left-0.5 w-4 h-4 rounded-full bg-red-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
-                <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>−</span>
+            {done && !skipped && exerciseOutcomes[ex.id]?.allNegative && (
+              <span className="absolute -bottom-1.5 -left-1">
+                <TrendingDown className="h-4 w-4 text-red-500 drop-shadow-sm" strokeWidth={2.5} />
               </span>
             )}
           </button>
@@ -675,7 +676,7 @@ export function TrackingMode({
         {/* Finish summary overlay */}
         {showFinishSummary && (() => {
           const prCount = Object.values(exerciseOutcomes).filter((o) => o.isPR).length;
-          const improvedCount = Object.values(exerciseOutcomes).filter((o) => !o.isPR && o.allPositive).length;
+          const improvedCount = Object.values(exerciseOutcomes).filter((o) => o.allPositive).length;
           const declinedCount = Object.values(exerciseOutcomes).filter((o) => o.allNegative).length;
           const doneCount = Object.keys(exerciseOutcomes).length;
           const totalVolume = Object.entries(sessionSavedSets).reduce((acc, [, savedSets]) => {
@@ -685,38 +686,41 @@ export function TrackingMode({
             }, 0);
           }, 0);
           return (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
-              <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-xl overflow-hidden">
-                <div className="px-5 py-4 text-center border-b border-zinc-100 dark:border-zinc-800">
-                  <p className="text-base font-bold text-zinc-900 dark:text-white">🏁 Session Complete</p>
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
+              <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden">
+                <div className="px-5 pt-5 pb-4">
+                  <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Session Complete</p>
+                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">{doneCount} exercise{doneCount !== 1 ? "s" : ""}</p>
                 </div>
-                <div className="px-5 py-4 space-y-2.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-500 dark:text-zinc-400">Exercises done</span>
-                    <span className="font-semibold text-zinc-900 dark:text-white">{doneCount}</span>
-                  </div>
+                <div className="px-5 pb-4 space-y-2">
                   {prCount > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-amber-600 dark:text-amber-400">🏆 New PRs</span>
-                      <span className="font-semibold text-amber-600 dark:text-amber-400">{prCount}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+                        <span>🏆</span> Personal Records
+                      </span>
+                      <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{prCount}</span>
                     </div>
                   )}
                   {improvedCount > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-emerald-600 dark:text-emerald-400">💪 Improved</span>
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{improvedCount}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                        <TrendingUp className="h-4 w-4" strokeWidth={2.5} /> Improved
+                      </span>
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{improvedCount}</span>
                     </div>
                   )}
                   {declinedCount > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-red-500 dark:text-red-400">🔻 Declined</span>
-                      <span className="font-semibold text-red-500 dark:text-red-400">{declinedCount}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-sm font-medium text-red-500 dark:text-red-400">
+                        <TrendingDown className="h-4 w-4" strokeWidth={2.5} /> Declined
+                      </span>
+                      <span className="text-sm font-bold text-red-500 dark:text-red-400">{declinedCount}</span>
                     </div>
                   )}
                   {totalVolume > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-zinc-500 dark:text-zinc-400">📦 Total volume</span>
-                      <span className="font-semibold text-zinc-900 dark:text-white">{totalVolume.toLocaleString()} kg</span>
+                    <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                      <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total volume</span>
+                      <span className="text-sm font-bold text-zinc-900 dark:text-white">{totalVolume.toLocaleString()} kg</span>
                     </div>
                   )}
                 </div>

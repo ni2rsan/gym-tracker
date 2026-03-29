@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pin, PinOff, Trash2, Plus, Minus, EyeOff, SkipForward } from "lucide-react";
+import { Pin, PinOff, Trash2, Plus, Minus, EyeOff, SkipForward, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SetRow } from "./SetRow";
 import { ExerciseIcon } from "./ExerciseIcon";
@@ -82,13 +82,13 @@ export function ExerciseCard({
         </span>
       )}
       {outcome === "pr" && (
-        <span className="px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase tracking-wide shrink-0">🏆 PR</span>
+        <span className="text-sm leading-none shrink-0">🏆</span>
       )}
       {outcome === "positive" && (
-        <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold tracking-wide shrink-0">+</span>
+        <TrendingUp className="h-3.5 w-3.5 shrink-0 text-emerald-500" strokeWidth={2.5} />
       )}
       {outcome === "negative" && (
-        <span className="px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/30 text-red-500 dark:text-red-400 text-[9px] font-bold tracking-wide shrink-0">−</span>
+        <TrendingDown className="h-3.5 w-3.5 shrink-0 text-red-500" strokeWidth={2.5} />
       )}
       <button
         onClick={() => onTogglePin(exercise.id)}
