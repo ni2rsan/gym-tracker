@@ -121,7 +121,7 @@ export function AddBlockModal({
         // Create one-off
         result = await createBlock({ date, blockType: selectedType });
         if (result.success) {
-          onBlockAdded({ id: `temp-${Date.now()}`, date, blockType: selectedType, seriesId: null, sorryExcused: false });
+          onBlockAdded({ id: `temp-${Date.now()}`, date, blockType: selectedType, seriesId: null, sorryExcused: false, isAutoPromoted: false });
         }
       } else {
         // Create series

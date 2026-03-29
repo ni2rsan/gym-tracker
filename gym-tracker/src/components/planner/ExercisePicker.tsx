@@ -4,12 +4,16 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Search, X, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getExercises } from "@/actions/exercise";
-import { addPlannedExercise, removePlannedExercise } from "@/actions/planner";
+import { addPlannedExercise, removePlannedExercise, createAutoPromotedBlock, deleteAutoPromotedBlock } from "@/actions/planner";
 import type { PlannedExerciseInfo } from "@/actions/planner";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 import type { MuscleGroup } from "@/types";
 
 const GROUP_ORDER = ["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT", "CARDIO"] as const;
+
+const PROMOTION_THRESHOLD: Record<string, number> = {
+  UPPER_BODY: 3, LOWER_BODY: 3, BODYWEIGHT: 3, CARDIO: 1,
+};
 const GROUP_LABELS: Record<string, string> = {
   UPPER_BODY: "Upper Body",
   LOWER_BODY: "Lower Body",
@@ -21,17 +25,22 @@ interface ExercisePickerProps {
   date: string;
   /** Already-planned exercises for this date */
   plannedExercises: PlannedExerciseInfo[];
-  /** Muscle groups already covered by planned workout blocks (these exercises are disabled) */
+  /** Muscle groups already covered by real (non-auto-promoted) workout blocks (hidden in picker) */
   blockedMuscleGroups?: Set<string>;
+  /** Muscle groups that currently have auto-promoted blocks */
+  autoPromotedGroups?: Set<string>;
   onClose: () => void;
   onPlannedChanged: (updated: PlannedExerciseInfo[]) => void;
+  /** Called when an auto-promoted block is created (created=true, blockId provided) or deleted (created=false) */
+  onAutoPromotionChanged?: (muscleGroup: string, created: boolean, blockId?: string) => void;
 }
 
-export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = new Set(), onClose, onPlannedChanged }: ExercisePickerProps) {
+export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = new Set(), autoPromotedGroups = new Set(), onClose, onPlannedChanged, onAutoPromotionChanged }: ExercisePickerProps) {
   const [query, setQuery] = useState("");
   const [exercises, setExercises] = useState<{ id: string; name: string; muscleGroup: string; isBodyweight: boolean }[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(true);
   const [planned, setPlanned] = useState<PlannedExerciseInfo[]>(plannedExercises);
+  const [localAutoPromoted, setLocalAutoPromoted] = useState<Set<string>>(new Set(autoPromotedGroups));
   const [pending, startTransition] = useTransition();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -64,6 +73,28 @@ export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = n
     return acc;
   }, {} as Record<string, typeof filtered>);
 
+  const checkPromotion = async (next: PlannedExerciseInfo[]) => {
+    for (const mg of Object.keys(PROMOTION_THRESHOLD)) {
+      const threshold = PROMOTION_THRESHOLD[mg];
+      const count = next.filter((p) => p.muscleGroup === mg).length;
+      const wasPromoted = localAutoPromoted.has(mg);
+      const willBePromoted = count >= threshold;
+      if (willBePromoted && !wasPromoted) {
+        const promoResult = await createAutoPromotedBlock(date, mg);
+        if (promoResult.success && promoResult.data) {
+          setLocalAutoPromoted((prev) => new Set([...prev, mg]));
+          onAutoPromotionChanged?.(mg, true, promoResult.data.id);
+        }
+      } else if (!willBePromoted && wasPromoted) {
+        const promoResult = await deleteAutoPromotedBlock(date, mg);
+        if (promoResult.success) {
+          setLocalAutoPromoted((prev) => { const s = new Set(prev); s.delete(mg); return s; });
+          onAutoPromotionChanged?.(mg, false);
+        }
+      }
+    }
+  };
+
   const handleToggle = (ex: { id: string; name: string; muscleGroup: string; isBodyweight: boolean }) => {
     if (pendingId) return;
     if (plannedIds.has(ex.id)) {
@@ -77,6 +108,7 @@ export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = n
           const next = planned.filter((p) => p.exerciseId !== ex.id);
           setPlanned(next);
           onPlannedChanged(next);
+          await checkPromotion(next);
         }
         setPendingId(null);
       });
@@ -89,6 +121,7 @@ export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = n
           const next = [...planned, result.data];
           setPlanned(next);
           onPlannedChanged(next);
+          await checkPromotion(next);
         }
         setPendingId(null);
       });

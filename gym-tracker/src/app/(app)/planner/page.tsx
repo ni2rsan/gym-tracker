@@ -35,6 +35,7 @@ export default async function PlannerPage({
     blockType: pw.blockType as string,
     seriesId: pw.seriesId,
     sorryExcused: pw.sorryExcused,
+    isAutoPromoted: pw.isAutoPromoted,
   }));
 
   const initialPlannedExercises = plannedExerciseRows.reduce<Record<string, typeof plannedExerciseRows[0]["exercises"]>>(

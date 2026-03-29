@@ -579,8 +579,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const sorryRemaining = plannerData?.sorryRemaining ?? 0;
   const showSorrySection = (isMissedDate || isFutureExcusable || allBlocksExcused) && blocksForDate.length > 0;
 
-  // Determine which block types are due (non-excused planned blocks)
-  const dueBlockTypes = new Set(blocksForDate.filter((b) => !b.sorryExcused).map((b) => b.blockType));
+  // Determine which block types are due (non-excused, non-auto-promoted planned blocks)
+  const dueBlockTypes = new Set(blocksForDate.filter((b) => !b.sorryExcused && !b.isAutoPromoted).map((b) => b.blockType));
   const isFullBodyDay = dueBlockTypes.has("FULL_BODY");
 
   // Muscle groups to show as standalone (excludes UB/LB when Full Body section handles them)
@@ -627,23 +627,12 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const plannedExerciseIdsForGroup = (mg: MuscleGroup): Set<string> =>
     new Set(exercises.filter((ex) => ex.muscleGroup === mg && plannedExerciseIdSet.has(ex.id)).map((ex) => ex.id));
 
-  // Promotion thresholds: if enough exercises are added for a non-due group, it gets
-  // promoted to act like a due group (expanded, exercises editable, shown before Added Exercises)
-  const PROMOTION_THRESHOLD: Record<string, number> = {
-    UPPER_BODY: 3,
-    LOWER_BODY: 3,
-    BODYWEIGHT: 3,
-    CARDIO: 1,
-  };
-
+  // Promoted groups: muscle groups that have been DB-promoted via auto-promoted blocks
   const promotedGroups = new Set<string>(
-    MUSCLE_GROUP_ORDER.filter((mg) => {
-      if (dueGroupMuscles.has(mg)) return false; // already a real due group
-      const count = exercises.filter(
-        (ex) => ex.muscleGroup === mg && plannedExerciseIdSet.has(ex.id)
-      ).length;
-      return count >= (PROMOTION_THRESHOLD[mg] ?? 3);
-    })
+    blocksForDate
+      .filter((b) => b.isAutoPromoted && !b.sorryExcused)
+      .map((b) => b.blockType)
+      .filter((bt) => !dueGroupMuscles.has(bt)) // exclude if already a real due group
   );
 
   const effectiveDueGroups = new Set([...dueGroupMuscles, ...promotedGroups]);
