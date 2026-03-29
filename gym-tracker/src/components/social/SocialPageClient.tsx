@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, ArrowLeft, Flame, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check, Users, Dumbbell, X } from "lucide-react";
+import { UserPlus, ArrowLeft, ChevronDown, ChevronUp, Trash2, Trophy, Link2, Check, Users, Dumbbell, X } from "lucide-react";
 import { AddFriendForm } from "@/components/social/AddFriendForm";
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { GlobalPrivacySettings } from "@/components/social/GlobalPrivacySettings";
@@ -82,6 +82,14 @@ function formatDateAgo(dateStr: string): string {
 
 // ─── Feed card ───────────────────────────────────────────────────────────────
 
+const MG_DOT: Record<string, string> = {
+  UPPER_BODY: "bg-blue-400",
+  LOWER_BODY: "bg-green-400",
+  BODYWEIGHT: "bg-purple-400",
+  FULL_BODY:  "bg-stone-400",
+  CARDIO:     "bg-rose-400",
+};
+
 function FeedCard({
   entry,
   onFistBump,
@@ -91,6 +99,7 @@ function FeedCard({
   onFistBump: (sessionId: string) => void;
   highlightColor?: "amber" | "blue";
 }) {
+  const [expanded, setExpanded] = useState(false);
   const displayName = entry.isOwnWorkout
     ? "You"
     : entry.username ?? entry.name ?? "Someone";
@@ -104,69 +113,104 @@ function FeedCard({
     : "border-zinc-200 dark:border-zinc-800";
 
   return (
-    <div className={`flex gap-3 rounded-2xl border bg-white dark:bg-zinc-900 p-4 transition-colors ${highlightClass}`}>
-      {entry.image ? (
-        <img src={entry.image} alt={displayName} className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
-      ) : (
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex-shrink-0 mt-0.5">
-          {(entry.username?.[0] ?? entry.name?.[0] ?? "?").toUpperCase()}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
-            {displayName}
+    <div className={`rounded-2xl border bg-white dark:bg-zinc-900 transition-colors ${highlightClass}`}>
+      <div className="flex gap-3 p-4">
+        {entry.image ? (
+          <img src={entry.image} alt={displayName} className="h-9 w-9 rounded-full object-cover flex-shrink-0 mt-0.5" />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-sm font-bold flex-shrink-0 mt-0.5">
+            {(entry.username?.[0] ?? entry.name?.[0] ?? "?").toUpperCase()}
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
+              {displayName}
+            </p>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">{dateLabel}</span>
+          </div>
+          <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-0.5">
+            logged a{" "}
+            <span className="font-medium text-zinc-900 dark:text-white">{entry.workoutType}</span>{" "}
+            workout
           </p>
-          <span className="text-xs text-zinc-400 dark:text-zinc-500 flex-shrink-0">{dateLabel}</span>
-        </div>
-        <p className="text-sm text-zinc-600 dark:text-zinc-300 mt-0.5">
-          logged a{" "}
-          <span className="font-medium text-zinc-900 dark:text-white">{entry.workoutType}</span>{" "}
-          workout
-        </p>
-        <div className="flex items-center justify-between mt-1.5">
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              {entry.exerciseCount} exercise{entry.exerciseCount !== 1 ? "s" : ""} · {entry.totalSets} sets
-            </span>
-            {entry.prCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                <Trophy className="h-3 w-3" />
-                {entry.prCount} PR{entry.prCount !== 1 ? "s" : ""}!
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setExpanded((v) => !v)}
+                className="flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+              >
+                {entry.exerciseCount} exercise{entry.exerciseCount !== 1 ? "s" : ""} · {entry.totalSets} sets
+                {expanded ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
+              </button>
+              {entry.prCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  <Trophy className="h-3 w-3" />
+                  {entry.prCount} PR{entry.prCount !== 1 ? "s" : ""}!
+                </span>
+              )}
+            </div>
+            {/* Fist bump — only on friends' entries */}
+            {!entry.isOwnWorkout && (
+              <button
+                onClick={() => onFistBump(entry.sessionId)}
+                className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${
+                  entry.myFistBump
+                    ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                    : "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
+                }`}
+                title={entry.myFistBump ? "Remove fist bump" : "Fist bump!"}
+              >
+                <img src="/fistbumpicon.png" alt="" className="h-4 w-4 object-contain fb-icon" />
+                {bumpCount > 0 && <span>{bumpCount}</span>}
+              </button>
+            )}
+            {/* Own entry: show bumper names */}
+            {entry.isOwnWorkout && bumpCount > 0 && (
+              <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-[160px]">
+                <img src="/fistbumpicon.png" alt="" className="h-3.5 w-3.5 object-contain flex-shrink-0 fb-icon" />
+                <span className="truncate">
+                  {(() => {
+                    const names = entry.fistBumps.map((b) => b.username ?? b.name ?? "Someone");
+                    if (names.length === 1) return names[0];
+                    if (names.length === 2) return `${names[0]} & ${names[1]}`;
+                    return `${names[0]} +${names.length - 1}`;
+                  })()}
+                </span>
               </span>
             )}
           </div>
-          {/* Fist bump — only on friends' entries */}
-          {!entry.isOwnWorkout && (
-            <button
-              onClick={() => onFistBump(entry.sessionId)}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${
-                entry.myFistBump
-                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                  : "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
-              }`}
-              title={entry.myFistBump ? "Remove fist bump" : "Fist bump!"}
-            >
-              <img src="/fistbumpicon.png" alt="" className="h-4 w-4 object-contain fb-icon" />
-              {bumpCount > 0 && <span>{bumpCount}</span>}
-            </button>
-          )}
-          {/* Own entry: show bumper names */}
-          {entry.isOwnWorkout && bumpCount > 0 && (
-            <span className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 max-w-[160px]">
-              <img src="/fistbumpicon.png" alt="" className="h-3.5 w-3.5 object-contain flex-shrink-0 fb-icon" />
-              <span className="truncate">
-                {(() => {
-                  const names = entry.fistBumps.map((b) => b.username ?? b.name ?? "Someone");
-                  if (names.length === 1) return names[0];
-                  if (names.length === 2) return `${names[0]} & ${names[1]}`;
-                  return `${names[0]} +${names.length - 1}`;
-                })()}
-              </span>
-            </span>
-          )}
         </div>
       </div>
+
+      {/* Expandable exercise detail */}
+      {expanded && entry.exercises.length > 0 && (
+        <div className="border-t border-zinc-100 dark:border-zinc-800 px-4 pb-3 pt-2 space-y-2">
+          {entry.exercises.map((ex) => (
+            <div key={ex.exerciseName}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${MG_DOT[ex.muscleGroup] ?? "bg-zinc-400"}`} />
+                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 capitalize">
+                  {ex.exerciseName.toLowerCase()}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1 pl-3">
+                {ex.sets.map((s) => (
+                  <span
+                    key={s.setNumber}
+                    className="inline-flex items-center gap-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[11px] text-zinc-600 dark:text-zinc-300 tabular-nums"
+                  >
+                    <span className="text-zinc-400 dark:text-zinc-500 text-[9px] font-bold mr-0.5">{s.setNumber}</span>
+                    {s.weightKg != null
+                      ? `${s.reps}×${s.weightKg % 1 === 0 ? s.weightKg : s.weightKg.toFixed(1)}kg`
+                      : `${s.reps} reps`}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -210,19 +254,18 @@ function FriendExpandableCard({
 
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <div className="flex items-center justify-center gap-1">
-              <Flame className="h-3.5 w-3.5 text-orange-500" />
-              <p className="text-base font-bold text-zinc-900 dark:text-white">{data.generalStreak}</p>
-            </div>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Streak</p>
-          </div>
-          <div>
-            <p className="text-base font-bold text-zinc-900 dark:text-white">{data.bestStreak}</p>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Best</p>
+            <p className="text-base font-bold text-zinc-900 dark:text-white">{data.totalWorkoutsAllTime}</p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Workouts</p>
           </div>
           <div>
             <p className="text-base font-bold text-zinc-900 dark:text-white">{data.totalWorkoutsThisMonth}</p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">This month</p>
+          </div>
+          <div>
+            <p className="text-base font-bold text-zinc-900 dark:text-white">
+              {new Date(data.joinedAt + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+            </p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Joined</p>
           </div>
         </div>
       </button>

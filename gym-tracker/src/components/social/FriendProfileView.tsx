@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Flame, Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { upsertFriendPrivacyOverride } from "@/actions/social";
 import { Toast } from "@/components/ui/Toast";
@@ -17,38 +17,11 @@ const GROUP_META: Record<string, { label: string; color: string; dot: string }> 
 const PR_ORDER = ["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT"];
 const COLLAPSED_COUNT = 5;
 
-function PRCard({ pr }: { pr: PRRecord }) {
-  return (
-    <div className="bg-zinc-50 dark:bg-zinc-800 rounded-xl p-2 flex flex-col gap-0.5 min-w-0">
-      <div className="w-14 h-14 mb-0.5 shrink-0">
-        <ExerciseIcon name={pr.exerciseName} muscleGroup={pr.muscleGroup as MuscleGroup} className="w-14 h-14" />
-      </div>
-      <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 leading-tight line-clamp-2">
-        {pr.exerciseName}
-      </span>
-      <span className="text-xs font-black text-zinc-900 dark:text-white leading-tight tabular-nums">
-        {pr.muscleGroup === "BODYWEIGHT" || pr.maxWeightKg == null
-          ? `${pr.maxReps ?? pr.repsAtMaxWeight}r`
-          : `${Number(pr.maxWeightKg).toFixed(1)}kg`}
-      </span>
-      {pr.muscleGroup !== "BODYWEIGHT" && pr.maxWeightKg != null && (
-        <span className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none">
-          ×{pr.repsAtMaxWeight} reps
-        </span>
-      )}
-      <span className="text-[9px] text-zinc-400 dark:text-zinc-500 leading-none mt-auto pt-1">
-        {pr.achievedOn.slice(5).replace("-", "/")}
-      </span>
-    </div>
-  );
-}
-
 function PRSection({ prs }: { prs: PRRecord[] }) {
   const [expanded, setExpanded] = useState(false);
 
   const visiblePrs = expanded ? prs : prs.slice(0, COLLAPSED_COUNT);
 
-  // Group visible PRs
   const grouped: Record<string, PRRecord[]> = {};
   for (const pr of visiblePrs) {
     if (!grouped[pr.muscleGroup]) grouped[pr.muscleGroup] = [];
@@ -61,26 +34,33 @@ function PRSection({ prs }: { prs: PRRecord[] }) {
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
-        <span className="text-sm">🏆</span>
+      <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+        <span className="text-xs">🏆</span>
         <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
           Personal Records
         </span>
       </div>
-      <div className="p-3 space-y-4">
+      <div className="p-2.5 space-y-3">
         {groups.map((group) => {
           const meta = GROUP_META[group] ?? { label: group, color: "text-zinc-600 dark:text-zinc-400", dot: "bg-zinc-400" };
           return (
             <div key={group}>
-              <div className="flex items-center gap-1.5 mb-2">
+              <div className="flex items-center gap-1.5 mb-1.5">
                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", meta.dot)} />
                 <span className={cn("text-[10px] font-bold uppercase tracking-widest", meta.color)}>
                   {meta.label}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1">
                 {grouped[group].map((pr) => (
-                  <PRCard key={pr.exerciseId} pr={pr} />
+                  <div key={pr.exerciseId} className="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-1.5 flex flex-col items-center gap-0.5 min-w-0">
+                    <ExerciseIcon name={pr.exerciseName} muscleGroup={pr.muscleGroup as MuscleGroup} className="w-8 h-8" />
+                    <span className="text-[10px] font-bold text-zinc-900 dark:text-white tabular-nums leading-tight text-center">
+                      {pr.muscleGroup === "BODYWEIGHT" || pr.maxWeightKg == null
+                        ? `${pr.maxReps ?? pr.repsAtMaxWeight}r`
+                        : `${Number(pr.maxWeightKg).toFixed(1)}kg`}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -90,7 +70,7 @@ function PRSection({ prs }: { prs: PRRecord[] }) {
       {prs.length > COLLAPSED_COUNT && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 border-t border-zinc-100 dark:border-zinc-800 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-2 border-t border-zinc-100 dark:border-zinc-800 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
         >
           {expanded ? (
             <><ChevronUp className="h-3.5 w-3.5" /> Show less</>
@@ -114,16 +94,10 @@ const MILESTONES = [
 function MilestoneBadge({ days, emoji, label, unlocked }: { days: number; emoji: string; label: string; unlocked: boolean }) {
   const [imgError, setImgError] = useState(false);
   return (
-    <div
-      className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 border transition-all ${
-        unlocked
-          ? "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20"
-          : "border-zinc-200 dark:border-zinc-800 opacity-40"
-      }`}
-    >
-      <div className="w-10 h-10 flex items-center justify-center">
+    <div className={`flex flex-col items-center gap-0.5 ${unlocked ? "" : "opacity-30"}`}>
+      <div className="w-9 h-9 flex items-center justify-center">
         {imgError ? (
-          <span className="text-2xl">{emoji}</span>
+          <span className="text-xl">{emoji}</span>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -134,7 +108,7 @@ function MilestoneBadge({ days, emoji, label, unlocked }: { days: number; emoji:
           />
         )}
       </div>
-      <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{label}</span>
+      <span className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">{label}</span>
     </div>
   );
 }
@@ -217,7 +191,7 @@ export function FriendProfileView({
 
   return (
     <>
-      <div className="space-y-5">
+      <div className="space-y-4">
         {/* Header */}
         {showHeader && (
           <div className="flex items-center gap-4">
@@ -235,35 +209,62 @@ export function FriendProfileView({
           </div>
         )}
 
-        {/* Streaks — always visible */}
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
-            <Flame className="h-4 w-4 text-orange-500" />
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Streaks</h3>
+        {/* Body metrics — first */}
+        {(data.heightCm != null || data.visibility.canSeeWeight || data.visibility.canSeeBodyFat) && (
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+              <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Body Metrics</h3>
+            </div>
+            {(() => {
+              const visibleCount = [data.heightCm != null, data.visibility.canSeeWeight, data.visibility.canSeeBodyFat].filter(Boolean).length;
+              const colsClass = visibleCount >= 3 ? "grid-cols-3" : visibleCount === 2 ? "grid-cols-2" : "grid-cols-1";
+              return (
+                <div className={`grid divide-x divide-zinc-100 dark:divide-zinc-800 ${colsClass}`}>
+                  {data.heightCm != null && (
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Height</p>
+                      <p className="text-xl font-bold text-zinc-900 dark:text-white">
+                        {data.heightCm}<span className="text-xs font-normal text-zinc-400 ml-1">cm</span>
+                      </p>
+                    </div>
+                  )}
+                  {data.visibility.canSeeWeight && (
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Weight</p>
+                      <p className="text-xl font-bold text-zinc-900 dark:text-white">
+                        {data.weight != null ? (
+                          <>{data.weight.toFixed(1)}<span className="text-xs font-normal text-zinc-400 ml-1">kg</span></>
+                        ) : (
+                          <span className="text-zinc-400 text-base">—</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {data.visibility.canSeeBodyFat && (
+                    <div className="px-4 py-3">
+                      <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-0.5">Body Fat</p>
+                      <p className="text-xl font-bold text-zinc-900 dark:text-white">
+                        {data.bodyFatPct != null ? (
+                          <>{data.bodyFatPct.toFixed(1)}<span className="text-xs font-normal text-zinc-400 ml-0.5">%</span></>
+                        ) : (
+                          <span className="text-zinc-400 text-base">—</span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
-          <div className="grid grid-cols-3 divide-x divide-zinc-100 dark:divide-zinc-800">
-            <div className="px-4 py-4 flex flex-col items-center gap-1">
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white">{data.generalStreak}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Current streak</p>
-            </div>
-            <div className="px-4 py-4 flex flex-col items-center gap-1">
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white">{data.bestStreak}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">Best streak</p>
-            </div>
-            <div className="px-4 py-4 flex flex-col items-center gap-1">
-              <p className="text-2xl font-bold text-zinc-900 dark:text-white">{data.totalWorkoutsThisMonth}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center">This month</p>
-            </div>
-          </div>
-        </div>
+        )}
 
-        {/* Milestones — always visible */}
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Crown className="h-4 w-4 text-amber-500" />
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Achievements</h3>
+        {/* Milestones — compact row */}
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2.5">
+            <Crown className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Achievements</span>
           </div>
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex justify-between">
             {MILESTONES.map((m) => (
               <MilestoneBadge
                 key={m.days}
@@ -275,55 +276,6 @@ export function FriendProfileView({
             ))}
           </div>
         </div>
-
-        {/* Body metrics */}
-        {(data.heightCm != null || data.visibility.canSeeWeight || data.visibility.canSeeBodyFat) && (
-          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-            <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Body Metrics</h3>
-            </div>
-            {(() => {
-              const visibleCount = [data.heightCm != null, data.visibility.canSeeWeight, data.visibility.canSeeBodyFat].filter(Boolean).length;
-              const colsClass = visibleCount >= 3 ? "grid-cols-3" : visibleCount === 2 ? "grid-cols-2" : "grid-cols-1";
-              return (
-                <div className={`grid divide-x divide-zinc-100 dark:divide-zinc-800 ${colsClass}`}>
-                  {data.heightCm != null && (
-                    <div className="px-5 py-4">
-                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Height</p>
-                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                        {data.heightCm}<span className="text-sm font-normal text-zinc-400 ml-1">cm</span>
-                      </p>
-                    </div>
-                  )}
-                  {data.visibility.canSeeWeight && (
-                    <div className="px-5 py-4">
-                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Weight</p>
-                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                        {data.weight != null ? (
-                          <>{data.weight.toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-1">kg</span></>
-                        ) : (
-                          <span className="text-zinc-400 text-lg">—</span>
-                        )}
-                      </p>
-                    </div>
-                  )}
-                  {data.visibility.canSeeBodyFat && (
-                    <div className="px-5 py-4">
-                      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-1">Body Fat</p>
-                      <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-                        {data.bodyFatPct != null ? (
-                          <>{data.bodyFatPct.toFixed(1)}<span className="text-sm font-normal text-zinc-400 ml-0.5">%</span></>
-                        ) : (
-                          <span className="text-zinc-400 text-lg">—</span>
-                        )}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        )}
 
         {/* PRs */}
         {data.visibility.canSeePRs && data.prs.length > 0 && (
