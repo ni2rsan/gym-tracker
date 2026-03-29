@@ -215,6 +215,8 @@ export type ExerciseStatCard = {
   // Totals
   totalSets: number;
   totalWorkouts: number;
+  // Chronological history for mini chart (ascending, capped at 30 sessions)
+  history: { date: string; weightKg: number | null; reps: number | null }[];
 };
 
 type RawSet = {
@@ -367,6 +369,12 @@ export async function getExerciseStatCards(userId: string): Promise<ExerciseStat
       isPR: !!(latest && prDate && latest.date === prDate),
       totalSets,
       totalWorkouts: ex.sessionDates.length,
+      // sessionMaxes is desc — reverse for chronological order, cap at 30
+      history: [...sessionMaxes].reverse().slice(-30).map((s) => ({
+        date: s.date,
+        weightKg: s.maxWeight,
+        reps: s.maxReps || null,
+      })),
     });
   }
 
