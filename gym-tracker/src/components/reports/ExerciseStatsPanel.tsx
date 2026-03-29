@@ -58,9 +58,11 @@ function SetDetailPanel({
 function ExerciseChart({
   history,
   isBodyweight,
+  isAssisted,
 }: {
   history: ExerciseStatCard["history"];
   isBodyweight: boolean;
+  isAssisted: boolean;
 }) {
   const [filter, setFilter] = useState<ChartFilter>(30);
   const [selectedPoint, setSelectedPoint] = useState<ChartPoint | null>(null);
@@ -89,8 +91,9 @@ function ExerciseChart({
   const maxVal = Math.max(...values);
   const domainMin = Math.max(0, minVal - (maxVal - minVal) * 0.35);
 
-  // Amber only on the most recent occurrence of maxVal (latest record), not all ties
-  const prIndex = filtered.reduce((last, pt, i) => pt.v === maxVal ? i : last, -1);
+  // For assisted exercises lower is better — PR is the lowest value; otherwise highest
+  const prVal = isAssisted ? minVal : maxVal;
+  const prIndex = filtered.reduce((last, pt, i) => pt.v === prVal ? i : last, -1);
   const getColor = (index: number, isSelected: boolean) => {
     if (isSelected) return "#f8fafc";
     if (index === prIndex) return "#f59e0b"; // amber — latest record bar only
@@ -314,6 +317,7 @@ export function ExerciseStatsPanel({ cards }: ExerciseStatsPanelProps) {
                               <ExerciseChart
                                 history={card.history}
                                 isBodyweight={card.isBodyweight}
+                                isAssisted={card.isAssisted}
                               />
                             )}
                             <div className="space-y-1.5 pt-0.5">
