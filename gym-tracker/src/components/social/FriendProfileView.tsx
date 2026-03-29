@@ -9,22 +9,40 @@ import { cn } from "@/lib/utils";
 import { upsertFriendPrivacyOverride } from "@/actions/social";
 import { Toast } from "@/components/ui/Toast";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
-import { RARITY_COLORS } from "@/constants/badges";
-import type { BadgeCategory } from "@/constants/badges";
 import type { FriendProfileData, PRRecord } from "@/types";
 import type { MuscleGroup } from "@/types";
 
 useGLTF.preload("/Early Adopter.glb");
 useGLTF.preload("/The Architect.glb");
 
-const CATEGORY_ORDER: BadgeCategory[] = ["streak", "consistency", "strength", "volume", "special"];
-const CATEGORY_LABELS: Record<BadgeCategory, string> = {
-  streak: "Streak",
-  consistency: "Consistency",
-  strength: "Strength",
-  volume: "Volume",
-  special: "Special",
-};
+const WORKOUT_MILESTONES = [10, 30, 50, 75, 100];
+
+const VOLUME_BADGES = [
+  { key: "50t",   thresholdKg: 50_000    },
+  { key: "100t",  thresholdKg: 100_000   },
+  { key: "150t",  thresholdKg: 150_000   },
+  { key: "250t",  thresholdKg: 250_000   },
+  { key: "500t",  thresholdKg: 500_000   },
+  { key: "750t",  thresholdKg: 750_000   },
+  { key: "1000t", thresholdKg: 1_000_000 },
+  { key: "1500t", thresholdKg: 1_500_000 },
+  { key: "2000t", thresholdKg: 2_000_000 },
+  { key: "2500t", thresholdKg: 2_500_000 },
+  { key: "3000t", thresholdKg: 3_000_000 },
+  { key: "4000t", thresholdKg: 4_000_000 },
+  { key: "5000t", thresholdKg: 5_000_000 },
+];
+
+const FRIEND_BADGES_DEF = [
+  { key: "1friend",   label: "1 Friend",   threshold: 1  },
+  { key: "5friends",  label: "5 Friends",  threshold: 5  },
+  { key: "10friends", label: "10 Friends", threshold: 10 },
+];
+const FISTBUMP_BADGES_DEF = [
+  { key: "1fistbump",   label: "1 Fist Bump",  threshold: 1  },
+  { key: "10fistbumps", label: "10 Fist Bumps", threshold: 10 },
+  { key: "30fistbumps", label: "30 Fist Bumps", threshold: 30 },
+];
 
 function NormalizedModel({ path }: { path: string }) {
   const { scene } = useGLTF(path);
@@ -283,60 +301,88 @@ export function FriendProfileView({
           </div>
         )}
 
-        {/* Achievements — unlocked badges only */}
-        {(() => {
-          const unlockedBadges = data.badges?.filter((b) => b.unlocked) ?? [];
-          const hasAny = unlockedBadges.length > 0 || true; // always show for 3D specials
-          if (!hasAny) return null;
-          return (
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
-                <Crown className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Achievements</span>
-              </div>
-              {unlockedBadges.length > 0 && (
-                <div className="px-3 py-3 space-y-3">
-                  {CATEGORY_ORDER.map((cat) => {
-                    const catBadges = unlockedBadges.filter((b) => b.category === cat);
-                    if (catBadges.length === 0) return null;
-                    const colors = RARITY_COLORS; // used per badge
-                    return (
-                      <div key={cat}>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">{CATEGORY_LABELS[cat]}</p>
-                        <div className="flex flex-wrap gap-1">
-                          {catBadges.map((badge) => {
-                            const c = colors[badge.rarity];
-                            return (
-                              <div
-                                key={badge.key}
-                                className={cn("flex flex-col items-center gap-0.5 rounded-lg p-1.5 border w-14", c.bg, c.border)}
-                              >
-                                <span className="text-lg leading-none">{badge.icon}</span>
-                                <span className={cn("text-[8px] font-semibold leading-tight text-center line-clamp-2", c.text)}>
-                                  {badge.name}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
+        {/* Achievements */}
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+            <Crown className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Achievements</span>
+          </div>
+          <div className="px-3 py-3 space-y-4">
+
+            {/* Workout badges — milestone PNGs */}
+            {(() => {
+              const unlocked = WORKOUT_MILESTONES.filter((d) => data.milestonesUnlocked.includes(d));
+              if (unlocked.length === 0) return null;
+              return (
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">Workout</p>
+                  <div className="flex flex-wrap gap-2">
+                    {unlocked.map((days) => (
+                      <div key={days} className="flex flex-col items-center gap-0.5 w-10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/milestones/${days}.png`} alt={`${days}d`} className="w-10 h-10 object-contain" />
+                        <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">{days}d</span>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              )}
-              {/* 3D specials row */}
-              <div className={cn("px-3 pb-3 pt-3", unlockedBadges.length > 0 && "border-t border-zinc-100 dark:border-zinc-800")}>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-2">Special</p>
-                <div className="flex gap-4">
-                  <CompactBadge3D path="/Early Adopter.glb" title="Early Adopter" tag="Special" />
-                  {data.isAdmin && (
-                    <CompactBadge3D path="/The Architect.glb" title="The Architect" tag="Admin" />
-                  )}
+              );
+            })()}
+
+            {/* Volume badges — casket PNGs */}
+            {(() => {
+              const unlocked = VOLUME_BADGES.filter((b) => (data.cumulativeVolume ?? 0) >= b.thresholdKg);
+              if (unlocked.length === 0) return null;
+              return (
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">Volume</p>
+                  <div className="flex flex-wrap gap-2">
+                    {unlocked.map((b) => (
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-10">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/volume/${b.key}.png`} alt={b.key} className="w-10 h-10 object-contain" />
+                        <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">{b.key}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              );
+            })()}
+
+            {/* Social badges — friend + fistbump PNGs */}
+            {(() => {
+              const achievedFriends = FRIEND_BADGES_DEF.filter((b) => (data.friendCount ?? 0) >= b.threshold);
+              const achievedFistbumps = FISTBUMP_BADGES_DEF.filter((b) => (data.fistbumpCount ?? 0) >= b.threshold);
+              if (achievedFriends.length === 0 && achievedFistbumps.length === 0) return null;
+              return (
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">Social</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[...achievedFriends, ...achievedFistbumps].map((b) => (
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-12">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/social/${b.key}.png`} alt={b.label} className="w-12 h-12 object-contain" />
+                        <span className="text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">{b.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Specials — 3D models */}
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">Specials</p>
+              <div className="flex gap-4">
+                <CompactBadge3D path="/Early Adopter.glb" title="Early Adopter" tag="OG" />
+                {data.isAdmin && (
+                  <CompactBadge3D path="/The Architect.glb" title="The Architect" tag="Admin" />
+                )}
               </div>
             </div>
-          );
-        })()}
+
+          </div>
+        </div>
 
         {/* PRs */}
         {data.visibility.canSeePRs && data.prs.length > 0 && (

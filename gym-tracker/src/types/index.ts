@@ -99,6 +99,9 @@ export interface FriendProfileData {
   totalWorkoutsThisMonth: number;
   totalWorkoutsAllTime: number;
   joinedAt: string; // ISO date string
+  friendCount: number;
+  fistbumpCount: number;
+  cumulativeVolume: number;
   badges: import("@/constants/badges").UserBadge[];
   isAdmin: boolean;
   heightCm: number | null;
