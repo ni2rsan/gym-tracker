@@ -252,7 +252,7 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
             {/* ── Fistbumps section ── */}
             <div className="px-0 pt-3 pb-2">
               <div className="flex items-center gap-1.5 mb-2 px-2">
-                <img src="/fistbump10.png" alt="" className="h-3.5 w-3.5 object-contain fb-icon" />
+                <img src="/fistbumpicon.png" alt="" className="h-3.5 w-3.5 object-contain fb-icon" />
                 <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Fist Bumps</span>
               </div>
               <div className="grid grid-cols-3 gap-1">

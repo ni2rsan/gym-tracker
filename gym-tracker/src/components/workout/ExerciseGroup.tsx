@@ -110,11 +110,6 @@ export function ExerciseGroup({
           <span className={cn("text-xs font-normal opacity-60")}>
             {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
           </span>
-          {plannedExerciseIds && plannedExerciseIds.size > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
-              {plannedExerciseIds.size} planned
-            </span>
-          )}
         </span>
         <span className="flex items-center gap-1.5">
           {onAdd && (

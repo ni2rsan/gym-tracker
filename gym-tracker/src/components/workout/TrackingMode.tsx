@@ -19,11 +19,17 @@ type TrackingView =
   | { kind: "icons" }
   | { kind: "exercise"; exercise: ExerciseWithSettings };
 
+interface TrackingModeSection {
+  label: string;
+  exercises: ExerciseWithSettings[];
+}
+
 interface TrackingModeProps {
   exercises: ExerciseWithSettings[];
   date: string;
   initialCompletedIds: Set<string>;
   scopeLabel: string;
+  sections?: TrackingModeSection[];
   workoutData?: Record<string, SetData[]>;
   skippedIds?: Set<string>;
   onSkipChange?: (id: string, skipped: boolean) => void;
@@ -78,6 +84,7 @@ export function TrackingMode({
   date,
   initialCompletedIds,
   scopeLabel,
+  sections,
   workoutData,
   skippedIds = new Set(),
   onSkipChange,
@@ -332,6 +339,68 @@ export function TrackingMode({
     setActiveSetIdx(lastIdx);
   };
 
+  // ── Icon render helper ───────────────────────────────────────────────────
+  const renderExerciseIcon = (ex: ExerciseWithSettings) => {
+    const done = completedIds.has(ex.id);
+    const skipped = skippedIds.has(ex.id);
+    return (
+      <div key={ex.id} className="flex flex-col items-center gap-2 text-center">
+        <div className="relative">
+          <button
+            onClick={() => {
+              if (skipped) { onSkipChange?.(ex.id, false); return; }
+              handleIconClick(ex);
+            }}
+            className={cn(
+              "w-20 h-20 rounded-full flex items-center justify-center transition-colors active:scale-95",
+              skipped
+                ? "bg-zinc-100 dark:bg-zinc-800 opacity-40"
+                : done
+                  ? "bg-amber-100 dark:bg-amber-900/50"
+                  : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
+            )}
+          >
+            <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
+            {done && !skipped && (
+              <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
+                <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => onSkipChange?.(ex.id, !skipped)}
+            className={cn(
+              "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 transition-colors",
+              skipped
+                ? "bg-zinc-400 dark:bg-zinc-500 text-white"
+                : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+            )}
+            title={skipped ? "Un-skip" : "Skip today"}
+          >
+            {skipped ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+          </button>
+        </div>
+        <span
+          className={cn(
+            "text-[11px] font-semibold leading-tight line-clamp-2 w-full uppercase tracking-wide",
+            skipped
+              ? "text-zinc-400 dark:text-zinc-500"
+              : done
+                ? "text-amber-700 dark:text-amber-400"
+                : "text-zinc-600 dark:text-zinc-400"
+          )}
+        >
+          {ex.name}
+        </span>
+        {ex.isCompound && !skipped && (
+          <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+            Compound
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // ── Icons view ─────────────────────────────────────────────────────────
   if (view.kind === "icons") {
     const allDone = nonSkippedExercises.length > 0 && nonSkippedExercises.every((ex) => completedIds.has(ex.id));
@@ -412,70 +481,23 @@ export function TrackingMode({
           </div>
         )}
 
-        {/* Icon grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5">
-          {exercises.map((ex) => {
-            const done = completedIds.has(ex.id);
-            const skipped = skippedIds.has(ex.id);
-            return (
-              <div key={ex.id} className="flex flex-col items-center gap-2 text-center">
-                <div className="relative">
-                  <button
-                    onClick={() => {
-                      if (skipped) { onSkipChange?.(ex.id, false); return; }
-                      handleIconClick(ex);
-                    }}
-                    className={cn(
-                      "w-20 h-20 rounded-full flex items-center justify-center transition-colors active:scale-95",
-                      skipped
-                        ? "bg-zinc-100 dark:bg-zinc-800 opacity-40"
-                        : done
-                          ? "bg-amber-100 dark:bg-amber-900/50"
-                          : "bg-zinc-100 dark:bg-zinc-800 ring-2 ring-zinc-200 dark:ring-zinc-700 active:ring-zinc-300 dark:active:ring-zinc-600"
-                    )}
-                  >
-                    <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup} className="h-10 w-10 sm:h-11 sm:w-11" />
-                    {done && !skipped && (
-                      <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-950 flex items-center justify-center">
-                        <span className="text-white font-bold leading-none" style={{ fontSize: "9px" }}>✓</span>
-                      </span>
-                    )}
-                  </button>
-                  {/* Skip / un-skip eye button */}
-                  <button
-                    onClick={() => onSkipChange?.(ex.id, !skipped)}
-                    className={cn(
-                      "absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 transition-colors",
-                      skipped
-                        ? "bg-zinc-400 dark:bg-zinc-500 text-white"
-                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                    )}
-                    title={skipped ? "Un-skip" : "Skip today"}
-                  >
-                    {skipped ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                  </button>
-                </div>
-                <span
-                  className={cn(
-                    "text-[11px] font-semibold leading-tight line-clamp-2 w-full uppercase tracking-wide",
-                    skipped
-                      ? "text-zinc-400 dark:text-zinc-500"
-                      : done
-                        ? "text-amber-700 dark:text-amber-400"
-                        : "text-zinc-600 dark:text-zinc-400"
-                  )}
-                >
-                  {ex.name}
-                </span>
-                {ex.isCompound && !skipped && (
-                  <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[8px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                    Compound
-                  </span>
-                )}
+        {/* Icon grid — flat or sectioned */}
+        {sections ? (
+          sections.map((sec) => (
+            <div key={sec.label}>
+              <div className="px-5 pt-4 pb-1">
+                <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{sec.label}</p>
               </div>
-            );
-          })}
-        </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 px-5 pb-4">
+                {sec.exercises.map((ex) => renderExerciseIcon(ex))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-4 gap-y-6 p-5">
+            {exercises.map((ex) => renderExerciseIcon(ex))}
+          </div>
+        )}
 
         {/* Finish button */}
         <div className="px-5 pb-8">

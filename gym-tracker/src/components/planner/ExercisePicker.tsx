@@ -55,7 +55,8 @@ export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = n
   const plannedIds = new Set(planned.map((p) => p.exerciseId));
 
   const filtered = exercises.filter((e) =>
-    e.name.toLowerCase().includes(query.toLowerCase())
+    e.name.toLowerCase().includes(query.toLowerCase()) &&
+    !blockedMuscleGroups.has(e.muscleGroup)
   );
 
   const grouped = GROUP_ORDER.reduce<Record<string, typeof filtered>>((acc, g) => {
@@ -184,21 +185,17 @@ export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = n
                   <div className="divide-y divide-zinc-50 dark:divide-zinc-800">
                     {groupExs.map((ex) => {
                       const isPlanned = plannedIds.has(ex.id);
-                      const isBlocked = blockedMuscleGroups.has(ex.muscleGroup);
                       const isThisPending = pendingId === ex.id;
                       return (
                         <button
                           key={ex.id}
-                          onClick={() => !isBlocked && handleToggle(ex)}
-                          disabled={isBlocked || isThisPending || (!!pendingId && !isThisPending)}
+                          onClick={() => handleToggle(ex)}
+                          disabled={isThisPending || (!!pendingId && !isThisPending)}
                           className={cn(
-                            "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                            isBlocked
-                              ? "opacity-35 cursor-not-allowed"
-                              : isPlanned
-                                ? "bg-emerald-50 dark:bg-emerald-900/10"
-                                : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50",
-                            !isBlocked && "disabled:opacity-60"
+                            "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors disabled:opacity-60",
+                            isPlanned
+                              ? "bg-emerald-50 dark:bg-emerald-900/10"
+                              : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                           )}
                         >
                           <div className="w-6 h-6 shrink-0">
@@ -210,16 +207,14 @@ export function ExercisePicker({ date, plannedExercises, blockedMuscleGroups = n
                           </div>
                           <span className={cn(
                             "flex-1 text-sm capitalize",
-                            isPlanned && !isBlocked
+                            isPlanned
                               ? "font-semibold text-emerald-700 dark:text-emerald-300"
                               : "text-zinc-700 dark:text-zinc-300"
                           )}>
                             {ex.name.toLowerCase()}
                           </span>
                           <div className="w-5 h-5 shrink-0 flex items-center justify-center">
-                            {isBlocked ? (
-                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide">block</span>
-                            ) : isThisPending ? (
+                            {isThisPending ? (
                               <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
                             ) : isPlanned ? (
                               <Check className="h-4 w-4 text-emerald-500" />

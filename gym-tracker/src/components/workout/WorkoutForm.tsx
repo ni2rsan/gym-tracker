@@ -170,6 +170,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     didScrollRef.current = true;
     if (section === "FULL_BODY") {
       setTrackingScope("FULL_BODY");
+    } else if (section === "WORKOUT") {
+      setTrackingScope("all");
     } else if ((MUSCLE_GROUP_ORDER as readonly string[]).includes(section)) {
       setTrackingScope(section as MuscleGroup);
     }
@@ -1037,8 +1039,20 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       {/* Tracking mode overlay */}
       {trackingScope !== null &&
         (() => {
-          const trackingExercises =
-            trackingScope === "all"
+          // When coming from the planner "Track Workout" button (section=WORKOUT),
+          // build grouped sections: UB / LB / Added Exercises
+          const isWorkoutFlow = searchParams.get("section") === "WORKOUT" && trackingScope === "all";
+          const workoutSections = isWorkoutFlow ? (() => {
+            const secs: { label: string; exercises: ExerciseWithSettings[] }[] = [];
+            if (exercisesByGroup["UPPER_BODY"]?.length) secs.push({ label: "Upper Body", exercises: exercisesByGroup["UPPER_BODY"] });
+            if (exercisesByGroup["LOWER_BODY"]?.length) secs.push({ label: "Lower Body", exercises: exercisesByGroup["LOWER_BODY"] });
+            if (addedExercises.length) secs.push({ label: "Added Exercises", exercises: addedExercises });
+            return secs.length > 0 ? secs : null;
+          })() : null;
+
+          const trackingExercises = workoutSections
+            ? workoutSections.flatMap((s) => s.exercises)
+            : trackingScope === "all"
               ? sortedExercises
               : trackingScope === "FULL_BODY"
                 ? sortedExercises.filter((e) => e.muscleGroup === "UPPER_BODY" || e.muscleGroup === "LOWER_BODY")
@@ -1055,6 +1069,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               date={selectedDate}
               initialCompletedIds={new Set(savedTodayIds)}
               scopeLabel={scopeLabel}
+              sections={workoutSections ?? undefined}
               workoutData={workoutData}
               skippedIds={skippedIds}
               onSkipChange={handleSkipChange}
