@@ -926,8 +926,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
             </div>
           )}
 
-          {/* Standalone groups — due ones first, then the rest */}
-          {standaloneGroups.map((mg) => (
+          {/* Due standalone groups first */}
+          {standaloneGroups.filter((mg) => dueGroupMuscles.has(mg)).map((mg) => (
             <div key={`${selectedDate}-${mg}`} id={`section-${mg}`}>
               <ExerciseGroup
                 muscleGroup={mg}
@@ -955,7 +955,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
             </div>
           ))}
 
-          {/* Added Exercises section — exercises individually added via planner, not covered by a block */}
+          {/* Added Exercises section — right after due groups, before non-due */}
           {addedExercises.length > 0 && (
             <div key={`${selectedDate}-added`} id="section-added">
               <ExerciseGroup
@@ -980,6 +980,35 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               />
             </div>
           )}
+
+          {/* Non-due standalone groups (collapsed) */}
+          {standaloneGroups.filter((mg) => !dueGroupMuscles.has(mg)).map((mg) => (
+            <div key={`${selectedDate}-${mg}`} id={`section-${mg}`}>
+              <ExerciseGroup
+                muscleGroup={mg}
+                exercises={exercisesByGroup[mg]}
+                workoutData={workoutData}
+                onSetsChange={handleSetsChange}
+                onTogglePin={handleTogglePin}
+                onRemove={handleRemoveClick}
+                onHide={handleHideClick}
+                defaultOpen={isGroupDefaultOpen(mg)}
+                onSave={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 ? () => handleSaveGroup(mg) : undefined}
+                isSaving={savingGroups.has(mg)}
+                lastSaved={lastSavedByGroup[mg] ?? null}
+                onTrack={isGroupEditable(mg) && exercisesByGroup[mg].length > 0 && selectedDate <= todayISO ? () => setTrackingScope(mg) : undefined}
+                onAdd={isGroupEditable(mg) ? () => setAddTargetGroup(mg) : undefined}
+                readOnlyIds={readOnlyIds}
+                trackedIds={savedTodayIds}
+                onDeleteTracking={handleDeleteExerciseTracking}
+                skippedIds={skippedIds}
+                onSkipChange={handleSkipChange}
+                removedFromLayout={hiddenByGroup[mg] ?? []}
+                onRestoreFromLayout={handleRestoreFromGroup}
+                plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
+              />
+            </div>
+          ))}
 
           {/* Bottom bar */}
           <div className="flex items-center gap-3 pt-1 border-t border-zinc-200 dark:border-zinc-800">
@@ -1044,8 +1073,11 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           const isWorkoutFlow = searchParams.get("section") === "WORKOUT" && trackingScope === "all";
           const workoutSections = isWorkoutFlow ? (() => {
             const secs: { label: string; exercises: ExerciseWithSettings[] }[] = [];
-            if (exercisesByGroup["UPPER_BODY"]?.length) secs.push({ label: "Upper Body", exercises: exercisesByGroup["UPPER_BODY"] });
-            if (exercisesByGroup["LOWER_BODY"]?.length) secs.push({ label: "Lower Body", exercises: exercisesByGroup["LOWER_BODY"] });
+            // Only include groups that are actually due (have planned blocks)
+            if (dueGroupMuscles.has("UPPER_BODY") && exercisesByGroup["UPPER_BODY"]?.length) secs.push({ label: "Upper Body", exercises: exercisesByGroup["UPPER_BODY"] });
+            if (dueGroupMuscles.has("LOWER_BODY") && exercisesByGroup["LOWER_BODY"]?.length) secs.push({ label: "Lower Body", exercises: exercisesByGroup["LOWER_BODY"] });
+            if (dueGroupMuscles.has("BODYWEIGHT") && exercisesByGroup["BODYWEIGHT"]?.length) secs.push({ label: "Bodyweight", exercises: exercisesByGroup["BODYWEIGHT"] });
+            if (dueGroupMuscles.has("CARDIO") && exercisesByGroup["CARDIO"]?.length) secs.push({ label: "Cardio", exercises: exercisesByGroup["CARDIO"] });
             if (addedExercises.length) secs.push({ label: "Added Exercises", exercises: addedExercises });
             return secs.length > 0 ? secs : null;
           })() : null;
