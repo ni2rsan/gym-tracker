@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import { X, ArrowLeft, Plus, Minus, Eye, EyeOff, TrendingUp, TrendingDown } from "lucide-react";
+import { X, ArrowLeft, Plus, Minus, Eye, EyeOff, TrendingUp, TrendingDown, ChevronDown, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
@@ -138,6 +138,9 @@ export function TrackingMode({
 
   // Manual mode edit toggle
   const [isManualEditMode, setIsManualEditMode] = useState(false);
+
+  // Large timer minimized state — reset each time a new timer starts
+  const [timerMinimized, setTimerMinimized] = useState(false);
 
   // Summary overlay (automated mode — tap a done icon)
   const [summaryOverlay, setSummaryOverlay] = useState<ExerciseWithSettings | null>(null);
@@ -399,6 +402,7 @@ export function TrackingMode({
     if (isLast) {
       handleAutoSave(ex);
     } else {
+      setTimerMinimized(false); // always start large
       setTimerSetIdx(idx);
       timerEndAtRef.current = Date.now() + breakDuration * 1000;
       setTimerLeft(breakDuration);
@@ -1017,6 +1021,31 @@ export function TrackingMode({
                 </div>
               )}
 
+              {/* ── Large rest timer banner ─────────────────────────────── */}
+              {autoTrack && timerSetIdx !== null && !timerMinimized && (
+                <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 px-4 py-6 mb-3 text-center relative">
+                  <button
+                    onClick={() => setTimerMinimized(true)}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-white/50 dark:hover:bg-zinc-800/50 transition-colors"
+                    aria-label="Minimize timer"
+                  >
+                    <Minimize2 className="h-4 w-4" />
+                  </button>
+                  <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-2">
+                    Rest · Set {timerSetIdx + 1} done ✓
+                  </p>
+                  <p className="text-7xl font-mono font-bold text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
+                    {formatTimer(timerLeft)}
+                  </p>
+                  <button
+                    onClick={() => handleSkipTimer(timerSetIdx, ex)}
+                    className="mt-4 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-2"
+                  >
+                    Skip rest
+                  </button>
+                </div>
+              )}
+
               {sets.map((set, i) => {
                 const isActive = autoTrack && i === activeSetIdx && !completedSetFlags[i];
                 const isTimerRow = autoTrack && timerSetIdx === i;
@@ -1075,7 +1104,15 @@ export function TrackingMode({
                         )}
 
                         <div className={cn("flex items-center gap-1.5 flex-1", rowDisabled && "pointer-events-none")}>
-                          <div className="flex-1 min-w-0">
+                          {/* Reps stepper */}
+                          <div className="flex-1 min-w-0 flex items-center">
+                            <button
+                              type="button"
+                              disabled={rowDisabled}
+                              onPointerDown={(e) => { e.preventDefault(); setSets((prev) => prev.map((s, idx) => idx === i ? { ...s, reps: Math.max(0, (Number(s.reps) || 0) - 1) } : s)); }}
+                              className="h-9 w-7 shrink-0 flex items-center justify-center rounded-l-lg border border-r-0 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-base font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:bg-zinc-200 dark:active:bg-zinc-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              tabIndex={-1}
+                            >−</button>
                             <input
                               type="number"
                               inputMode="numeric"
@@ -1091,11 +1128,26 @@ export function TrackingMode({
                                   )
                                 )
                               }
-                              className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-center text-sm text-zinc-900 placeholder-zinc-300 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-600 dark:focus:border-emerald-400 dark:focus:bg-zinc-800 dark:focus:ring-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="h-9 w-full border-y border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 rounded-none px-1 text-center text-sm text-zinc-900 dark:text-white placeholder-zinc-300 dark:placeholder-zinc-600 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:z-10 dark:focus:border-emerald-400 dark:focus:bg-zinc-800 dark:focus:ring-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             />
+                            <button
+                              type="button"
+                              disabled={rowDisabled}
+                              onPointerDown={(e) => { e.preventDefault(); setSets((prev) => prev.map((s, idx) => idx === i ? { ...s, reps: Math.min(9999, (Number(s.reps) || 0) + 1) } : s)); }}
+                              className="h-9 w-7 shrink-0 flex items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-base font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:bg-zinc-200 dark:active:bg-zinc-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              tabIndex={-1}
+                            >+</button>
                           </div>
+                          {/* Kg stepper */}
                           {!ex.isBodyweight && (
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 flex items-center">
+                              <button
+                                type="button"
+                                disabled={rowDisabled}
+                                onPointerDown={(e) => { e.preventDefault(); setSets((prev) => prev.map((s, idx) => { if (idx !== i) return s; const cur = s.weightKg === "" || s.weightKg === 0 ? 0 : Number(s.weightKg); return { ...s, weightKg: parseFloat(Math.max(0, cur - 0.5).toFixed(1)) }; })); }}
+                                className="h-9 w-7 shrink-0 flex items-center justify-center rounded-l-lg border border-r-0 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-base font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:bg-zinc-200 dark:active:bg-zinc-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                tabIndex={-1}
+                              >−</button>
                               <input
                                 type="number"
                                 inputMode="decimal"
@@ -1114,15 +1166,27 @@ export function TrackingMode({
                                     )
                                   )
                                 }
-                                className="h-9 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2 text-center text-sm text-zinc-900 placeholder-zinc-300 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-white dark:placeholder-zinc-600 dark:focus:border-emerald-400 dark:focus:bg-zinc-800 dark:focus:ring-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="h-9 w-full border-y border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 rounded-none px-1 text-center text-sm text-zinc-900 dark:text-white placeholder-zinc-300 dark:placeholder-zinc-600 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:z-10 dark:focus:border-emerald-400 dark:focus:bg-zinc-800 dark:focus:ring-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               />
+                              <button
+                                type="button"
+                                disabled={rowDisabled}
+                                onPointerDown={(e) => { e.preventDefault(); setSets((prev) => prev.map((s, idx) => { if (idx !== i) return s; const cur = s.weightKg === "" || s.weightKg === 0 ? 0 : Number(s.weightKg); return { ...s, weightKg: parseFloat(Math.min(9999, cur + 0.5).toFixed(1)) }; })); }}
+                                className="h-9 w-7 shrink-0 flex items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-base font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 active:bg-zinc-200 dark:active:bg-zinc-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                tabIndex={-1}
+                              >+</button>
                             </div>
                           )}
                         </div>
 
-                        {isTimerRow ? (
+                        {/* Small minimized timer — only shown when timer active and minimized */}
+                        {isTimerRow && timerMinimized ? (
                           <div className="flex flex-col items-center gap-0.5 w-16 shrink-0">
-                            <div className="relative w-9 h-9">
+                            <button
+                              onClick={() => setTimerMinimized(false)}
+                              className="relative w-9 h-9"
+                              aria-label="Expand timer"
+                            >
                               <svg className="-rotate-90 w-full h-full" viewBox="0 0 36 36">
                                 <circle cx="18" cy="18" r="14" fill="none" strokeWidth="3" className="stroke-zinc-200 dark:stroke-zinc-700" />
                                 <circle
@@ -1139,7 +1203,7 @@ export function TrackingMode({
                                   {formatTimer(timerLeft)}
                                 </span>
                               </div>
-                            </div>
+                            </button>
                             <button
                               onClick={() => handleSkipTimer(i, ex)}
                               className="text-[9px] text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 underline underline-offset-1 leading-none"

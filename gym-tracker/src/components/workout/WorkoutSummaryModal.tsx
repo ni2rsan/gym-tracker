@@ -69,13 +69,6 @@ export function WorkoutSummaryModal({
   const improvedCount = exerciseData.filter((e) => e.outcome === "positive").length;
   const declinedCount = exerciseData.filter((e) => e.outcome === "negative").length;
 
-  const totalVolume = exercises.reduce((acc, ex) => {
-    return acc + ex.currentSets.reduce((sum, s) => {
-      const kg = s.weightKg !== null && s.weightKg !== "" ? Number(s.weightKg) : 0;
-      return sum + kg * Number(s.reps);
-    }, 0);
-  }, 0);
-
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
       <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl flex flex-col max-h-[90vh]">
@@ -102,11 +95,6 @@ export function WorkoutSummaryModal({
               {declinedCount > 0 && (
                 <span className="flex items-center gap-1 text-xs font-semibold text-red-500 dark:text-red-400">
                   <TrendingDown className="h-3 w-3" strokeWidth={2.5} /> {declinedCount}
-                </span>
-              )}
-              {totalVolume > 0 && (
-                <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
-                  {totalVolume.toLocaleString()} kg vol
                 </span>
               )}
             </div>
@@ -166,8 +154,8 @@ export function WorkoutSummaryModal({
                       className={cn(
                         "grid gap-x-3 gap-y-1",
                         ex.isBodyweight
-                          ? "[grid-template-columns:auto_auto_1fr]"
-                          : "[grid-template-columns:auto_auto_auto_1fr]"
+                          ? "[grid-template-columns:auto_auto]"
+                          : "[grid-template-columns:auto_auto_auto]"
                       )}
                     >
                       {ex.diffs.map((d) => {
@@ -216,16 +204,6 @@ export function WorkoutSummaryModal({
                               </span>
                             )}
 
-                            {/* Last col: Previous value or "new" badge */}
-                            <span className={cn("self-center text-[9px] text-zinc-400 dark:text-zinc-600 tabular-nums", faded)}>
-                              {hasPrev && hasCurr ? (
-                                ex.isBodyweight
-                                  ? `was ${d.prevReps}r`
-                                  : `was ${d.prevReps}r · ${d.prevKg}kg`
-                              ) : d.isNewSet ? (
-                                <span className="bg-zinc-100 dark:bg-zinc-800 rounded px-1 py-px">new</span>
-                              ) : null}
-                            </span>
                           </Fragment>
                         );
                       })}
