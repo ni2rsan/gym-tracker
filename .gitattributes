@@ -1,5 +1,1 @@
-gym-tracker/public/tree*.glb filter=lfs diff=lfs merge=lfs -text
-gym-tracker/public/tree1stage1.glb !text !filter !merge !diff
-gym-tracker/public/tree1stage2.glb !text !filter !merge !diff
-gym-tracker/public/tree1stage3.glb !text !filter !merge !diff
-gym-tracker/public/tree1stage4.glb !text !filter !merge !diff
+gym-tracker/public/tree1stage5.glb filter=lfs diff=lfs merge=lfs -text

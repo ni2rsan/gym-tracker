@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useRef, useMemo, useState, useEffect } from "react";
+import { Suspense, useRef, useMemo, useState, useEffect, Component } from "react";
+import type { ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3, Group } from "three";
@@ -11,6 +12,31 @@ import { STAGE_THRESHOLDS, TREE_CAPACITY } from "@/lib/gardenUtils";
 
 // Models are loaded on demand via Suspense. No preload to avoid downloading
 // all stages (stage 5 alone is 380 MB) on every page visit.
+
+// ─── Error boundary ───────────────────────────────────────────────────────────
+
+class CanvasErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback ?? (
+        <div className="flex items-center justify-center h-full text-zinc-300 dark:text-zinc-600 text-xs">
+          3D unavailable
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─── Tree metadata ────────────────────────────────────────────────────────────
 
@@ -89,20 +115,22 @@ function WiggleGroup({ children }: { children: React.ReactNode }) {
 
 function TreeCardCanvas({ path }: { path: string }) {
   return (
-    <Canvas
-      shadows={false}
-      camera={{ position: [0, 0, 3.2], fov: 50 }}
-      style={{ width: "100%", height: "100%" }}
-    >
-      <ambientLight intensity={1.3} />
-      <directionalLight position={[3, 5, 3]} intensity={0.9} />
-      <Suspense fallback={null}>
-        <WiggleGroup>
-          <NormalizedModel path={path} />
-        </WiggleGroup>
-        <Environment preset="forest" />
-      </Suspense>
-    </Canvas>
+    <CanvasErrorBoundary>
+      <Canvas
+        shadows={false}
+        camera={{ position: [0, 0, 3.2], fov: 50 }}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <ambientLight intensity={1.3} />
+        <directionalLight position={[3, 5, 3]} intensity={0.9} />
+        <Suspense fallback={null}>
+          <WiggleGroup>
+            <NormalizedModel path={path} />
+          </WiggleGroup>
+          <Environment preset="forest" />
+        </Suspense>
+      </Canvas>
+    </CanvasErrorBoundary>
   );
 }
 
@@ -220,19 +248,21 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           className="w-full h-64"
           style={viewStage === 5 ? MYSTICAL_GLOW_STYLE : undefined}
         >
-          <Canvas
-            shadows={false}
-            camera={{ position: [0, 0, 3.2], fov: 50 }}
-            style={{ width: "100%", height: "100%" }}
-          >
-            <ambientLight intensity={1.3} />
-            <directionalLight position={[3, 5, 3]} intensity={0.9} />
-            <Suspense fallback={null}>
-              <NormalizedModel path={stageData.path} />
-              <Environment preset="forest" />
-            </Suspense>
-            <OrbitControls enableZoom={false} />
-          </Canvas>
+          <CanvasErrorBoundary>
+            <Canvas
+              shadows={false}
+              camera={{ position: [0, 0, 3.2], fov: 50 }}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <ambientLight intensity={1.3} />
+              <directionalLight position={[3, 5, 3]} intensity={0.9} />
+              <Suspense fallback={null}>
+                <NormalizedModel path={stageData.path} />
+                <Environment preset="forest" />
+              </Suspense>
+              <OrbitControls enableZoom={false} />
+            </Canvas>
+          </CanvasErrorBoundary>
         </div>
 
         {/* Stage navigation */}
