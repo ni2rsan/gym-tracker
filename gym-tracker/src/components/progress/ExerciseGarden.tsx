@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useMemo, useState } from "react";
+import { Suspense, useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3, Group } from "three";
@@ -9,12 +9,8 @@ import { cn } from "@/lib/utils";
 import type { TreeState } from "@/lib/gardenUtils";
 import { STAGE_THRESHOLDS, TREE_CAPACITY } from "@/lib/gardenUtils";
 
-// ─── Preload all tree1 models ─────────────────────────────────────────────────
-useGLTF.preload("/tree1stage1.glb");
-useGLTF.preload("/tree1stage2.glb");
-useGLTF.preload("/tree1stage3.glb");
-useGLTF.preload("/tree1stage4.glb");
-useGLTF.preload("/tree1stage5.glb");
+// Models are loaded on demand via Suspense. No preload to avoid downloading
+// all stages (stage 5 alone is 380 MB) on every page visit.
 
 // ─── Tree metadata ────────────────────────────────────────────────────────────
 
@@ -310,6 +306,13 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
 
   const tree1 = trees[0];
   const currentStageData = TREE1_STAGES.find((s) => s.stage === tree1.stage)!;
+
+  // Preload only the model the user will actually see on the card
+  useEffect(() => {
+    if (tree1.isUnlocked && currentStageData) {
+      useGLTF.preload(currentStageData.path);
+    }
+  }, [tree1.isUnlocked, currentStageData]);
 
   return (
     <>
