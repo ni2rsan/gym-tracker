@@ -25,6 +25,7 @@ interface WorkoutSummaryModalProps {
   onClose: () => void;
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
+  stardustEarned?: number;
 }
 
 function fmt(v: number) {
@@ -54,6 +55,7 @@ export function WorkoutSummaryModal({
   onClose,
   primaryActionLabel,
   onPrimaryAction,
+  stardustEarned = 0,
 }: WorkoutSummaryModalProps) {
   const exerciseData = exercises.map((ex) => {
     const diffs = computeSetDiffs(ex.prevSets, ex.currentSets as CurrSet[]);
@@ -108,6 +110,14 @@ export function WorkoutSummaryModal({
                 </span>
               )}
             </div>
+            {stardustEarned > 0 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <img src="/stardusticon.png" alt="stardust" className="h-4 w-4" />
+                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  You earned {stardustEarned} stardust
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}

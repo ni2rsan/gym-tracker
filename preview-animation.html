@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fistbump Overlay Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #09090b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: -apple-system, system-ui, sans-serif;
+      gap: 20px;
+      padding: 24px;
+    }
+
+    /* Mode selector */
+    .mode-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 300; }
+    .mode-btn {
+      padding: 8px 16px; border-radius: 8px; border: 1px solid #3f3f46;
+      background: #27272a; color: #a1a1aa; cursor: pointer; font-size: 13px; font-weight: 500;
+    }
+    .mode-btn.active { background: #f59e0b; color: #18181b; border-color: #f59e0b; }
+
+    /* Backdrop */
+    #backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      animation: fb-fade-in 0.25s ease both;
+    }
+
+    /* Card */
+    #card {
+      position: relative; width: 100%; max-width: 320px;
+      border-radius: 24px; background: #18181b;
+      border: 1px solid #27272a; padding: 32px;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+      animation: fb-slide-up 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+      overflow: visible;
+    }
+
+    #close-btn {
+      position: absolute; top: 16px; right: 16px;
+      width: 28px; height: 28px; border-radius: 50%;
+      border: none; background: transparent; color: #71717a;
+      cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #close-btn:hover { background: #27272a; color: #d4d4d8; }
+
+    #sprite-container { position: relative; width: 144px; height: 112px; margin: 0 auto 20px; }
+    #sprite {
+      width: 100%; height: 100%;
+      background-image: url('gym-tracker/public/fistbump-sprite.png');
+      background-size: auto 112px; background-repeat: no-repeat;
+      background-position-y: center; filter: invert(1);
+    }
+    #effect-layer { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+
+    #names { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.3; margin-bottom: 4px; }
+    #subtitle { font-size: 14px; color: #71717a; }
+
+    #play-btn {
+      padding: 10px 28px; background: #f59e0b; border: none;
+      border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; color: #18181b;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 300;
+    }
+
+    /* ── Effect 1: Flying stars ───────────────── */
+    .comic-star {
+      position: absolute; left: 50%; top: 50%;
+      font-size: 20px; line-height: 1;
+      animation: star-fly 0.7s ease-out both;
+      transform-origin: center;
+    }
+    @keyframes star-fly {
+      0%   { transform: translate(-50%,-50%) translate(0,0) scale(0) rotate(0deg); opacity: 1; }
+      60%  { opacity: 1; }
+      100% { transform: translate(-50%,-50%) translate(var(--sx),var(--sy)) scale(1.2) rotate(var(--sr)); opacity: 0; }
+    }
+
+    /* ── Effect 2: POW bubble ─────────────────── */
+    .pow-bubble {
+      position: absolute; left: 50%; top: -10px;
+      transform: translateX(-50%) scale(0);
+      background: #fbbf24; color: #18181b;
+      font-size: 22px; font-weight: 900; letter-spacing: -1px;
+      padding: 6px 14px; border-radius: 12px;
+      border: 3px solid #18181b;
+      box-shadow: 3px 3px 0 #18181b;
+      animation: pow-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+      white-space: nowrap;
+    }
+    .pow-bubble::after {
+      content: ''; position: absolute; bottom: -12px; left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #18181b;
+    }
+    @keyframes pow-pop {
+      0%   { transform: translateX(-50%) scale(0) rotate(-8deg); opacity: 0; }
+      60%  { transform: translateX(-50%) scale(1.1) rotate(4deg); opacity: 1; }
+      80%  { transform: translateX(-50%) scale(0.95) rotate(-2deg); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 1; }
+    }
+    .pow-bubble.hide { animation: pow-fade 0.3s ease forwards; }
+    @keyframes pow-fade { to { opacity: 0; transform: translateX(-50%) scale(0.8); } }
+
+    /* ── Effect 3: Speed lines ────────────────── */
+    .speed-line {
+      position: absolute; left: 50%; top: 50%;
+      width: 2px; background: linear-gradient(to top, transparent, #fbbf24);
+      transform-origin: 50% 100%;
+      animation: speed-burst 0.45s ease-out forwards;
+    }
+    @keyframes speed-burst {
+      0%   { height: 0px; opacity: 1; transform: rotate(var(--rd)) translateY(-20px); }
+      60%  { height: 55px; opacity: 1; }
+      100% { height: 55px; opacity: 0; transform: rotate(var(--rd)) translateY(-20px); }
+    }
+
+    /* ── Effect 4: Stars + POW combo ─────────── */
+
+    /* ── Clash (original) ─────────────────────── */
+    .clash-ray {
+      position: absolute; width: 4px; height: 22px; background: #fbbf24;
+      border-radius: 3px; left: 50%; top: 50%; margin-left: -2px; margin-top: -11px;
+      transform-origin: 50% 50%; animation: clash-ray 0.38s ease-out forwards;
+    }
+    .clash-burst { position: absolute; width: 20px; height: 20px; background: #fbbf24; border-radius: 50%; animation: clash-burst 0.38s ease-out forwards; }
+    .clash-star {
+      position: absolute; width: 14px; height: 14px; background: #f97316;
+      clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+      animation: clash-star 0.38s ease-out forwards;
+    }
+
+    @keyframes fb-fade-in { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes fb-slide-up { from { transform: translateY(48px) scale(0.92); opacity: 0 } to { transform: none; opacity: 1 } }
+    @keyframes clash-ray { 0% { opacity:1; transform:rotate(var(--rd)) translateY(-18px) scaleY(0.1); } 100% { opacity:0; transform:rotate(var(--rd)) translateY(-38px) scaleY(1); } }
+    @keyframes clash-burst { 0% { opacity:0.9; transform:scale(0.2); } 100% { opacity:0; transform:scale(2.8); } }
+    @keyframes clash-star { 0% { opacity:1; transform:scale(0) rotate(0deg); } 70% { opacity:1; transform:scale(1) rotate(30deg); } 100% { opacity:0; transform:scale(1.1) rotate(40deg); } }
+  </style>
+</head>
+<body>
+  <div class="mode-btns">
+    <button class="mode-btn active" onclick="setMode('stars')">⭐ Stars</button>
+    <button class="mode-btn" onclick="setMode('pow')">💥 POW!</button>
+    <button class="mode-btn" onclick="setMode('lines')">✦ Speed lines</button>
+    <button class="mode-btn" onclick="setMode('combo')">🔥 Stars + POW</button>
+    <button class="mode-btn" onclick="setMode('clash')">Original clash</button>
+  </div>
+
+  <div id="backdrop">
+    <div id="card">
+      <button id="close-btn" onclick="resetAnim()">✕</button>
+      <div id="sprite-container">
+        <div id="sprite"></div>
+        <div id="effect-layer"></div>
+      </div>
+      <p id="names">Alex & Jordan</p>
+      <p id="subtitle">gave you a fist bump!</p>
+    </div>
+  </div>
+
+  <button id="play-btn" onclick="startAnim()">▶ Play again</button>
+
+  <script>
+    let currentMode = 'stars';
+    function setMode(m) {
+      currentMode = m;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase().includes(m) || (m==='combo'&&b.textContent.includes('Stars + POW')) || (m==='clash'&&b.textContent.includes('clash'))));
+      resetAnim(); startAnim();
+    }
+
+    const FRAME_X_NAT = [0,189,374,555,732,905,1075,1242,1404,1562];
+    const FRAME_W_NAT = [164,160,156,152,148,145,142,137,133,128];
+    const SCALE = 112/131, CONTAINER_W = 144;
+    const FRAME_POS = FRAME_X_NAT.map((x,i)=>{
+      const fc = Math.round((x+FRAME_W_NAT[i]/2)*SCALE);
+      return Math.round(CONTAINER_W/2)-fc;
+    });
+
+    const CYCLES=3, TOTAL_STEPS=30, MS_PER_FRAME=80;
+    let rafId;
+
+    const STAR_CHARS = ['★','✦','✶','✸','⭐'];
+    const STAR_COLORS = ['#fbbf24','#f97316','#ef4444','#a78bfa','#34d399'];
+
+    function showEffect() {
+      const layer = document.getElementById('effect-layer');
+      layer.innerHTML = '';
+      if (currentMode === 'stars' || currentMode === 'combo') {
+        const count = 10;
+        for (let i=0; i<count; i++) {
+          const angle = (i/count)*2*Math.PI - Math.PI/2;
+          const dist = 55 + (i%3)*15;
+          const el = document.createElement('span');
+          el.className = 'comic-star';
+          el.textContent = STAR_CHARS[i%STAR_CHARS.length];
+          el.style.color = STAR_COLORS[i%STAR_COLORS.length];
+          el.style.setProperty('--sx', Math.round(Math.cos(angle)*dist)+'px');
+          el.style.setProperty('--sy', Math.round(Math.sin(angle)*dist)+'px');
+          el.style.setProperty('--sr', (i%2===0?90:-90)+'deg');
+          el.style.animationDelay = (i*18)+'ms';
+          layer.appendChild(el);
+        }
+      }
+      if (currentMode === 'pow' || currentMode === 'combo') {
+        const pow = document.createElement('div');
+        pow.className = 'pow-bubble';
+        pow.textContent = 'POW!';
+        document.getElementById('sprite-container').appendChild(pow);
+        setTimeout(()=>{ pow.classList.add('hide'); setTimeout(()=>pow.remove(),300); }, 900);
+      }
+      if (currentMode === 'lines') {
+        const count = 16;
+        for (let i=0; i<count; i++) {
+          const el = document.createElement('div');
+          el.className = 'speed-line';
+          el.style.setProperty('--rd', (i/count*360)+'deg');
+          el.style.animationDelay = (i*12)+'ms';
+          layer.appendChild(el);
+        }
+      }
+      if (currentMode === 'clash') {
+        [0,60,120,180,240,300].forEach(deg=>{
+          const d=document.createElement('div'); d.className='clash-ray';
+          d.style.setProperty('--rd',deg+'deg'); layer.appendChild(d);
+        });
+        const b=document.createElement('div'); b.className='clash-burst'; layer.appendChild(b);
+        const s=document.createElement('div'); s.className='clash-star'; layer.appendChild(s);
+      }
+      setTimeout(()=>{ if(currentMode!=='pow'&&currentMode!=='combo') layer.innerHTML=''; }, 600);
+    }
+
+    function startAnim() {
+      if (rafId) cancelAnimationFrame(rafId);
+      const el = document.getElementById('effect-layer');
+      el.innerHTML='';
+      document.querySelectorAll('.pow-bubble').forEach(e=>e.remove());
+      document.getElementById('sprite').style.backgroundPositionX = FRAME_POS[0]+'px';
+      let step=0, lastTime=0;
+      function tick(ts) {
+        if (ts-lastTime>=MS_PER_FRAME) {
+          lastTime=ts;
+          document.getElementById('sprite').style.backgroundPositionX=FRAME_POS[step%10]+'px';
+          if (step===TOTAL_STEPS-1) showEffect();
+          step++;
+          if (step>=TOTAL_STEPS) return;
+        }
+        rafId=requestAnimationFrame(tick);
+      }
+      rafId=requestAnimationFrame(tick);
+    }
+
+    function resetAnim() {
+      if (rafId) cancelAnimationFrame(rafId);
+      document.getElementById('effect-layer').innerHTML='';
+      document.querySelectorAll('.pow-bubble').forEach(e=>e.remove());
+      document.getElementById('sprite').style.backgroundPositionX=FRAME_POS[0]+'px';
+    }
+
+    window.addEventListener('load', ()=>setTimeout(startAnim,400));
+  </script>
+</body>
+</html>

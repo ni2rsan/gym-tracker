@@ -61,6 +61,8 @@ model User {
   role               String    @default("USER")  // "USER" | "ADMIN"
   sorryTokenMax      Int       @default(3)       // user-configured max (1–5), persists across months
   sorryTokenMaxEditedMonth String?               // "YYYY-MM" of last edit — enforces once-per-month
+  stardustTotal      Int       @default(0)       // lifetime stardust earned from upward workout trends
+  stardustSynced     Boolean   @default(false)   // true once historical stardust has been computed
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

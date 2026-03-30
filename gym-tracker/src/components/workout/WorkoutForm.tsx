@@ -20,6 +20,7 @@ import {
   deleteExerciseTracking,
   getExercisesComparisonBatch,
 } from "@/actions/workout";
+import { awardSessionStardust } from "@/actions/garden";
 import { computeSetDiffs, computeOutcome, isAssistedExercise } from "@/lib/workoutDiff";
 import type { PrevSet } from "@/lib/workoutDiff";
 import { WorkoutSummaryModal } from "./WorkoutSummaryModal";
@@ -133,6 +134,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     setIsDeleteConfirming(false);
     setSorryConfirm(false);
     setComparisonData({}); // clear stale diffs from previous date
+    setStardustEarned(0);
+    awardedExerciseIdsRef.current = new Set();
     Promise.all([getWorkoutForDate(selectedDate), getLastKnownSets()]).then(
       async ([dateResult, lastResult]) => {
         const existing = dateResult.success && dateResult.data ? dateResult.data : {};
@@ -401,14 +404,19 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   };
   const [comparisonData, setComparisonData] = useState<Record<string, ExOutcomeEntry>>({});
   const [showSessionSummary, setShowSessionSummary] = useState(false);
+  const [stardustEarned, setStardustEarned] = useState(0);
+  // Tracks which exercise IDs have already earned stardust this session (prevents double-awarding)
+  const awardedExerciseIdsRef = useRef<Set<string>>(new Set());
 
   // currentSetsOverride: pass freshly-loaded sets when calling from inside a .then()
   // before React has applied the setWorkoutData update to state.
+  // awardStardust: true when called from an explicit save action (not auto-load on mount).
   const applyComparisonResults = async (
     exList: ExerciseWithSettings[],
     date: string,
     autoShow = true,
-    currentSetsOverride?: Record<string, SetData[]>
+    currentSetsOverride?: Record<string, SetData[]>,
+    awardStardust = false
   ) => {
     const batchInput = exList.map((ex) => ({
       id: ex.id,
@@ -440,6 +448,22 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       };
     }
     setComparisonData((prev) => ({ ...prev, ...newData }));
+
+    // Award stardust for newly-positive/PR exercises not yet counted this session
+    if (awardStardust) {
+      const newlyEarned = Object.entries(newData).filter(
+        ([id, d]) =>
+          (d.outcome === "positive" || d.outcome === "pr") &&
+          !awardedExerciseIdsRef.current.has(id)
+      );
+      for (const [id] of newlyEarned) awardedExerciseIdsRef.current.add(id);
+      const count = newlyEarned.length;
+      if (count > 0) {
+        setStardustEarned((prev) => prev + count);
+        awardSessionStardust(count); // fire-and-forget — no need to await
+      }
+    }
+
     if (autoShow) setShowSessionSummary(true);
   };
 
@@ -464,7 +488,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         refreshSavedIds(workoutData, fullBodyExercises);
         refreshRangeData();
         setToast({ message: "Full Body saved ✓", type: "success" });
-        await applyComparisonResults(fullBodyExercises, selectedDate);
+        await applyComparisonResults(fullBodyExercises, selectedDate, true, undefined, true);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -492,7 +516,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         refreshSavedIds(workoutData, groupExercises);
         refreshRangeData();
         setToast({ message: `${MUSCLE_GROUP_LABELS[mg]} saved ✓`, type: "success" });
-        await applyComparisonResults(groupExercises, selectedDate);
+        await applyComparisonResults(groupExercises, selectedDate, true, undefined, true);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -523,7 +547,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         refreshSavedIds(workoutData, exList);
         refreshRangeData();
         setToast({ message: "Added exercises saved ✓", type: "success" });
-        await applyComparisonResults(savedAdded, selectedDate);
+        await applyComparisonResults(savedAdded, selectedDate, true, undefined, true);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -544,7 +568,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         setSavedAtByExercise((prev) => ({ ...prev, [exerciseId]: now }));
         refreshSavedIds(workoutData, [ex]);
         refreshRangeData();
-        await applyComparisonResults([ex], selectedDate, false);
+        await applyComparisonResults([ex], selectedDate, false, undefined, true);
       } else {
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
@@ -1268,6 +1292,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           <WorkoutSummaryModal
             title="Saved!"
             exercises={summaryExercises}
+            stardustEarned={stardustEarned}
             onClose={() => {
               setShowSessionSummary(false);
               if (fromPlannerRef.current) {
@@ -1332,7 +1357,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 setTrackingScope(null);
                 const savedExercises = sortedExercises.filter((ex) => savedTodayIds.has(ex.id));
                 if (savedExercises.length > 0) {
-                  applyComparisonResults(savedExercises, selectedDate, true);
+                  applyComparisonResults(savedExercises, selectedDate, true, undefined, true);
                 }
               }}
               onExit={() => {
