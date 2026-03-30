@@ -43,3 +43,4 @@ next-env.d.ts
 /src/generated/prisma
 # Keep .env.example committed (it's a template with no secrets)
 \!.env.example
+
