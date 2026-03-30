@@ -40,7 +40,8 @@ interface ExerciseGroupProps {
     diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
   }>;
   onSaveExercise?: (exerciseId: string) => void;
-  savedAtByExercise?: Record<string, Date | null>;
+  /** Timestamp per exercise — when it changes the card remounts, resetting edit mode */
+  savedAtByExercise?: Record<string, Date>;
 }
 
 export function ExerciseGroup({
@@ -175,7 +176,7 @@ export function ExerciseGroup({
             )}>
               {exercises.map((exercise) => (
                 <ExerciseCard
-                  key={exercise.id}
+                  key={`${exercise.id}-${savedAtByExercise?.[exercise.id]?.getTime() ?? 0}`}
                   exercise={exercise}
                   sets={workoutData[exercise.id] ?? []}
                   onSetsChange={(sets) => onSetsChange(exercise.id, sets)}
@@ -191,7 +192,6 @@ export function ExerciseGroup({
                   outcome={outcomeData?.[exercise.id]?.outcome}
                   diffData={outcomeData?.[exercise.id]?.diffData}
                   onSave={onSaveExercise ? () => onSaveExercise(exercise.id) : undefined}
-                  savedAt={savedAtByExercise?.[exercise.id]}
                 />
               ))}
             </div>

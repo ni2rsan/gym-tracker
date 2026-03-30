@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Pin, PinOff, Trash2, Plus, Minus, EyeOff, SkipForward, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SetRow } from "./SetRow";
@@ -24,7 +24,6 @@ interface ExerciseCardProps {
   outcome?: "positive" | "negative" | "pr" | null;
   diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
   onSave?: () => void;
-  savedAt?: Date | null;
 }
 
 export function ExerciseCard({
@@ -43,16 +42,10 @@ export function ExerciseCard({
   outcome,
   diffData,
   onSave,
-  savedAt,
 }: ExerciseCardProps) {
   const isCardio = exercise.muscleGroup === "CARDIO";
   const [, startTransition] = useTransition();
   const [isEditMode, setIsEditMode] = useState(false);
-
-  // Exit edit mode whenever the parent signals a save completed (group or individual)
-  useEffect(() => {
-    setIsEditMode(false);
-  }, [savedAt]);
 
   // Locked when explicitly read-only OR tracked but not in edit mode
   const locked = isReadOnly || (isTracked && !isEditMode);
@@ -323,30 +316,15 @@ export function ExerciseCard({
               </div>
             );
           }
-          // In editable mode: keep the interactive SetRow but add small diff indicators below
+          // In editable mode: interactive inputs only, no diff indicators
           return (
-            <div key={set.setNumber}>
-              <SetRow
-                setNumber={set.setNumber}
-                data={set}
-                isBodyweight={exercise.isBodyweight}
-                onChange={(updated) => updateSet(index, updated)}
-              />
-              {diff && (
-                <div className="flex gap-2 mt-0.5 pl-10 text-[9px]">
-                  {diff.diffReps !== null && diff.diffReps !== 0 && (
-                    <span className={diff.diffReps > 0 ? "text-emerald-500" : "text-red-500"}>
-                      {diff.diffReps > 0 ? `▲+${parseFloat(diff.diffReps.toFixed(1))}r` : `▼${parseFloat(diff.diffReps.toFixed(1))}r`}
-                    </span>
-                  )}
-                  {!exercise.isBodyweight && diff.diffKg !== null && diff.diffKg !== 0 && (
-                    <span className={diff.diffKg > 0 ? "text-emerald-500" : "text-red-500"}>
-                      {diff.diffKg > 0 ? `▲+${parseFloat(diff.diffKg.toFixed(1))}kg` : `▼${parseFloat(diff.diffKg.toFixed(1))}kg`}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
+            <SetRow
+              key={set.setNumber}
+              setNumber={set.setNumber}
+              data={set}
+              isBodyweight={exercise.isBodyweight}
+              onChange={(updated) => updateSet(index, updated)}
+            />
           );
         })}
       </div>

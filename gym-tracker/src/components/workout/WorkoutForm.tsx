@@ -1097,6 +1097,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onRestoreFromLayout={handleRestoreFromGroup}
                 plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
                 outcomeData={comparisonData}
+                onSaveExercise={handleSaveExercise}
+                savedAtByExercise={savedAtByExercise}
               />
             </div>
           ))}
@@ -1127,6 +1129,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onRestoreFromLayout={handleRestoreFromGroup}
                 plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
                 outcomeData={comparisonData}
+                onSaveExercise={handleSaveExercise}
+                savedAtByExercise={savedAtByExercise}
               />
             </div>
           ))}
@@ -1154,6 +1158,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 removedFromLayout={[]}
                 groupLabel="Added Exercises"
                 outcomeData={comparisonData}
+                onSaveExercise={handleSaveExercise}
+                savedAtByExercise={savedAtByExercise}
               />
             </div>
           )}
@@ -1184,6 +1190,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                 onRestoreFromLayout={handleRestoreFromGroup}
                 plannedExerciseIds={plannedExerciseIdsForGroup(mg)}
                 outcomeData={comparisonData}
+                onSaveExercise={handleSaveExercise}
+                savedAtByExercise={savedAtByExercise}
               />
             </div>
           ))}
