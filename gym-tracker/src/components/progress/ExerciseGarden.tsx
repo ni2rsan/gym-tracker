@@ -6,8 +6,8 @@ import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3, Group } from "three";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TreeState } from "@/lib/services/gardenService";
-import { STAGE_THRESHOLDS, TREE_CAPACITY } from "@/lib/services/gardenService";
+import type { TreeState } from "@/lib/gardenUtils";
+import { STAGE_THRESHOLDS, TREE_CAPACITY } from "@/lib/gardenUtils";
 
 // ─── Preload all tree1 models ─────────────────────────────────────────────────
 useGLTF.preload("/tree1stage1.glb");

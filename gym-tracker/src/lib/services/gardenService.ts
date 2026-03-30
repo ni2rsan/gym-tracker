@@ -1,42 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { computeSetDiffs, computeOutcome } from "@/lib/workoutDiff";
-
-// ─── Tree / Stage constants ──────────────────────────────────────────────────
-
-export const TREE_COUNT = 6;
-export const TREE_CAPACITY = 100; // stardust per tree
-
-/** Minimum stardust within a tree to reach each stage (index = stage - 1) */
-export const STAGE_THRESHOLDS = [0, 10, 25, 50, 75] as const;
-
-export type TreeState = {
-  treeIndex: number;      // 0-based (0 = tree 1)
-  stardust: number;       // 0 – TREE_CAPACITY
-  stage: 1 | 2 | 3 | 4 | 5;
-  isUnlocked: boolean;
-  isComplete: boolean;    // stardust >= TREE_CAPACITY
-};
-
-export function getGardenState(stardustTotal: number): TreeState[] {
-  return Array.from({ length: TREE_COUNT }, (_, i) => {
-    const stardust = Math.max(0, Math.min(stardustTotal - i * TREE_CAPACITY, TREE_CAPACITY));
-    const isUnlocked = i === 0 || stardustTotal >= i * TREE_CAPACITY;
-
-    // Walk thresholds to find current stage
-    let stage: 1 | 2 | 3 | 4 | 5 = 1;
-    for (let s = 0; s < STAGE_THRESHOLDS.length; s++) {
-      if (stardust >= STAGE_THRESHOLDS[s]) stage = (s + 1) as 1 | 2 | 3 | 4 | 5;
-    }
-
-    return {
-      treeIndex: i,
-      stardust,
-      stage,
-      isUnlocked,
-      isComplete: stardust >= TREE_CAPACITY,
-    };
-  });
-}
+export { TREE_COUNT, TREE_CAPACITY, STAGE_THRESHOLDS, getGardenState } from "@/lib/gardenUtils";
+export type { TreeState } from "@/lib/gardenUtils";
 
 // ─── Stardust persistence ────────────────────────────────────────────────────
 
