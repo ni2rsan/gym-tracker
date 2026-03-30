@@ -26,6 +26,9 @@ class CanvasErrorBoundary extends Component<
   static getDerivedStateFromError() {
     return { hasError: true };
   }
+  componentDidCatch(error: Error) {
+    console.error("[Garden 3D error]", error.message);
+  }
   render() {
     if (this.state.hasError) {
       return this.props.fallback ?? (
