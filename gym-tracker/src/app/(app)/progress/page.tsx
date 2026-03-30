@@ -2,6 +2,8 @@ import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getStreakData } from "@/lib/services/plannerService";
 import { getCumulativeVolume } from "@/lib/services/progressService";
 import { getSocialStats } from "@/lib/services/socialService";
+import { getOrSyncStardust } from "@/lib/services/gardenService";
+import { getGardenState } from "@/lib/gardenUtils";
 import { ProgressPage } from "@/components/progress/ProgressPage";
 
 export const metadata = { title: "Progress — Gym Tracker" };
@@ -10,11 +12,13 @@ export const dynamic = "force-dynamic";
 export default async function Progress() {
   const userId = await getCurrentUserId();
 
-  const [streakData, cumulativeVolume, socialStats] = await Promise.all([
+  const [streakData, cumulativeVolume, socialStats, stardustTotal] = await Promise.all([
     getStreakData(userId),
     getCumulativeVolume(userId),
     getSocialStats(userId),
+    getOrSyncStardust(userId),
   ]);
+  const gardenTrees = getGardenState(stardustTotal);
 
   return (
     <div className="space-y-6">
@@ -30,6 +34,8 @@ export default async function Progress() {
         friendCount={socialStats.friendCount}
         fistbumpCount={socialStats.totalFistBumpsReceived}
         userId={userId}
+        stardustTotal={stardustTotal}
+        gardenTrees={gardenTrees}
       />
     </div>
   );

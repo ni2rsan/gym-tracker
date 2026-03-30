@@ -4,8 +4,6 @@ import { getCurrentUserId } from "@/lib/auth-helpers";
 import { getWeightTrendData, getExerciseStatCards } from "@/lib/services/reportService";
 import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getRangeAgoMetrics, getUserHeightCm } from "@/lib/services/metricsService";
 import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
-import { getOrSyncStardust } from "@/lib/services/gardenService";
-import { getGardenState } from "@/lib/gardenUtils";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { WeightTrendChart } from "@/components/reports/WeightTrendChart";
 import { ReportFilters } from "@/components/reports/ReportFilters";
@@ -13,7 +11,6 @@ import { MetricsCards } from "@/components/metrics/MetricsCards";
 import { WithingsPanel } from "@/components/metrics/WithingsPanel";
 import { WithingsToast } from "@/components/reports/WithingsToast";
 import { ExerciseStatsPanel } from "@/components/reports/ExerciseStatsPanel";
-import { ExerciseGarden } from "@/components/progress/ExerciseGarden";
 import type { TimeRange } from "@/types";
 
 export const metadata = { title: "Stats — Gym Tracker" };
@@ -35,7 +32,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   await syncWithingsIfNeeded(userId);
 
-  const [weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, rangeAgoMetric, heightCm, exerciseCards, stardustTotal] = await Promise.all([
+  const [weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, rangeAgoMetric, heightCm, exerciseCards] = await Promise.all([
     getWeightTrendData(userId, range),
     getLatestBodyMetric(userId),
     getLastNBodyMetrics(userId, 7),
@@ -44,9 +41,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     getRangeAgoMetrics(userId, range),
     getUserHeightCm(userId),
     getExerciseStatCards(userId),
-    getOrSyncStardust(userId),
   ]);
-  const gardenTrees = getGardenState(stardustTotal);
 
   const RANGE_LABELS: Record<typeof range, string> = { week: "7d", month: "30d", year: "1yr" };
   const rangeLabel = RANGE_LABELS[range];
@@ -135,9 +130,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             <ExerciseStatsPanel cards={exerciseCards} />
           </div>
         )}
-
-        {/* Exercise Garden */}
-        <ExerciseGarden stardustTotal={stardustTotal} trees={gardenTrees} />
       </div>
     </>
   );
