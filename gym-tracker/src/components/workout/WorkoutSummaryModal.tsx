@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { X, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
@@ -145,48 +146,54 @@ export function WorkoutSummaryModal({
                 </div>
 
                 {/* Set rows */}
-                <div className="px-3 pb-3 space-y-1.5">
+                <div className="px-3 pb-3">
                   {isFirstTime ? (
                     <p className="text-[10px] text-zinc-400 dark:text-zinc-500 italic text-center py-1">
                       First time — no previous data
                     </p>
                   ) : (
-                    ex.diffs.map((d) => {
-                      const hasPrev = !d.isNewSet;
-                      const hasCurr = !d.isDropped;
+                    <div
+                      className={cn(
+                        "grid gap-x-3 gap-y-1",
+                        ex.isBodyweight
+                          ? "[grid-template-columns:auto_auto_1fr]"
+                          : "[grid-template-columns:auto_auto_auto_1fr]"
+                      )}
+                    >
+                      {ex.diffs.map((d) => {
+                        const hasPrev = !d.isNewSet;
+                        const hasCurr = !d.isDropped;
+                        const faded = d.isDropped ? "opacity-40" : "";
 
-                      return (
-                        <div
-                          key={d.setNumber}
-                          className={cn(
-                            "flex items-center gap-2 rounded-lg px-2 py-1.5",
-                            "bg-white dark:bg-zinc-900/60",
-                            d.isDropped && "opacity-40"
-                          )}
-                        >
-                          {/* Set label */}
-                          <span className="w-5 shrink-0 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
-                            S{d.setNumber}
-                          </span>
+                        return (
+                          <Fragment key={d.setNumber}>
+                            {/* Col 1: Set label */}
+                            <span className={cn("self-center text-[10px] font-semibold text-zinc-400 dark:text-zinc-500", faded)}>
+                              S{d.setNumber}
+                            </span>
 
-                          {hasCurr ? (
-                            <div className="flex-1 flex items-center gap-1.5 flex-wrap">
-                              {/* Reps: current value + diff badge inline */}
-                              <span className="flex items-center gap-1">
-                                <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
-                                  {d.currReps}
-                                </span>
-                                <span className="text-[10px] text-zinc-400">r</span>
-                                {d.diffReps !== null && d.diffReps !== 0 && (
-                                  <DiffBadge value={d.diffReps} unit="r" />
-                                )}
-                              </span>
-
-                              {/* kg: current value + diff badge inline (weighted only) */}
-                              {!ex.isBodyweight && (
+                            {/* Col 2: Reps */}
+                            <span className={cn("self-center flex items-center gap-1", faded)}>
+                              {hasCurr ? (
                                 <>
-                                  <span className="text-[10px] text-zinc-300 dark:text-zinc-600">·</span>
-                                  <span className="flex items-center gap-1">
+                                  <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
+                                    {d.currReps}
+                                  </span>
+                                  <span className="text-[10px] text-zinc-400">r</span>
+                                  {d.diffReps !== null && d.diffReps !== 0 && (
+                                    <DiffBadge value={d.diffReps} unit="r" />
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-[10px] text-zinc-400 italic">—</span>
+                              )}
+                            </span>
+
+                            {/* Col 3: Kg (weighted only) */}
+                            {!ex.isBodyweight && (
+                              <span className={cn("self-center flex items-center gap-1", faded)}>
+                                {hasCurr ? (
+                                  <>
                                     <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
                                       {d.currKg}
                                     </span>
@@ -194,30 +201,25 @@ export function WorkoutSummaryModal({
                                     {d.diffKg !== null && d.diffKg !== 0 && (
                                       <DiffBadge value={d.diffKg} unit="kg" />
                                     )}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="flex-1 text-[10px] text-zinc-400 italic">dropped</span>
-                          )}
+                                  </>
+                                ) : null}
+                              </span>
+                            )}
 
-                          {/* Previous value — right-aligned, small and muted */}
-                          {hasPrev && hasCurr && (
-                            <span className="shrink-0 text-[9px] text-zinc-400 dark:text-zinc-600 tabular-nums">
-                              {ex.isBodyweight
-                                ? `was ${d.prevReps}r`
-                                : `was ${d.prevReps}r · ${d.prevKg}kg`}
+                            {/* Last col: Previous value or "new" badge */}
+                            <span className={cn("self-center text-[9px] text-zinc-400 dark:text-zinc-600 tabular-nums", faded)}>
+                              {hasPrev && hasCurr ? (
+                                ex.isBodyweight
+                                  ? `was ${d.prevReps}r`
+                                  : `was ${d.prevReps}r · ${d.prevKg}kg`
+                              ) : d.isNewSet ? (
+                                <span className="bg-zinc-100 dark:bg-zinc-800 rounded px-1 py-px">new</span>
+                              ) : null}
                             </span>
-                          )}
-                          {d.isNewSet && (
-                            <span className="shrink-0 text-[9px] text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded px-1 py-px">
-                              new
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })
+                          </Fragment>
+                        );
+                      })}
+                    </div>
                   )}
 
                   {!isFirstTime && ex.allPositive && (
