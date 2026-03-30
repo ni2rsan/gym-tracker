@@ -245,7 +245,7 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           <X className="h-5 w-5" />
         </button>
 
-        {/* 3D canvas — full OrbitControls */}
+        {/* 3D canvas — gentle z-axis tilt only */}
         <div
           className="w-full h-64"
           style={viewStage === 5 ? MYSTICAL_GLOW_STYLE : undefined}
@@ -261,7 +261,14 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
               <Suspense fallback={null}>
                 <NormalizedModel path={stageData.path} />
               </Suspense>
-              <OrbitControls enableZoom={false} />
+              <OrbitControls
+                enableZoom={false}
+                enablePan={false}
+                minAzimuthAngle={-0.3}
+                maxAzimuthAngle={0.3}
+                minPolarAngle={Math.PI / 2 - 0.15}
+                maxPolarAngle={Math.PI / 2 + 0.15}
+              />
             </Canvas>
           </CanvasErrorBoundary>
         </div>

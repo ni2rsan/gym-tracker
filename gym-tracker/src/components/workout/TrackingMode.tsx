@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
 import { saveWorkout, deleteExerciseTracking, getExerciseComparisonData, getExercisesComparisonBatch } from "@/actions/workout";
+import { awardSessionStardust } from "@/actions/garden";
 import { WorkoutSummaryModal } from "./WorkoutSummaryModal";
 import type { SummaryExerciseData } from "./WorkoutSummaryModal";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
@@ -162,6 +163,10 @@ export function TrackingMode({
   const [comparisonDetails, setComparisonDetails] = useState<
     Record<string, { prevSets: PrevSet[]; currentSets: SetData[]; isPR: boolean }>
   >({});
+
+  // Stardust tracking
+  const [stardustEarned, setStardustEarned] = useState(0);
+  const awardedExerciseIdsRef = useRef<Set<string>>(new Set());
 
   // Detailed "View Summary" modal (dismissable, doesn't exit)
   const [showDetailedSummary, setShowDetailedSummary] = useState(false);
@@ -322,6 +327,12 @@ export function TrackingMode({
       setExerciseOutcomes((prev) => ({ ...prev, [ex.id]: { allPositive, allNegative, isPR } }));
       setComparisonDetails((prev) => ({ ...prev, [ex.id]: { prevSets, currentSets: savedSets, isPR } }));
       onExerciseOutcome?.(ex.id, { allPositive, allNegative, isPR }, prevSets, savedSets);
+      // Award stardust for positive outcomes
+      if (allPositive && !awardedExerciseIdsRef.current.has(ex.id)) {
+        awardedExerciseIdsRef.current.add(ex.id);
+        setStardustEarned((prev) => prev + 1);
+        awardSessionStardust(1).catch(() => {});
+      }
       setComparisonOverlay({ exercise: ex, prevSets, currentSets: savedSets, isPR });
       setView({ kind: "icons" });
     } else {
@@ -757,6 +768,7 @@ export function TrackingMode({
               title="Session Summary"
               exercises={summaryExercises}
               onClose={() => setShowDetailedSummary(false)}
+              stardustEarned={stardustEarned}
             />
           );
         })()}
