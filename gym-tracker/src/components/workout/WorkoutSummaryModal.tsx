@@ -121,6 +121,20 @@ export function WorkoutSummaryModal({
         <div className="overflow-y-auto flex-1 p-4 space-y-3">
           {exerciseData.map((ex) => {
             const isFirstTime = ex.prevSets.length === 0;
+
+            // Find the PR set (max kg for weighted, max reps for bodyweight)
+            let prSetNumber: number | null = null;
+            if (ex.isPR && !isFirstTime) {
+              const currSets = ex.diffs.filter((d) => !d.isDropped);
+              if (ex.isBodyweight) {
+                const maxReps = Math.max(...currSets.map((d) => d.currReps ?? 0));
+                prSetNumber = currSets.find((d) => d.currReps === maxReps)?.setNumber ?? null;
+              } else {
+                const maxKg = Math.max(...currSets.map((d) => d.currKg ?? 0));
+                prSetNumber = currSets.find((d) => d.currKg === maxKg)?.setNumber ?? null;
+              }
+            }
+
             return (
               <div key={ex.exerciseId} className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 overflow-hidden">
                 {/* Exercise header */}
@@ -136,11 +150,10 @@ export function WorkoutSummaryModal({
                       {MUSCLE_GROUP_LABELS[ex.muscleGroup as MuscleGroup] ?? ex.muscleGroup}
                     </p>
                   </div>
-                  {ex.outcome === "pr" && <span className="text-sm leading-none shrink-0">🏆</span>}
-                  {ex.outcome === "positive" && (
+                  {ex.allPositive && (
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={2.5} />
                   )}
-                  {ex.outcome === "negative" && (
+                  {ex.allNegative && (
                     <TrendingDown className="h-3.5 w-3.5 text-red-500 shrink-0" strokeWidth={2.5} />
                   )}
                 </div>
@@ -161,9 +174,9 @@ export function WorkoutSummaryModal({
                       )}
                     >
                       {ex.diffs.map((d) => {
-                        const hasPrev = !d.isNewSet;
                         const hasCurr = !d.isDropped;
                         const faded = d.isDropped ? "opacity-40" : "";
+                        const isPRSet = d.setNumber === prSetNumber;
 
                         return (
                           <Fragment key={d.setNumber}>
@@ -183,6 +196,9 @@ export function WorkoutSummaryModal({
                                   {d.diffReps !== null && d.diffReps !== 0 && (
                                     <DiffBadge value={d.diffReps} unit="r" />
                                   )}
+                                  {isPRSet && ex.isBodyweight && (
+                                    <span className="text-[10px] leading-none">🏆</span>
+                                  )}
                                 </>
                               ) : (
                                 <span className="text-[10px] text-zinc-400 italic">—</span>
@@ -191,7 +207,11 @@ export function WorkoutSummaryModal({
 
                             {/* Col 3: Kg (weighted only) */}
                             {!ex.isBodyweight && (
-                              <span className={cn("self-center flex items-center gap-1", faded)}>
+                              <span className={cn(
+                                "self-center flex items-center gap-1",
+                                faded,
+                                isPRSet && "ring-1 ring-amber-400 dark:ring-amber-500 rounded-md px-1.5 py-0.5 bg-amber-50/50 dark:bg-amber-900/20"
+                              )}>
                                 {hasCurr ? (
                                   <>
                                     <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
@@ -201,6 +221,7 @@ export function WorkoutSummaryModal({
                                     {d.diffKg !== null && d.diffKg !== 0 && (
                                       <DiffBadge value={d.diffKg} unit="kg" />
                                     )}
+                                    {isPRSet && <span className="text-[10px] leading-none">🏆</span>}
                                   </>
                                 ) : null}
                               </span>
