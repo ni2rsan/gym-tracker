@@ -79,6 +79,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [savingGroups, setSavingGroups] = useState<Set<MuscleGroup>>(new Set());
   const [lastSavedByGroup, setLastSavedByGroup] = useState<Partial<Record<MuscleGroup, Date>>>({});
   const [lastSavedAll, setLastSavedAll] = useState<Date | null>(null);
+  const [savedAtByExercise, setSavedAtByExercise] = useState<Record<string, Date>>({});
   const [toast, setToast] = useState<ToastState>(null);
   const [hiddenByGroup, setHiddenByGroup] = useState<Partial<Record<MuscleGroup, ExerciseWithSettings[]>>>({});
   const [addTargetGroup, setAddTargetGroup] = useState<MuscleGroup | null>(null);
@@ -453,7 +454,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         exercises: fullBodyExercises.map((ex) => ({ exerciseId: ex.id, sets: workoutData[ex.id] ?? [] })),
       });
       if (result.success) {
-        setLastSavedAll(new Date());
+        const now = new Date();
+        setLastSavedAll(now);
+        setSavedAtByExercise((prev) => {
+          const next = { ...prev };
+          for (const ex of fullBodyExercises) next[ex.id] = now;
+          return next;
+        });
         refreshSavedIds(workoutData, fullBodyExercises);
         refreshRangeData();
         setToast({ message: "Full Body saved ✓", type: "success" });
@@ -475,7 +482,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       }));
       const result = await saveWorkout({ date: selectedDate, exercises: exerciseInputs });
       if (result.success) {
-        setLastSavedByGroup((prev) => ({ ...prev, [mg]: new Date() }));
+        const now = new Date();
+        setLastSavedByGroup((prev) => ({ ...prev, [mg]: now }));
+        setSavedAtByExercise((prev) => {
+          const next = { ...prev };
+          for (const ex of groupExercises) next[ex.id] = now;
+          return next;
+        });
         refreshSavedIds(workoutData, groupExercises);
         refreshRangeData();
         setToast({ message: `${MUSCLE_GROUP_LABELS[mg]} saved ✓`, type: "success" });
@@ -499,8 +512,14 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         .map((ex) => ({ exerciseId: ex.id, sets: workoutData[ex.id] ?? [] }));
       const result = await saveWorkout({ date: selectedDate, exercises: exerciseInputs });
       if (result.success) {
-        setLastSavedAdded(new Date());
+        const now = new Date();
+        setLastSavedAdded(now);
         const savedAdded = exList.filter((ex) => !skippedIds.has(ex.id));
+        setSavedAtByExercise((prev) => {
+          const next = { ...prev };
+          for (const ex of savedAdded) next[ex.id] = now;
+          return next;
+        });
         refreshSavedIds(workoutData, exList);
         refreshRangeData();
         setToast({ message: "Added exercises saved ✓", type: "success" });
@@ -509,6 +528,26 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
         setToast({ message: result.error ?? "Failed to save", type: "error" });
       }
       setIsSavingAdded(false);
+    });
+  };
+
+  const handleSaveExercise = (exerciseId: string) => {
+    const ex = exercises.find((e) => e.id === exerciseId);
+    if (!ex) return;
+    startTransition(async () => {
+      const result = await saveWorkout({
+        date: selectedDate,
+        exercises: [{ exerciseId, sets: workoutData[exerciseId] ?? [] }],
+      });
+      if (result.success) {
+        const now = new Date();
+        setSavedAtByExercise((prev) => ({ ...prev, [exerciseId]: now }));
+        refreshSavedIds(workoutData, [ex]);
+        refreshRangeData();
+        await applyComparisonResults([ex], selectedDate, false);
+      } else {
+        setToast({ message: result.error ?? "Failed to save", type: "error" });
+      }
     });
   };
 
@@ -999,6 +1038,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   plannedExerciseIds={plannedExerciseIdsForGroup("UPPER_BODY")}
                   isNested
                   outcomeData={comparisonData}
+                  onSaveExercise={handleSaveExercise}
+                  savedAtByExercise={savedAtByExercise}
                 />
                 <ExerciseGroup
                   muscleGroup="LOWER_BODY"
@@ -1023,6 +1064,8 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   plannedExerciseIds={plannedExerciseIdsForGroup("LOWER_BODY")}
                   isNested
                   outcomeData={comparisonData}
+                  onSaveExercise={handleSaveExercise}
+                  savedAtByExercise={savedAtByExercise}
                 />
               </div>
             </div>

@@ -39,6 +39,8 @@ interface ExerciseGroupProps {
     outcome: "positive" | "negative" | "pr" | null;
     diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
   }>;
+  onSaveExercise?: (exerciseId: string) => void;
+  savedAtByExercise?: Record<string, Date | null>;
 }
 
 export function ExerciseGroup({
@@ -66,6 +68,8 @@ export function ExerciseGroup({
   plannedExerciseIds,
   groupLabel,
   outcomeData,
+  onSaveExercise,
+  savedAtByExercise,
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [removedOpen, setRemovedOpen] = useState(false);
@@ -141,6 +145,20 @@ export function ExerciseGroup({
         </span>
       </button>
 
+      {/* Top save button */}
+      {open && onSave && (
+        <div className="px-3 pt-3 flex items-center justify-end">
+          <button
+            onClick={onSave}
+            disabled={isSaving}
+            className="flex items-center gap-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+          >
+            <Save className="h-3 w-3" />
+            Save {groupLabel ?? MUSCLE_GROUP_LABELS[muscleGroup]}
+          </button>
+        </div>
+      )}
+
       {/* Exercise cards */}
       {open && (
         <div>
@@ -172,6 +190,8 @@ export function ExerciseGroup({
                   isPlanned={plannedExerciseIds?.has(exercise.id)}
                   outcome={outcomeData?.[exercise.id]?.outcome}
                   diffData={outcomeData?.[exercise.id]?.diffData}
+                  onSave={onSaveExercise ? () => onSaveExercise(exercise.id) : undefined}
+                  savedAt={savedAtByExercise?.[exercise.id]}
                 />
               ))}
             </div>

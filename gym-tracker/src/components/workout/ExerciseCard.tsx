@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { Pin, PinOff, Trash2, Plus, Minus, EyeOff, SkipForward, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SetRow } from "./SetRow";
@@ -23,6 +23,8 @@ interface ExerciseCardProps {
   isPlanned?: boolean;
   outcome?: "positive" | "negative" | "pr" | null;
   diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
+  onSave?: () => void;
+  savedAt?: Date | null;
 }
 
 export function ExerciseCard({
@@ -40,10 +42,17 @@ export function ExerciseCard({
   onSkipChange,
   outcome,
   diffData,
+  onSave,
+  savedAt,
 }: ExerciseCardProps) {
   const isCardio = exercise.muscleGroup === "CARDIO";
   const [, startTransition] = useTransition();
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Exit edit mode whenever the parent signals a save completed (group or individual)
+  useEffect(() => {
+    setIsEditMode(false);
+  }, [savedAt]);
 
   // Locked when explicitly read-only OR tracked but not in edit mode
   const locked = isReadOnly || (isTracked && !isEditMode);
@@ -152,12 +161,22 @@ export function ExerciseCard({
       )}
       <div className="flex-1" />
       {isEditMode ? (
-        <button
-          onClick={() => setIsEditMode(false)}
-          className="rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-        >
-          Cancel
-        </button>
+        <>
+          {onSave && (
+            <button
+              onClick={() => { onSave(); setIsEditMode(false); }}
+              className="rounded-md border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+            >
+              Save
+            </button>
+          )}
+          <button
+            onClick={() => setIsEditMode(false)}
+            className="rounded-md border border-zinc-200 dark:border-zinc-700 px-2 py-1 text-[11px] text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+          >
+            Cancel
+          </button>
+        </>
       ) : (
         <>
           <button
@@ -356,13 +375,23 @@ export function ExerciseCard({
           >
             <Plus className="h-2.5 w-2.5" /> Set
           </button>
-          <button
-            onClick={() => onSkipChange?.(exercise.id, true)}
-            className="ml-auto flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
-          >
-            <SkipForward className="h-3 w-3" />
-            Skip today
-          </button>
+          {onSave && !isTracked && (
+            <button
+              onClick={onSave}
+              className="ml-auto flex items-center gap-1 rounded-md border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+            >
+              Save
+            </button>
+          )}
+          {(!onSave || isTracked) && (
+            <button
+              onClick={() => onSkipChange?.(exercise.id, true)}
+              className="ml-auto flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+            >
+              <SkipForward className="h-3 w-3" />
+              Skip today
+            </button>
+          )}
         </div>
       )}
     </div>
