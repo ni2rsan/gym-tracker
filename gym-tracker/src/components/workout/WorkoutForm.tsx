@@ -131,15 +131,16 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     setLastSavedByGroup({});
     setIsDeleteConfirming(false);
     setSorryConfirm(false);
+    setComparisonData({}); // clear stale diffs from previous date
     Promise.all([getWorkoutForDate(selectedDate), getLastKnownSets()]).then(
-      ([dateResult, lastResult]) => {
+      async ([dateResult, lastResult]) => {
         const existing = dateResult.success && dateResult.data ? dateResult.data : {};
         const lastKnown = lastResult.success && lastResult.data ? lastResult.data : {};
         const merged = { ...lastKnown, ...existing };
-        setWorkoutData(initializeSets(exercises, merged));
-        setSavedTodayIds(
-          new Set(Object.keys(existing).filter((id) => existing[id]?.length > 0))
-        );
+        const mergedData = initializeSets(exercises, merged);
+        setWorkoutData(mergedData);
+        const savedIds = new Set(Object.keys(existing).filter((id) => existing[id]?.length > 0));
+        setSavedTodayIds(savedIds);
         // Restore skipped state from localStorage
         try {
           const stored = localStorage.getItem(`gymtracker_skipped_${selectedDate}`);
@@ -148,6 +149,15 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           }
         } catch {}
         setIsLoading(false);
+        // Auto-load comparison data for exercises already saved today (e.g. after page reload
+        // or navigating back from planner). Pass mergedData directly since workoutData state
+        // hasn't applied yet at this point in the .then() callback.
+        if (savedIds.size > 0) {
+          const savedExs = exercises.filter((ex) => savedIds.has(ex.id));
+          if (savedExs.length > 0) {
+            await applyComparisonResults(savedExs, selectedDate, false, mergedData);
+          }
+        }
       }
     );
   }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -391,7 +401,14 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [comparisonData, setComparisonData] = useState<Record<string, ExOutcomeEntry>>({});
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
-  const applyComparisonResults = async (exList: ExerciseWithSettings[], date: string, autoShow = true) => {
+  // currentSetsOverride: pass freshly-loaded sets when calling from inside a .then()
+  // before React has applied the setWorkoutData update to state.
+  const applyComparisonResults = async (
+    exList: ExerciseWithSettings[],
+    date: string,
+    autoShow = true,
+    currentSetsOverride?: Record<string, SetData[]>
+  ) => {
     const batchInput = exList.map((ex) => ({
       id: ex.id,
       isBodyweight: ex.isBodyweight,
@@ -404,7 +421,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       const comp = batchResult.data[ex.id];
       if (!comp) continue;
       const { prevSets, isPR } = comp;
-      const currentSets = workoutData[ex.id] ?? [];
+      const currentSets = (currentSetsOverride ?? workoutData)[ex.id] ?? [];
       const diffs = computeSetDiffs(prevSets, currentSets);
       const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
       const outcome: ExOutcomeEntry["outcome"] = isPR ? "pr" : allPositive ? "positive" : allNegative ? "negative" : null;
@@ -1200,7 +1217,14 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           <WorkoutSummaryModal
             title="Saved!"
             exercises={summaryExercises}
-            onClose={() => setShowSessionSummary(false)}
+            onClose={() => {
+              setShowSessionSummary(false);
+              if (fromPlannerRef.current) {
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+                router.push("/planner");
+              }
+            }}
           />
         );
       })()}
