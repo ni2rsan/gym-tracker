@@ -69,6 +69,10 @@ export function WorkoutSummaryModal({
   const improvedCount = exerciseData.filter((e) => e.outcome === "positive").length;
   const declinedCount = exerciseData.filter((e) => e.outcome === "negative").length;
 
+  // Stardust = every exercise with allPositive (includes PRs that also improved vs previous)
+  const computedStardust = exerciseData.filter((e) => e.allPositive).length;
+  const displayStardust = Math.max(stardustEarned, computedStardust);
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
       <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl flex flex-col max-h-[90vh]">
@@ -101,7 +105,7 @@ export function WorkoutSummaryModal({
             <div className="flex items-center gap-1.5 mt-2">
               <img src="/stardusticon.png" alt="stardust" className="h-4 w-4" />
               <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                You earned {stardustEarned} stardust
+                You earned {displayStardust} stardust
               </span>
             </div>
           </div>
