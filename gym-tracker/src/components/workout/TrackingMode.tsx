@@ -164,9 +164,9 @@ export function TrackingMode({
     Record<string, { prevSets: PrevSet[]; currentSets: SetData[]; isPR: boolean }>
   >({});
 
-  // Stardust tracking
-  const [stardustEarned, setStardustEarned] = useState(0);
+  // Stardust: derived from exerciseOutcomes so it always matches the icons
   const awardedExerciseIdsRef = useRef<Set<string>>(new Set());
+  const stardustEarned = Object.values(exerciseOutcomes).filter((o) => o.allPositive).length;
 
   // Detailed "View Summary" modal (dismissable, doesn't exit)
   const [showDetailedSummary, setShowDetailedSummary] = useState(false);
@@ -327,10 +327,9 @@ export function TrackingMode({
       setExerciseOutcomes((prev) => ({ ...prev, [ex.id]: { allPositive, allNegative, isPR } }));
       setComparisonDetails((prev) => ({ ...prev, [ex.id]: { prevSets, currentSets: savedSets, isPR } }));
       onExerciseOutcome?.(ex.id, { allPositive, allNegative, isPR }, prevSets, savedSets);
-      // Award stardust for positive outcomes
+      // Award stardust to DB for positive outcomes (only once per exercise per session)
       if (allPositive && !awardedExerciseIdsRef.current.has(ex.id)) {
         awardedExerciseIdsRef.current.add(ex.id);
-        setStardustEarned((prev) => prev + 1);
         awardSessionStardust(1).catch(() => {});
       }
       setComparisonOverlay({ exercise: ex, prevSets, currentSets: savedSets, isPR });
