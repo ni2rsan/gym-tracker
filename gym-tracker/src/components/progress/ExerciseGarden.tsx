@@ -3,7 +3,7 @@
 import { Suspense, useRef, useMemo, useState, useEffect, Component } from "react";
 import type { ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, Vector3, Group } from "three";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,7 +127,6 @@ function TreeCardCanvas({ path }: { path: string }) {
           <WiggleGroup>
             <NormalizedModel path={path} />
           </WiggleGroup>
-          <Environment preset="forest" />
         </Suspense>
       </Canvas>
     </CanvasErrorBoundary>
@@ -258,7 +257,6 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
               <directionalLight position={[3, 5, 3]} intensity={0.9} />
               <Suspense fallback={null}>
                 <NormalizedModel path={stageData.path} />
-                <Environment preset="forest" />
               </Suspense>
               <OrbitControls enableZoom={false} />
             </Canvas>
