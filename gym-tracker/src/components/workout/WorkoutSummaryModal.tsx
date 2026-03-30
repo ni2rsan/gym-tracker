@@ -44,7 +44,7 @@ function DiffBadge({ value, unit }: { value: number; unit: string }) {
           : "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40"
       )}
     >
-      {positive ? `▲+${fmt(value)}` : `▼${fmt(Math.abs(value))}`}{unit}
+      {positive ? `▲${fmt(value)}` : `▼${fmt(Math.abs(value))}`}{unit}
     </span>
   );
 }
@@ -98,14 +98,12 @@ export function WorkoutSummaryModal({
                 </span>
               )}
             </div>
-            {stardustEarned > 0 && (
-              <div className="flex items-center gap-1.5 mt-2">
-                <img src="/stardusticon.png" alt="stardust" className="h-4 w-4" />
-                <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                  You earned {stardustEarned} stardust
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 mt-2">
+              <img src="/stardusticon.png" alt="stardust" className="h-4 w-4" />
+              <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                You earned {stardustEarned} stardust
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
