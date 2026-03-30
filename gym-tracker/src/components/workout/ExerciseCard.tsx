@@ -284,7 +284,7 @@ export function ExerciseCard({
                   {isPRSet ? "🏆" : `S${set.setNumber}`}
                 </span>
                 <span className="flex-1 text-center text-sm text-zinc-700 dark:text-zinc-300">
-                  {exercise.isBodyweight ? `${set.reps}` : `${set.reps}`}
+                  {set.reps}
                   {diff.diffReps !== null && diff.diffReps !== 0 && (
                     <span className={cn("text-[9px] ml-0.5", diff.diffReps > 0 ? "text-emerald-500" : "text-red-500")}>
                       {diff.diffReps > 0 ? `▲+${parseFloat(diff.diffReps.toFixed(1))}` : `▼${parseFloat(diff.diffReps.toFixed(1))}`}
@@ -304,14 +304,30 @@ export function ExerciseCard({
               </div>
             );
           }
+          // In editable mode: keep the interactive SetRow but add small diff indicators below
           return (
-            <SetRow
-              key={set.setNumber}
-              setNumber={set.setNumber}
-              data={set}
-              isBodyweight={exercise.isBodyweight}
-              onChange={(updated) => updateSet(index, updated)}
-            />
+            <div key={set.setNumber}>
+              <SetRow
+                setNumber={set.setNumber}
+                data={set}
+                isBodyweight={exercise.isBodyweight}
+                onChange={(updated) => updateSet(index, updated)}
+              />
+              {diff && (
+                <div className="flex gap-2 mt-0.5 pl-10 text-[9px]">
+                  {diff.diffReps !== null && diff.diffReps !== 0 && (
+                    <span className={diff.diffReps > 0 ? "text-emerald-500" : "text-red-500"}>
+                      {diff.diffReps > 0 ? `▲+${parseFloat(diff.diffReps.toFixed(1))}r` : `▼${parseFloat(diff.diffReps.toFixed(1))}r`}
+                    </span>
+                  )}
+                  {!exercise.isBodyweight && diff.diffKg !== null && diff.diffKg !== 0 && (
+                    <span className={diff.diffKg > 0 ? "text-emerald-500" : "text-red-500"}>
+                      {diff.diffKg > 0 ? `▲+${parseFloat(diff.diffKg.toFixed(1))}kg` : `▼${parseFloat(diff.diffKg.toFixed(1))}kg`}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

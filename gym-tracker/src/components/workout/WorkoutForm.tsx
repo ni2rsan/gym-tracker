@@ -391,7 +391,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [comparisonData, setComparisonData] = useState<Record<string, ExOutcomeEntry>>({});
   const [showSessionSummary, setShowSessionSummary] = useState(false);
 
-  const applyComparisonResults = async (exList: ExerciseWithSettings[], date: string) => {
+  const applyComparisonResults = async (exList: ExerciseWithSettings[], date: string, autoShow = true) => {
     const batchInput = exList.map((ex) => ({
       id: ex.id,
       isBodyweight: ex.isBodyweight,
@@ -422,7 +422,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       };
     }
     setComparisonData((prev) => ({ ...prev, ...newData }));
-    setShowSessionSummary(true);
+    if (autoShow) setShowSessionSummary(true);
   };
 
   const handleSaveFullBody = () => {
@@ -806,10 +806,10 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
             {formatLastSaved(lastSavedTime)}
           </span>
         )}
-        {Object.keys(comparisonData).some((id) => comparisonData[id].prevSets !== undefined || comparisonData[id].currentSets !== undefined) && (
+        {Object.keys(comparisonData).length > 0 && (
           <button
             onClick={() => setShowSessionSummary(true)}
-            className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+            className="flex items-center gap-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors shrink-0"
           >
             View Summary
           </button>
@@ -1186,7 +1186,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
       {/* Session summary overlay — shown after bulk save */}
       {showSessionSummary && (() => {
         const summaryExercises: SummaryExerciseData[] = sortedExercises
-          .filter((ex) => comparisonData[ex.id]?.prevSets !== undefined || comparisonData[ex.id]?.currentSets !== undefined)
+          .filter((ex) => comparisonData[ex.id] != null)
           .map((ex) => ({
             exerciseId: ex.id,
             name: ex.name,
@@ -1252,8 +1252,22 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
               skippedIds={skippedIds}
               onSkipChange={handleSkipChange}
               onBack={handleTrackingBack}
+              onFinish={() => {
+                // First visit: close TrackingMode and show session summary overlay
+                setTrackingScope(null);
+                const savedExercises = sortedExercises.filter((ex) => savedTodayIds.has(ex.id));
+                if (savedExercises.length > 0) {
+                  applyComparisonResults(savedExercises, selectedDate, true);
+                }
+              }}
               onExit={() => {
                 setTrackingScope(null);
+                // Reliably populate comparison data from DB for all saved exercises so
+                // the tracker page shows outcome badges + diffs immediately after tracking.
+                const savedExercises = sortedExercises.filter((ex) => savedTodayIds.has(ex.id));
+                if (savedExercises.length > 0) {
+                  applyComparisonResults(savedExercises, selectedDate, false);
+                }
                 if (fromPlannerRef.current) {
                   document.documentElement.scrollTop = 0;
                   document.body.scrollTop = 0;

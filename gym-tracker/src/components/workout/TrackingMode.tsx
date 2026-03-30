@@ -39,6 +39,8 @@ interface TrackingModeProps {
   onSkipChange?: (id: string, skipped: boolean) => void;
   /** Outcomes computed by WorkoutForm (bulk-save path) — merged with in-session outcomes */
   externalOutcomes?: Record<string, { allPositive: boolean; allNegative: boolean; isPR: boolean }>;
+  /** Called when the user presses "Finish" on a FIRST visit — parent shows summary overlay after closing */
+  onFinish: () => void;
   onExit: () => void;
   onBack: () => void;
   onExerciseSaved: (exerciseId: string, sets: SetData[]) => void;
@@ -101,11 +103,14 @@ export function TrackingMode({
   skippedIds = new Set(),
   onSkipChange,
   externalOutcomes,
+  onFinish,
   onExit,
   onBack,
   onExerciseSaved,
   onExerciseOutcome,
 }: TrackingModeProps) {
+  // Revisit = any exercises were already completed when this component mounted
+  const isRevisit = initialCompletedIds.size > 0;
   const [view, setView] = useState<TrackingView>({ kind: "icons" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(initialCompletedIds);
   const [sets, setSets] = useState<SetData[]>([]);
@@ -146,9 +151,6 @@ export function TrackingMode({
   const [exerciseOutcomes, setExerciseOutcomes] = useState<
     Record<string, { allPositive: boolean; allNegative: boolean; isPR: boolean }>
   >({});
-
-  // Finish summary overlay
-  const [showFinishSummary, setShowFinishSummary] = useState(false);
 
   // Per-exercise prevSets + currentSets for detailed summary
   const [comparisonDetails, setComparisonDetails] = useState<
@@ -599,9 +601,9 @@ export function TrackingMode({
           </div>
         )}
 
-        {/* Finish / View Summary buttons */}
+        {/* Bottom action buttons */}
         <div className="px-5 pb-8 flex flex-col gap-2">
-          {Object.keys(comparisonDetails).length > 0 && (
+          {isRevisit && (
             <button
               onClick={() => setShowDetailedSummary(true)}
               className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
@@ -610,11 +612,7 @@ export function TrackingMode({
             </button>
           )}
           <button
-            onClick={() => {
-              const hasDetails = Object.keys(comparisonDetails).length > 0;
-              if (hasDetails) setShowFinishSummary(true);
-              else onExit();
-            }}
+            onClick={isRevisit ? onExit : onFinish}
             className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
           >
             Finish
@@ -752,30 +750,6 @@ export function TrackingMode({
               title="Session Summary"
               exercises={summaryExercises}
               onClose={() => setShowDetailedSummary(false)}
-            />
-          );
-        })()}
-
-        {/* Finish summary overlay */}
-        {showFinishSummary && (() => {
-          const summaryExercises: SummaryExerciseData[] = exercises
-            .filter((ex) => comparisonDetails[ex.id])
-            .map((ex) => ({
-              exerciseId: ex.id,
-              name: ex.name,
-              muscleGroup: ex.muscleGroup,
-              isBodyweight: ex.isBodyweight,
-              isPR: comparisonDetails[ex.id].isPR,
-              prevSets: comparisonDetails[ex.id].prevSets,
-              currentSets: comparisonDetails[ex.id].currentSets,
-            }));
-          return (
-            <WorkoutSummaryModal
-              title="Session Complete"
-              exercises={summaryExercises}
-              onClose={() => setShowFinishSummary(false)}
-              primaryActionLabel="Finish Workout"
-              onPrimaryAction={onExit}
             />
           );
         })()}
