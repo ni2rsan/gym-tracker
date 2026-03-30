@@ -109,8 +109,11 @@ export function TrackingMode({
   onExerciseSaved,
   onExerciseOutcome,
 }: TrackingModeProps) {
-  // Revisit = any exercises were already completed when this component mounted
-  const isRevisit = initialCompletedIds.size > 0;
+  // Capture revisit state at mount — NOT on every render.
+  // initialCompletedIds prop updates as exercises are saved mid-session,
+  // which would incorrectly flip isRevisit from false → true after the first save.
+  const isRevisitRef = useRef(initialCompletedIds.size > 0);
+  const isRevisit = isRevisitRef.current;
   const [view, setView] = useState<TrackingView>({ kind: "icons" });
   const [completedIds, setCompletedIds] = useState<Set<string>>(initialCompletedIds);
   const [sets, setSets] = useState<SetData[]>([]);
