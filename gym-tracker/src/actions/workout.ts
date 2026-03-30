@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import * as workoutService from "@/lib/services/workoutService";
+import { isAssistedExercise } from "@/lib/workoutDiff";
 import type { ActionResult } from "@/types";
+import type { PrevSet } from "@/lib/workoutDiff";
 
 const SetSchema = z.object({
   setNumber: z.number().int().min(1).max(10),
@@ -197,6 +199,56 @@ export async function getExercisesComparisonBatch(
   } catch (error) {
     console.error("getExercisesComparisonBatch error:", error);
     return { success: false, error: "Failed to load comparison data." };
+  }
+}
+
+export type FullSummaryExercise = {
+  exerciseId: string;
+  name: string;
+  muscleGroup: string;
+  isBodyweight: boolean;
+  isAssisted: boolean;
+  isPR: boolean;
+  prevSets: PrevSet[];
+  currentSets: { setNumber: number; reps: number; weightKg: number | null }[];
+};
+
+export async function getFullWorkoutSummaryForDate(
+  date: string
+): Promise<ActionResult<FullSummaryExercise[]>> {
+  try {
+    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    if (!parsed.success) return { success: false, error: "Invalid date." };
+    const userId = await getCurrentUserId();
+
+    const summary = await workoutService.getWorkoutSummaryForDate(userId, parsed.data);
+    if (!summary.length) return { success: true, data: [] };
+
+    const latestSets = await workoutService.getLatestSetsForDate(userId, parsed.data);
+
+    const results = await Promise.all(
+      summary.map(async (ex) => {
+        const assisted = isAssistedExercise(ex.name);
+        const comparison = await workoutService.getExerciseTrackingComparison(
+          userId, ex.exerciseId, parsed.data, ex.isBodyweight, assisted
+        );
+        return {
+          exerciseId: ex.exerciseId,
+          name: ex.name,
+          muscleGroup: ex.muscleGroup,
+          isBodyweight: ex.isBodyweight,
+          isAssisted: assisted,
+          isPR: comparison.isPR,
+          prevSets: comparison.prevSets,
+          currentSets: latestSets[ex.exerciseId] ?? [],
+        } satisfies FullSummaryExercise;
+      })
+    );
+
+    return { success: true, data: results };
+  } catch (error) {
+    console.error("getFullWorkoutSummaryForDate error:", error);
+    return { success: false, error: "Failed to load workout summary." };
   }
 }
 

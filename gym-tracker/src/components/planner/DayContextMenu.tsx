@@ -14,8 +14,10 @@ import {
   excuseMissedDay,
   revokeSorryExcuse,
 } from "@/actions/planner";
-import { deleteTrackedBlockByDate, getWorkoutSummaryForDate } from "@/actions/workout";
+import { deleteTrackedBlockByDate, getWorkoutSummaryForDate, getFullWorkoutSummaryForDate } from "@/actions/workout";
 import type { WorkoutExerciseSummary } from "@/lib/services/workoutService";
+import { WorkoutSummaryModal } from "@/components/workout/WorkoutSummaryModal";
+import type { SummaryExerciseData } from "@/components/workout/WorkoutSummaryModal";
 import type { PlannedBlock } from "./WorkoutCalendar";
 import { BlockBadge } from "./BlockDot";
 import { AddBlockModal } from "./AddBlockModal";
@@ -89,6 +91,9 @@ export function DayContextMenu({
   const [confirmDelete, setConfirmDelete] = useState<"block" | "series" | "workout" | null>(null);
   const [confirmSorryToken, setConfirmSorryToken] = useState(false);
   const [workoutSummary, setWorkoutSummary] = useState<WorkoutExerciseSummary[]>([]);
+  const [showFullSummary, setShowFullSummary] = useState(false);
+  const [fullSummaryData, setFullSummaryData] = useState<SummaryExerciseData[]>([]);
+  const [fullSummaryLoading, setFullSummaryLoading] = useState(false);
 
   useEffect(() => {
     if (!workedOut) return;
@@ -96,6 +101,26 @@ export function DayContextMenu({
       if (result.success && result.data) setWorkoutSummary(result.data);
     });
   }, [date, workedOut]);
+
+  const handleViewFullSummary = () => {
+    setFullSummaryLoading(true);
+    getFullWorkoutSummaryForDate(date).then((result) => {
+      setFullSummaryLoading(false);
+      if (result.success && result.data) {
+        const mapped: SummaryExerciseData[] = result.data.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          name: ex.name,
+          muscleGroup: ex.muscleGroup,
+          isBodyweight: ex.isBodyweight,
+          isPR: ex.isPR,
+          prevSets: ex.prevSets,
+          currentSets: ex.currentSets,
+        }));
+        setFullSummaryData(mapped);
+        setShowFullSummary(true);
+      }
+    });
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -626,6 +651,15 @@ export function DayContextMenu({
             >
               Go to Workout Tracker →
             </button>
+            {workedOut && (
+              <button
+                onClick={handleViewFullSummary}
+                disabled={fullSummaryLoading}
+                className="w-full flex items-center gap-3 px-4 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors text-left border-t border-zinc-100 dark:border-zinc-800 disabled:opacity-50"
+              >
+                {fullSummaryLoading ? "Loading…" : "View Workout Summary →"}
+              </button>
+            )}
           </div>
         )}
 
@@ -654,6 +688,15 @@ export function DayContextMenu({
           )
         )}
       </div>
+
+      {/* Full workout summary modal */}
+      {showFullSummary && (
+        <WorkoutSummaryModal
+          title="Workout Summary"
+          exercises={fullSummaryData}
+          onClose={() => setShowFullSummary(false)}
+        />
+      )}
     </div>
   );
 }

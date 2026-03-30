@@ -160,6 +160,7 @@ export async function changeWorkoutSessionDate(userId: string, sessionId: string
 }
 
 export type WorkoutExerciseSummary = {
+  exerciseId: string;
   name: string;
   muscleGroup: string;
   isCardio: boolean;
@@ -191,6 +192,7 @@ export async function getWorkoutSummaryForDate(userId: string, date: string): Pr
     const isCardio = (set.exercise.muscleGroup as string) === "CARDIO";
     if (!exerciseMap[set.exerciseId]) {
       exerciseMap[set.exerciseId] = {
+        exerciseId: set.exerciseId,
         name: set.exercise.name,
         muscleGroup: set.exercise.muscleGroup as string,
         isCardio,

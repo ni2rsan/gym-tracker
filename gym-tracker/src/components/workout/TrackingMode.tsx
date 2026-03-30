@@ -5,7 +5,9 @@ import { X, ArrowLeft, Plus, Minus, Eye, EyeOff, TrendingUp, TrendingDown } from
 import { cn } from "@/lib/utils";
 import { ExerciseIcon } from "./ExerciseIcon";
 import { SetRow } from "./SetRow";
-import { saveWorkout, deleteExerciseTracking, getExerciseComparisonData } from "@/actions/workout";
+import { saveWorkout, deleteExerciseTracking, getExerciseComparisonData, getExercisesComparisonBatch } from "@/actions/workout";
+import { WorkoutSummaryModal } from "./WorkoutSummaryModal";
+import type { SummaryExerciseData } from "./WorkoutSummaryModal";
 import { setPreferredSets as savePreferredSets } from "@/actions/exercise";
 import { MUSCLE_GROUP_LABELS } from "@/constants/exercises";
 import { computeSetDiffs, computeOutcome, isAssistedExercise } from "@/lib/workoutDiff";
@@ -35,10 +37,17 @@ interface TrackingModeProps {
   workoutData?: Record<string, SetData[]>;
   skippedIds?: Set<string>;
   onSkipChange?: (id: string, skipped: boolean) => void;
+  /** Outcomes computed by WorkoutForm (bulk-save path) — merged with in-session outcomes */
+  externalOutcomes?: Record<string, { allPositive: boolean; allNegative: boolean; isPR: boolean }>;
   onExit: () => void;
   onBack: () => void;
   onExerciseSaved: (exerciseId: string, sets: SetData[]) => void;
-  onExerciseOutcome?: (exerciseId: string, outcome: { allPositive: boolean; allNegative: boolean; isPR: boolean }) => void;
+  onExerciseOutcome?: (
+    exerciseId: string,
+    outcome: { allPositive: boolean; allNegative: boolean; isPR: boolean },
+    prevSets: PrevSet[],
+    currentSets: SetData[]
+  ) => void;
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -91,6 +100,7 @@ export function TrackingMode({
   workoutData,
   skippedIds = new Set(),
   onSkipChange,
+  externalOutcomes,
   onExit,
   onBack,
   onExerciseSaved,
@@ -140,6 +150,14 @@ export function TrackingMode({
   // Finish summary overlay
   const [showFinishSummary, setShowFinishSummary] = useState(false);
 
+  // Per-exercise prevSets + currentSets for detailed summary
+  const [comparisonDetails, setComparisonDetails] = useState<
+    Record<string, { prevSets: PrevSet[]; currentSets: SetData[]; isPR: boolean }>
+  >({});
+
+  // Detailed "View Summary" modal (dismissable, doesn't exit)
+  const [showDetailedSummary, setShowDetailedSummary] = useState(false);
+
   // Guide modals (shown once ever per context)
   const [showIconGuide, setShowIconGuide] = useState(false);
   const [iconGuideStep, setIconGuideStep] = useState(0);
@@ -152,6 +170,34 @@ export function TrackingMode({
       setShowIconGuide(true);
     }
   }, []);
+
+  // On mount: hydrate outcomes + details for exercises already completed (e.g. returning to icon page)
+  useEffect(() => {
+    const completedExercises = exercises.filter((ex) => initialCompletedIds.has(ex.id));
+    if (!completedExercises.length) return;
+    const batchInput = completedExercises.map((ex) => ({
+      id: ex.id,
+      isBodyweight: ex.isBodyweight,
+      isAssisted: isAssistedExercise(ex.name),
+    }));
+    getExercisesComparisonBatch(batchInput, date).then((result) => {
+      if (!result.success || !result.data) return;
+      const newOutcomes: Record<string, { allPositive: boolean; allNegative: boolean; isPR: boolean }> = {};
+      const newDetails: Record<string, { prevSets: PrevSet[]; currentSets: SetData[]; isPR: boolean }> = {};
+      for (const ex of completedExercises) {
+        const comp = result.data[ex.id];
+        if (!comp) continue;
+        const { prevSets, isPR } = comp;
+        const currentSets = workoutData?.[ex.id] ?? [];
+        const diffs = computeSetDiffs(prevSets, currentSets);
+        const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
+        newOutcomes[ex.id] = { allPositive, allNegative, isPR };
+        newDetails[ex.id] = { prevSets, currentSets, isPR };
+      }
+      setExerciseOutcomes((prev) => ({ ...prev, ...newOutcomes }));
+      setComparisonDetails((prev) => ({ ...prev, ...newDetails }));
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasNonCardio = exercises.some((ex) => ex.muscleGroup !== "CARDIO");
   const nonSkippedExercises = exercises.filter((ex) => !skippedIds.has(ex.id));
@@ -266,7 +312,8 @@ export function TrackingMode({
       const diffs = computeSetDiffs(prevSets, savedSets);
       const { allPositive, allNegative } = computeOutcome(diffs, ex.isBodyweight);
       setExerciseOutcomes((prev) => ({ ...prev, [ex.id]: { allPositive, allNegative, isPR } }));
-      onExerciseOutcome?.(ex.id, { allPositive, allNegative, isPR });
+      setComparisonDetails((prev) => ({ ...prev, [ex.id]: { prevSets, currentSets: savedSets, isPR } }));
+      onExerciseOutcome?.(ex.id, { allPositive, allNegative, isPR }, prevSets, savedSets);
       setComparisonOverlay({ exercise: ex, prevSets, currentSets: savedSets, isPR });
       setView({ kind: "icons" });
     } else {
@@ -381,6 +428,8 @@ export function TrackingMode({
   const renderExerciseIcon = (ex: ExerciseWithSettings) => {
     const done = completedIds.has(ex.id);
     const skipped = skippedIds.has(ex.id);
+    // Merge locally-computed outcomes with those pushed from WorkoutForm (bulk-save path)
+    const outcome = exerciseOutcomes[ex.id] ?? externalOutcomes?.[ex.id];
     return (
       <div key={ex.id} className="flex flex-col items-center gap-2 text-center">
         <div className="relative">
@@ -404,15 +453,15 @@ export function TrackingMode({
                 <span className="text-white font-black leading-none" style={{ fontSize: "9px" }}>✓</span>
               </span>
             )}
-            {done && !skipped && exerciseOutcomes[ex.id]?.isPR && (
+            {done && !skipped && outcome?.isPR && (
               <span className="absolute -top-0.5 -right-0.5 leading-none" style={{ fontSize: "13px" }}>🏆</span>
             )}
-            {done && !skipped && exerciseOutcomes[ex.id]?.allPositive && (
+            {done && !skipped && outcome?.allPositive && (
               <span className="absolute -bottom-1.5 -left-1">
                 <TrendingUp className="h-4 w-4 text-emerald-500 drop-shadow-sm" strokeWidth={2.5} />
               </span>
             )}
-            {done && !skipped && exerciseOutcomes[ex.id]?.allNegative && (
+            {done && !skipped && outcome?.allNegative && (
               <span className="absolute -bottom-1.5 -left-1">
                 <TrendingDown className="h-4 w-4 text-red-500 drop-shadow-sm" strokeWidth={2.5} />
               </span>
@@ -550,10 +599,22 @@ export function TrackingMode({
           </div>
         )}
 
-        {/* Finish button */}
-        <div className="px-5 pb-8">
+        {/* Finish / View Summary buttons */}
+        <div className="px-5 pb-8 flex flex-col gap-2">
+          {Object.keys(comparisonDetails).length > 0 && (
+            <button
+              onClick={() => setShowDetailedSummary(true)}
+              className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
+            >
+              View Summary
+            </button>
+          )}
           <button
-            onClick={() => setShowFinishSummary(true)}
+            onClick={() => {
+              const hasDetails = Object.keys(comparisonDetails).length > 0;
+              if (hasDetails) setShowFinishSummary(true);
+              else onExit();
+            }}
             className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
           >
             Finish
@@ -673,67 +734,49 @@ export function TrackingMode({
           );
         })()}
 
+        {/* Detailed summary modal (View Summary button) */}
+        {showDetailedSummary && (() => {
+          const summaryExercises: SummaryExerciseData[] = exercises
+            .filter((ex) => comparisonDetails[ex.id])
+            .map((ex) => ({
+              exerciseId: ex.id,
+              name: ex.name,
+              muscleGroup: ex.muscleGroup,
+              isBodyweight: ex.isBodyweight,
+              isPR: comparisonDetails[ex.id].isPR,
+              prevSets: comparisonDetails[ex.id].prevSets,
+              currentSets: comparisonDetails[ex.id].currentSets,
+            }));
+          return (
+            <WorkoutSummaryModal
+              title="Session Summary"
+              exercises={summaryExercises}
+              onClose={() => setShowDetailedSummary(false)}
+            />
+          );
+        })()}
+
         {/* Finish summary overlay */}
         {showFinishSummary && (() => {
-          const prCount = Object.values(exerciseOutcomes).filter((o) => o.isPR).length;
-          const improvedCount = Object.values(exerciseOutcomes).filter((o) => o.allPositive).length;
-          const declinedCount = Object.values(exerciseOutcomes).filter((o) => o.allNegative).length;
-          const doneCount = Object.keys(exerciseOutcomes).length;
-          const totalVolume = Object.entries(sessionSavedSets).reduce((acc, [, savedSets]) => {
-            return acc + savedSets.reduce((sum, s) => {
-              const kg = s.weightKg !== "" && s.weightKg != null ? Number(s.weightKg) : 0;
-              return sum + (kg * Number(s.reps));
-            }, 0);
-          }, 0);
+          const summaryExercises: SummaryExerciseData[] = exercises
+            .filter((ex) => comparisonDetails[ex.id])
+            .map((ex) => ({
+              exerciseId: ex.id,
+              name: ex.name,
+              muscleGroup: ex.muscleGroup,
+              isBodyweight: ex.isBodyweight,
+              isPR: comparisonDetails[ex.id].isPR,
+              prevSets: comparisonDetails[ex.id].prevSets,
+              currentSets: comparisonDetails[ex.id].currentSets,
+            }));
           return (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50">
-              <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden">
-                <div className="px-5 pt-5 pb-4">
-                  <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-0.5">Session Complete</p>
-                  <p className="text-2xl font-bold text-zinc-900 dark:text-white">{doneCount} exercise{doneCount !== 1 ? "s" : ""}</p>
-                </div>
-                <div className="px-5 pb-4 space-y-2">
-                  {prCount > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
-                        <span>🏆</span> Personal Records
-                      </span>
-                      <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{prCount}</span>
-                    </div>
-                  )}
-                  {improvedCount > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                        <TrendingUp className="h-4 w-4" strokeWidth={2.5} /> Improved
-                      </span>
-                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{improvedCount}</span>
-                    </div>
-                  )}
-                  {declinedCount > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-sm font-medium text-red-500 dark:text-red-400">
-                        <TrendingDown className="h-4 w-4" strokeWidth={2.5} /> Declined
-                      </span>
-                      <span className="text-sm font-bold text-red-500 dark:text-red-400">{declinedCount}</span>
-                    </div>
-                  )}
-                  {totalVolume > 0 && (
-                    <div className="flex items-center justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800">
-                      <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Total volume</span>
-                      <span className="text-sm font-bold text-zinc-900 dark:text-white">{totalVolume.toLocaleString()} kg</span>
-                    </div>
-                  )}
-                </div>
-                <div className="px-5 pb-5">
-                  <button
-                    onClick={onExit}
-                    className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
-                  >
-                    Finish
-                  </button>
-                </div>
-              </div>
-            </div>
+            <WorkoutSummaryModal
+              title="Session Complete"
+              exercises={summaryExercises}
+              onClose={() => setShowFinishSummary(false)}
+              primaryActionLabel="Finish Workout"
+              onPrimaryAction={onExit}
+            />
           );
         })()}
 

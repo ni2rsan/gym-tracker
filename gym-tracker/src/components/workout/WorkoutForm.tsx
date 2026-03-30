@@ -21,6 +21,9 @@ import {
   getExercisesComparisonBatch,
 } from "@/actions/workout";
 import { computeSetDiffs, computeOutcome, isAssistedExercise } from "@/lib/workoutDiff";
+import type { PrevSet } from "@/lib/workoutDiff";
+import { WorkoutSummaryModal } from "./WorkoutSummaryModal";
+import type { SummaryExerciseData } from "./WorkoutSummaryModal";
 import { togglePin, getExercises, getHiddenExercises, hideExercise, unhideExercise } from "@/actions/exercise";
 import {
   getBlocksForRange,
@@ -378,10 +381,12 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   const [isSavingAdded, setIsSavingAdded] = useState(false);
   const [lastSavedAdded, setLastSavedAdded] = useState<Date | null>(null);
 
-  // Comparison data after bulk saves
+  // Comparison data after bulk saves or TrackingMode saves
   type ExOutcomeEntry = {
     outcome: "positive" | "negative" | "pr" | null;
     diffData?: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }>;
+    prevSets?: PrevSet[];
+    currentSets?: SetData[];
   };
   const [comparisonData, setComparisonData] = useState<Record<string, ExOutcomeEntry>>({});
   const [showSessionSummary, setShowSessionSummary] = useState(false);
@@ -409,7 +414,12 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
           diffDataMap[d.setNumber] = { diffReps: d.diffReps, diffKg: d.diffKg, isPRSet: false };
         }
       }
-      newData[ex.id] = { outcome, diffData: Object.keys(diffDataMap).length > 0 ? diffDataMap : undefined };
+      newData[ex.id] = {
+        outcome,
+        diffData: Object.keys(diffDataMap).length > 0 ? diffDataMap : undefined,
+        prevSets,
+        currentSets,
+      };
     }
     setComparisonData((prev) => ({ ...prev, ...newData }));
     setShowSessionSummary(true);
@@ -796,6 +806,14 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
             {formatLastSaved(lastSavedTime)}
           </span>
         )}
+        {Object.keys(comparisonData).some((id) => comparisonData[id].prevSets !== undefined || comparisonData[id].currentSets !== undefined) && (
+          <button
+            onClick={() => setShowSessionSummary(true)}
+            className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline shrink-0"
+          >
+            View Summary
+          </button>
+        )}
         <button
           onClick={() => setShowEditExercises(true)}
           className="flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
@@ -1167,53 +1185,23 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
 
       {/* Session summary overlay — shown after bulk save */}
       {showSessionSummary && (() => {
-        const outcomes = Object.values(comparisonData);
-        const prCount = outcomes.filter((o) => o.outcome === "pr").length;
-        const improvedCount = outcomes.filter((o) => o.outcome === "positive").length;
-        const declinedCount = outcomes.filter((o) => o.outcome === "negative").length;
-        const doneCount = outcomes.filter((o) => o.outcome !== null).length;
+        const summaryExercises: SummaryExerciseData[] = sortedExercises
+          .filter((ex) => comparisonData[ex.id]?.prevSets !== undefined || comparisonData[ex.id]?.currentSets !== undefined)
+          .map((ex) => ({
+            exerciseId: ex.id,
+            name: ex.name,
+            muscleGroup: ex.muscleGroup,
+            isBodyweight: ex.isBodyweight,
+            isPR: comparisonData[ex.id].outcome === "pr",
+            prevSets: comparisonData[ex.id].prevSets ?? [],
+            currentSets: comparisonData[ex.id].currentSets ?? workoutData[ex.id] ?? [],
+          }));
         return (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
-            <div className="w-full max-w-xs rounded-2xl bg-white dark:bg-zinc-900 shadow-xl overflow-hidden">
-              <div className="px-5 py-4 text-center border-b border-zinc-100 dark:border-zinc-800">
-                <p className="text-base font-bold text-zinc-900 dark:text-white">🏁 Saved!</p>
-              </div>
-              <div className="px-5 py-4 space-y-2.5">
-                {doneCount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-500 dark:text-zinc-400">Exercises compared</span>
-                    <span className="font-semibold text-zinc-900 dark:text-white">{doneCount}</span>
-                  </div>
-                )}
-                {prCount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-amber-600 dark:text-amber-400">🏆 New PRs</span>
-                    <span className="font-semibold text-amber-600 dark:text-amber-400">{prCount}</span>
-                  </div>
-                )}
-                {improvedCount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-emerald-600 dark:text-emerald-400">💪 Improved</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{improvedCount}</span>
-                  </div>
-                )}
-                {declinedCount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-red-500 dark:text-red-400">🔻 Declined</span>
-                    <span className="font-semibold text-red-500 dark:text-red-400">{declinedCount}</span>
-                  </div>
-                )}
-              </div>
-              <div className="px-5 pb-5">
-                <button
-                  onClick={() => setShowSessionSummary(false)}
-                  className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-3 text-sm font-bold text-white transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
+          <WorkoutSummaryModal
+            title="Saved!"
+            exercises={summaryExercises}
+            onClose={() => setShowSessionSummary(false)}
+          />
         );
       })()}
 
@@ -1272,10 +1260,37 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
                   router.push("/planner");
                 }
               }}
-              onExerciseOutcome={(exerciseId, outcome) => {
+              externalOutcomes={Object.fromEntries(
+                Object.entries(comparisonData).map(([id, d]) => [
+                  id,
+                  {
+                    allPositive: d.outcome === "positive",
+                    allNegative: d.outcome === "negative",
+                    isPR: d.outcome === "pr",
+                  },
+                ])
+              )}
+              onExerciseOutcome={(exerciseId, outcome, prevSetsFromTracking, currentSetsFromTracking) => {
                 const outcomeStr: "positive" | "negative" | "pr" | null =
                   outcome.isPR ? "pr" : outcome.allPositive ? "positive" : outcome.allNegative ? "negative" : null;
-                setComparisonData((prev) => ({ ...prev, [exerciseId]: { outcome: outcomeStr } }));
+                const diffs = prevSetsFromTracking && currentSetsFromTracking
+                  ? computeSetDiffs(prevSetsFromTracking, currentSetsFromTracking)
+                  : [];
+                const diffDataMap: Record<number, { diffReps: number | null; diffKg: number | null; isPRSet: boolean }> = {};
+                for (const d of diffs) {
+                  if (!d.isNewSet && !d.isDropped) {
+                    diffDataMap[d.setNumber] = { diffReps: d.diffReps, diffKg: d.diffKg, isPRSet: false };
+                  }
+                }
+                setComparisonData((prev) => ({
+                  ...prev,
+                  [exerciseId]: {
+                    outcome: outcomeStr,
+                    diffData: Object.keys(diffDataMap).length > 0 ? diffDataMap : undefined,
+                    prevSets: prevSetsFromTracking,
+                    currentSets: currentSetsFromTracking,
+                  },
+                }));
               }}
               onExerciseSaved={(exerciseId, sets) => {
                 setWorkoutData((prev) => ({ ...prev, [exerciseId]: sets }));
