@@ -22,13 +22,29 @@ interface WorkoutSummaryModalProps {
   title?: string;
   exercises: SummaryExerciseData[];
   onClose: () => void;
-  /** If provided, renders a prominent CTA button (e.g. "Finish Workout") */
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
 }
 
 function fmt(v: number) {
   return parseFloat(v.toFixed(1));
+}
+
+function DiffBadge({ value, unit }: { value: number; unit: string }) {
+  if (value === 0) return null;
+  const positive = value > 0;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center text-[9px] font-bold px-1 py-px rounded",
+        positive
+          ? "text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40"
+          : "text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40"
+      )}
+    >
+      {positive ? `▲+${fmt(value)}` : `▼${fmt(Math.abs(value))}`}{unit}
+    </span>
+  );
 }
 
 export function WorkoutSummaryModal({
@@ -69,7 +85,6 @@ export function WorkoutSummaryModal({
             <p className="text-xl font-bold text-zinc-900 dark:text-white">
               {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
             </p>
-            {/* Stats row */}
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {prCount > 0 && (
                 <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
@@ -88,7 +103,7 @@ export function WorkoutSummaryModal({
               )}
               {totalVolume > 0 && (
                 <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
-                  {totalVolume.toLocaleString()} kg
+                  {totalVolume.toLocaleString()} kg vol
                 </span>
               )}
             </div>
@@ -106,10 +121,10 @@ export function WorkoutSummaryModal({
           {exerciseData.map((ex) => {
             const isFirstTime = ex.prevSets.length === 0;
             return (
-              <div key={ex.exerciseId} className="rounded-xl bg-zinc-50 dark:bg-zinc-800 overflow-hidden">
+              <div key={ex.exerciseId} className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 overflow-hidden">
                 {/* Exercise header */}
                 <div className="flex items-center gap-2.5 px-3 py-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-zinc-700">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-zinc-700 shadow-sm">
                     <ExerciseIcon name={ex.name} muscleGroup={ex.muscleGroup as MuscleGroup} className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -120,9 +135,7 @@ export function WorkoutSummaryModal({
                       {MUSCLE_GROUP_LABELS[ex.muscleGroup as MuscleGroup] ?? ex.muscleGroup}
                     </p>
                   </div>
-                  {ex.outcome === "pr" && (
-                    <span className="text-sm leading-none shrink-0">🏆</span>
-                  )}
+                  {ex.outcome === "pr" && <span className="text-sm leading-none shrink-0">🏆</span>}
                   {ex.outcome === "positive" && (
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={2.5} />
                   )}
@@ -131,101 +144,89 @@ export function WorkoutSummaryModal({
                   )}
                 </div>
 
-                {/* Set comparison table */}
-                <div className="px-3 pb-3">
+                {/* Set rows */}
+                <div className="px-3 pb-3 space-y-1.5">
                   {isFirstTime ? (
-                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 italic text-center pb-1">
-                      First time — no previous data to compare
+                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 italic text-center py-1">
+                      First time — no previous data
                     </p>
                   ) : (
-                    <>
-                      <div className="grid grid-cols-4 gap-1 mb-1">
-                        {["S#", "Prev", "Today", "Diff"].map((h) => (
-                          <span
-                            key={h}
-                            className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide text-center"
-                          >
-                            {h}
+                    ex.diffs.map((d) => {
+                      const hasPrev = !d.isNewSet;
+                      const hasCurr = !d.isDropped;
+
+                      return (
+                        <div
+                          key={d.setNumber}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg px-2 py-1.5",
+                            "bg-white dark:bg-zinc-900/60",
+                            d.isDropped && "opacity-40"
+                          )}
+                        >
+                          {/* Set label */}
+                          <span className="w-5 shrink-0 text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
+                            S{d.setNumber}
                           </span>
-                        ))}
-                      </div>
-                      <div className="space-y-1">
-                        {ex.diffs.map((d) => {
-                          const prevLabel = d.isNewSet
-                            ? "—"
-                            : ex.isBodyweight
-                            ? `${d.prevReps}r`
-                            : `${d.prevReps}r · ${d.prevKg}kg`;
-                          const currLabel = d.isDropped
-                            ? "—"
-                            : ex.isBodyweight
-                            ? `${d.currReps}r`
-                            : `${d.currReps}r · ${d.currKg}kg`;
 
-                          const parts: string[] = [];
-                          if (!d.isNewSet && !d.isDropped) {
-                            if (d.diffReps !== null && d.diffReps !== 0)
-                              parts.push(`${d.diffReps > 0 ? "▲+" : "▼"}${fmt(d.diffReps)}r`);
-                            if (!ex.isBodyweight && d.diffKg !== null && d.diffKg !== 0)
-                              parts.push(`${d.diffKg > 0 ? "▲+" : "▼"}${fmt(d.diffKg)}kg`);
-                          }
+                          {hasCurr ? (
+                            <div className="flex-1 flex items-center gap-1.5 flex-wrap">
+                              {/* Reps: current value + diff badge inline */}
+                              <span className="flex items-center gap-1">
+                                <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
+                                  {d.currReps}
+                                </span>
+                                <span className="text-[10px] text-zinc-400">r</span>
+                                {d.diffReps !== null && d.diffReps !== 0 && (
+                                  <DiffBadge value={d.diffReps} unit="r" />
+                                )}
+                              </span>
 
-                          const isPos =
-                            !d.isNewSet &&
-                            !d.isDropped &&
-                            (d.diffReps ?? 0) >= 0 &&
-                            (d.diffKg ?? 0) >= 0;
-
-                          const diffEl = d.isNewSet ? (
-                            <span className="text-zinc-400 text-[9px]">new</span>
-                          ) : d.isDropped ? (
-                            <span className="text-zinc-400 text-[9px]">—</span>
-                          ) : parts.length === 0 ? (
-                            <span className="text-zinc-300 dark:text-zinc-600 text-[9px]">=</span>
-                          ) : (
-                            <span
-                              className={cn(
-                                "text-[9px] font-medium",
-                                isPos
-                                  ? "text-emerald-600 dark:text-emerald-400"
-                                  : "text-red-500 dark:text-red-400"
+                              {/* kg: current value + diff badge inline (weighted only) */}
+                              {!ex.isBodyweight && (
+                                <>
+                                  <span className="text-[10px] text-zinc-300 dark:text-zinc-600">·</span>
+                                  <span className="flex items-center gap-1">
+                                    <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 tabular-nums">
+                                      {d.currKg}
+                                    </span>
+                                    <span className="text-[10px] text-zinc-400">kg</span>
+                                    {d.diffKg !== null && d.diffKg !== 0 && (
+                                      <DiffBadge value={d.diffKg} unit="kg" />
+                                    )}
+                                  </span>
+                                </>
                               )}
-                            >
-                              {parts.join(" ")}
-                            </span>
-                          );
-
-                          return (
-                            <div
-                              key={d.setNumber}
-                              className={cn(
-                                "grid grid-cols-4 gap-1 items-center",
-                                d.isDropped && "opacity-50"
-                              )}
-                            >
-                              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center font-medium">
-                                S{d.setNumber}
-                              </span>
-                              <span className="text-[10px] text-zinc-500 dark:text-zinc-400 text-center">
-                                {prevLabel}
-                              </span>
-                              <span className="text-[10px] text-zinc-800 dark:text-zinc-200 text-center font-medium">
-                                {currLabel}
-                              </span>
-                              <span className="text-center">{diffEl}</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </>
+                          ) : (
+                            <span className="flex-1 text-[10px] text-zinc-400 italic">dropped</span>
+                          )}
+
+                          {/* Previous value — right-aligned, small and muted */}
+                          {hasPrev && hasCurr && (
+                            <span className="shrink-0 text-[9px] text-zinc-400 dark:text-zinc-600 tabular-nums">
+                              {ex.isBodyweight
+                                ? `was ${d.prevReps}r`
+                                : `was ${d.prevReps}r · ${d.prevKg}kg`}
+                            </span>
+                          )}
+                          {d.isNewSet && (
+                            <span className="shrink-0 text-[9px] text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded px-1 py-px">
+                              new
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })
                   )}
+
                   {!isFirstTime && ex.allPositive && (
-                    <p className="mt-2 text-[10px] text-emerald-600 dark:text-emerald-400 text-center font-medium">
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 text-center font-medium pt-0.5">
                       💪 Great work!
                     </p>
                   )}
                   {!isFirstTime && ex.allNegative && (
-                    <p className="mt-2 text-[10px] text-red-500 dark:text-red-400 text-center font-medium">
+                    <p className="text-[10px] text-red-500 dark:text-red-400 text-center font-medium pt-0.5">
                       🔥 Keep fighting!
                     </p>
                   )}
