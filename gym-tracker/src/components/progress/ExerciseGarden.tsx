@@ -85,7 +85,7 @@ function getTree1Data(upToStage: number) {
 // ─── 3D helpers ───────────────────────────────────────────────────────────────
 
 function NormalizedModel({ path }: { path: string }) {
-  const { scene } = useGLTF(path);
+  const { scene } = useGLTF(path, false, true);
   const normalized = useMemo(() => {
     const clone = scene.clone(true);
     const box = new Box3().setFromObject(clone);
@@ -101,15 +101,15 @@ function NormalizedModel({ path }: { path: string }) {
   return <primitive object={normalized} />;
 }
 
-/** Wiggling group: gentle pendulum + bob, NO auto-rotate */
+/** Wiggling group: lively pendulum + bob, NO auto-rotate */
 function WiggleGroup({ children }: { children: React.ReactNode }) {
   const groupRef = useRef<Group>(null!);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = Math.sin(t * 0.75) * 0.22;
-    groupRef.current.rotation.z = Math.sin(t * 0.55 + 1.1) * 0.055;
-    groupRef.current.position.y = Math.sin(t * 1.1) * 0.035;
+    groupRef.current.rotation.y = Math.sin(t * 1.2) * 0.5;
+    groupRef.current.rotation.z = Math.sin(t * 0.85 + 1.1) * 0.15;
+    groupRef.current.position.y = Math.sin(t * 1.6) * 0.08;
   });
   return <group ref={groupRef}>{children}</group>;
 }
@@ -406,8 +406,8 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
         <div className="px-4 pb-3 -mt-1">
           <p className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center">
             {tree1.isComplete
-              ? `${trees[1]?.isUnlocked ? "Tending the next tree" : "All trees growing — more coming soon"}`
-              : `${STAGE_THRESHOLDS.find((t) => t > tree1.stardust) ?? TREE_CAPACITY} ${String.fromCodePoint(0x2728)} needed to evolve · earn by improving exercises`}
+              ? (trees[1]?.isUnlocked ? "Tending the next tree" : "All trees growing — more coming soon")
+              : (<>{STAGE_THRESHOLDS.find((t) => t > tree1.stardust) ?? TREE_CAPACITY}{" "}<img src="/stardusticon.png" alt="stardust" className="inline-block h-3 w-3 -mt-0.5 align-middle" />{" "}needed to evolve · earn by improving exercises</>)}
           </p>
         </div>
       </div>
