@@ -21,33 +21,32 @@ const TREE1_STAGES: { stage: TreeStage; name: string; subtext: string }[] = [
   {
     stage: 1,
     name: "Ember Seed",
-    subtext: "A tiny spark of ambition. Every fire starts with a single ember.",
+    subtext: "A single rep. A single spark. The ember waits for fuel.",
   },
   {
     stage: 2,
-    name: "First Flame",
-    subtext: "The fire catches. Consistency is the kindling that keeps it alive.",
+    name: "Cinder Sprout",
+    subtext: "You came back. The flame catches. Smoke rises from the ground.",
   },
   {
     stage: 3,
-    name: "Burning Sapling",
-    subtext: "Roots of fire running deeper. Your dedication is impossible to ignore.",
+    name: "Ashwood Sapling",
+    subtext: "Session after session, the fire grows. The bark won\u2019t bend anymore.",
   },
   {
     stage: 4,
-    name: "Fire Tree",
-    subtext: "Strong, blazing, and unstoppable. The work speaks for itself.",
+    name: "Flamecrown Juvenile",
+    subtext: "Your discipline fed the flame. The crown ignites and won\u2019t go out.",
   },
   {
     stage: 5,
-    name: "Inferno",
-    subtext: "A roaring testament to discipline. You burn brighter than ever.",
+    name: "Emberveil Mature",
+    subtext: "Months of stardust, months of fire. The heat you carry now is permanent.",
   },
   {
     stage: 6,
-    name: "Eternal Blaze",
-    subtext:
-      "You built this — rep by rep, session by session. A monument of fire that will never go out.",
+    name: "The Eternal Pyre",
+    subtext: "You are the fire now. Every rep was a log. It will never go out.",
   },
 ];
 
