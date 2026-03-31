@@ -58,38 +58,18 @@ function getTree1Data(upToStage: number) {
 // bgPosX formula: stageIdx * (STAGE_W+GAP)*100 / (SPRITE_W-STAGE_W) ≈ stageIdx * 20%
 // background-size 611% scales sprite so one stage = container width exactly.
 
-function TreeStageImage({
-  stage,
-  className,
-  naturalAspect = false,
-}: {
-  stage: number;
-  className?: string;
-  naturalAspect?: boolean;
-}) {
+// aspect-ratio CSS property ensures height = width × (H/W) based on the
+// element's OWN width — unlike paddingTop% which is relative to parent width.
+function TreeStageImage({ stage, className }: { stage: number; className?: string }) {
   const stageIdx = stage - 1;
   const bgPosX = stageIdx * ((STAGE_W + GAP) * 100) / (SPRITE_W - STAGE_W);
   const bgSizeX = (SPRITE_W / STAGE_W) * 100; // ~611%
 
-  if (naturalAspect) {
-    // Pad the container to the stage's natural aspect ratio so the full tree shows.
-    return (
-      <div
-        className={cn("relative w-full bg-no-repeat", className)}
-        style={{
-          paddingTop: `${(SPRITE_H / STAGE_W) * 100}%`,
-          backgroundImage: "url(/tree1.png)",
-          backgroundSize: `${bgSizeX}% auto`,
-          backgroundPosition: `${bgPosX}% top`,
-        }}
-      />
-    );
-  }
-
   return (
     <div
-      className={cn("bg-no-repeat", className)}
+      className={cn("w-full bg-no-repeat", className)}
       style={{
+        aspectRatio: `${STAGE_W} / ${SPRITE_H}`,
         backgroundImage: "url(/tree1.png)",
         backgroundSize: `${bgSizeX}% auto`,
         backgroundPosition: `${bgPosX}% top`,
@@ -191,17 +171,21 @@ function TreeCard({ tree, stageName, isMaxStage, onClick }: TreeCardProps) {
           ? "border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 active:scale-[0.97]"
           : "border-zinc-100 dark:border-zinc-800 cursor-default opacity-50"
       )}
-      style={isMaxStage && isUnlocked ? BLAZE_GLOW_STYLE : undefined}
     >
-      {/* Image or placeholder — 30% smaller than original (h-40→h-28, w-36→w-[100px]) */}
-      <div className="relative w-full h-28 rounded-t-2xl overflow-hidden">
+      {/* Image or placeholder — aspect-ratio drives height so nothing is clipped */}
+      <div
+        className="relative w-full rounded-t-2xl overflow-hidden"
+        style={isMaxStage && isUnlocked ? BLAZE_GLOW_STYLE : undefined}
+      >
         {isUnlocked ? (
           <>
-            <TreeStageImage stage={tree.stage} className="w-full h-full" />
+            <TreeStageImage stage={tree.stage} />
             <FireSparks stage={tree.stage} isBlue={tree.stage === 6} />
           </>
         ) : (
-          <LockedPlaceholder />
+          <div className="h-24">
+            <LockedPlaceholder />
+          </div>
         )}
       </div>
 
@@ -264,14 +248,14 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           <X className="h-5 w-5" />
         </button>
 
-        {/* Stage image — 70% width centered, natural aspect ratio, no cropping */}
+        {/* Stage image — 55% width centered, aspect-ratio ensures no cropping */}
         <div className="w-full flex justify-center py-3">
           <div
-            className="relative w-[70%]"
+            className="relative w-[55%]"
             style={viewStage === 6 ? BLAZE_GLOW_STYLE : undefined}
           >
-            <TreeStageImage stage={viewStage} naturalAspect />
-            <div className="absolute inset-0">
+            <TreeStageImage stage={viewStage} />
+            <div className="absolute inset-0 overflow-hidden">
               <FireSparks stage={viewStage} isBlue={viewStage === 6} />
             </div>
           </div>
