@@ -74,7 +74,7 @@ function FireSparks({ stage, isBlue }: { stage: number; isBlue: boolean }) {
   const color = isBlue ? "#3b82f6" : "#f97316";
   const glow = isBlue ? "0 0 4px 1px #60a5fa" : "0 0 4px 1px #fb923c";
   // stage 1: center, stage 2: lower-top, stage 3+: top third
-  const originTop = stage === 1 ? "50%" : stage === 2 ? "38%" : "22%";
+  const originTop = stage === 1 ? "50%" : stage === 2 ? "55%" : "22%";
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
