@@ -135,9 +135,9 @@ function BendingModel({ path }: { path: string }) {
             [
               "#include <begin_vertex>",
               "vec4 wPos = modelMatrix * vec4(transformed, 1.0);",
-              "float bendFactor = smoothstep(-0.33, 1.0, wPos.y);",
-              "transformed.x += uBendX * bendFactor * bendFactor;",
-              "transformed.z += uBendZ * bendFactor * bendFactor;",
+              "float bendFactor = sqrt(smoothstep(-0.33, 1.0, wPos.y));",
+              "transformed.x += uBendX * bendFactor;",
+              "transformed.z += uBendZ * bendFactor;",
             ].join("\n")
           );
           shaders.push(shader);
