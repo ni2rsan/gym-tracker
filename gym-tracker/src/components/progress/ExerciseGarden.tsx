@@ -123,11 +123,12 @@ function WiggleGroup({ stage, children }: { stage: number; children: React.React
   });
 
   if (isTree) {
-    // Offset model down so rotation pivot is at the base (bottom third stays still)
+    // Pivot at model base: shift model up so base sits at origin,
+    // rotate (base stays still, top sways), then shift back down.
     return (
-      <group position={[0, -0.7, 0]}>
-        <group ref={groupRef} position={[0, 0.7, 0]}>
-          <group position={[0, -0.7, 0]}>
+      <group position={[0, -1, 0]}>
+        <group ref={groupRef}>
+          <group position={[0, 1, 0]}>
             {children}
           </group>
         </group>
