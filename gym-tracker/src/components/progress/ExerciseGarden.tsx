@@ -101,22 +101,46 @@ function NormalizedModel({ path }: { path: string }) {
   return <primitive object={normalized} />;
 }
 
-/** Wiggling group: lively pendulum + bob, NO auto-rotate */
-function WiggleGroup({ children }: { children: React.ReactNode }) {
+/** Wiggling group: lively pendulum + bob, NO auto-rotate.
+ *  Stage 3+: pivot shifted to bottom so only the canopy sways. */
+function WiggleGroup({ stage, children }: { stage: number; children: React.ReactNode }) {
   const groupRef = useRef<Group>(null!);
+  const isTree = stage >= 3;
+
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (!groupRef.current) return;
-    groupRef.current.rotation.y = Math.sin(t * 1.2) * 0.5;
-    groupRef.current.rotation.z = Math.sin(t * 0.85 + 1.1) * 0.15;
-    groupRef.current.position.y = Math.sin(t * 1.6) * 0.08;
+    if (isTree) {
+      // Gentler sway — pivot is at the base so top moves more
+      groupRef.current.rotation.y = Math.sin(t * 0.8) * 0.12;
+      groupRef.current.rotation.z = Math.sin(t * 0.6 + 1.1) * 0.06;
+      groupRef.current.position.y = 0; // no bob for trees
+    } else {
+      groupRef.current.rotation.y = Math.sin(t * 1.2) * 0.5;
+      groupRef.current.rotation.z = Math.sin(t * 0.85 + 1.1) * 0.15;
+      groupRef.current.position.y = Math.sin(t * 1.6) * 0.08;
+    }
   });
+
+  if (isTree) {
+    // Offset model down so rotation pivot is at the base (bottom third stays still)
+    return (
+      <group position={[0, -0.7, 0]}>
+        <group ref={groupRef} position={[0, 0.7, 0]}>
+          <group position={[0, -0.7, 0]}>
+            {children}
+          </group>
+        </group>
+      </group>
+    );
+  }
+
   return <group ref={groupRef}>{children}</group>;
 }
 
 // ─── Card 3D canvas (wiggle, no orbit) ───────────────────────────────────────
 
-function TreeCardCanvas({ path }: { path: string }) {
+function TreeCardCanvas({ path, stage }: { path: string; stage: number }) {
   return (
     <CanvasErrorBoundary>
       <Canvas
@@ -127,7 +151,7 @@ function TreeCardCanvas({ path }: { path: string }) {
         <ambientLight intensity={1.3} />
         <directionalLight position={[3, 5, 3]} intensity={0.9} />
         <Suspense fallback={null}>
-          <WiggleGroup>
+          <WiggleGroup stage={stage}>
             <NormalizedModel path={path} />
           </WiggleGroup>
         </Suspense>
@@ -187,7 +211,7 @@ function TreeCard({ tree, stageName, modelPath, isStage5, onClick }: TreeCardPro
       {/* 3D canvas or placeholder */}
       <div className="w-full h-32 rounded-t-2xl overflow-hidden">
         {isUnlocked && modelPath ? (
-          <TreeCardCanvas path={modelPath} />
+          <TreeCardCanvas path={modelPath} stage={tree.stage} />
         ) : (
           <LockedPlaceholder />
         )}
@@ -264,10 +288,10 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
               <OrbitControls
                 enableZoom={false}
                 enablePan={false}
-                minAzimuthAngle={-0.3}
-                maxAzimuthAngle={0.3}
-                minPolarAngle={Math.PI / 2 - 0.15}
-                maxPolarAngle={Math.PI / 2 + 0.15}
+                minAzimuthAngle={-Math.PI / 6}
+                maxAzimuthAngle={Math.PI / 6}
+                minPolarAngle={Math.PI / 2}
+                maxPolarAngle={Math.PI / 2}
               />
             </Canvas>
           </CanvasErrorBoundary>
