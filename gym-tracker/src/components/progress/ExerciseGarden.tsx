@@ -127,7 +127,7 @@ function FireSparks({ stage, isBlue }: { stage: number; isBlue: boolean }) {
   const color = isBlue ? "#3b82f6" : "#f97316";
   const glow = isBlue ? "0 0 4px 1px #60a5fa" : "0 0 4px 1px #fb923c";
   // Stage 1: sparks from center; all others: from top third
-  const originTop = stage === 1 ? "50%" : "22%";
+  const originTop = stage === 1 ? "50%" : stage === 2 ? "38%" : "22%";
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -264,14 +264,16 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           <X className="h-5 w-5" />
         </button>
 
-        {/* Stage image — natural aspect ratio so full tree is always visible */}
-        <div
-          className="relative w-full"
-          style={viewStage === 6 ? BLAZE_GLOW_STYLE : undefined}
-        >
-          <TreeStageImage stage={viewStage} naturalAspect />
-          <div className="absolute inset-0">
-            <FireSparks stage={viewStage} isBlue={viewStage === 6} />
+        {/* Stage image — 70% width centered, natural aspect ratio, no cropping */}
+        <div className="w-full flex justify-center py-3">
+          <div
+            className="relative w-[70%]"
+            style={viewStage === 6 ? BLAZE_GLOW_STYLE : undefined}
+          >
+            <TreeStageImage stage={viewStage} naturalAspect />
+            <div className="absolute inset-0">
+              <FireSparks stage={viewStage} isBlue={viewStage === 6} />
+            </div>
           </div>
         </div>
 
