@@ -4,7 +4,7 @@ import { Suspense, useRef, useMemo, useState, useEffect, Component } from "react
 import type { ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
-import { Box3, Vector3, Group } from "three";
+import { Box3, Vector3, Group, Mesh } from "three";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TreeState } from "@/lib/gardenUtils";
@@ -101,40 +101,79 @@ function NormalizedModel({ path }: { path: string }) {
   return <primitive object={normalized} />;
 }
 
-/** Wiggling group: lively pendulum + bob, NO auto-rotate.
- *  Stage 3+: pivot shifted to bottom so only the canopy sways. */
-function WiggleGroup({ stage, children }: { stage: number; children: React.ReactNode }) {
+/** Stage 3+: vertex-level bend so the bottom half stays solid.
+ *  Uses world-space Y to determine bend amount — vertices below
+ *  center don't move at all, vertices above bend quadratically. */
+function BendingModel({ path }: { path: string }) {
+  const { scene } = useGLTF(path, false, true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const shadersRef = useRef<any[]>([]);
+
+  const normalized = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new Box3().setFromObject(clone);
+    const center = box.getCenter(new Vector3());
+    const size = box.getSize(new Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim === 0) return clone;
+    const scale = 2 / maxDim;
+    clone.scale.setScalar(scale);
+    clone.position.copy(center.multiplyScalar(-scale));
+
+    const shaders: typeof shadersRef.current = [];
+    clone.traverse((child) => {
+      if (child instanceof Mesh && child.material) {
+        const mat = child.material.clone();
+        child.material = mat;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mat.onBeforeCompile = (shader: any) => {
+          shader.uniforms.uBendX = { value: 0 };
+          shader.uniforms.uBendZ = { value: 0 };
+          shader.vertexShader = `uniform float uBendX;\nuniform float uBendZ;\n` + shader.vertexShader;
+          shader.vertexShader = shader.vertexShader.replace(
+            "#include <begin_vertex>",
+            [
+              "#include <begin_vertex>",
+              "vec4 wPos = modelMatrix * vec4(transformed, 1.0);",
+              "float bendFactor = smoothstep(0.0, 1.0, wPos.y);",
+              "transformed.x += uBendX * bendFactor * bendFactor;",
+              "transformed.z += uBendZ * bendFactor * bendFactor;",
+            ].join("\n")
+          );
+          shaders.push(shader);
+        };
+        mat.needsUpdate = true;
+      }
+    });
+    shadersRef.current = shaders;
+
+    return clone;
+  }, [scene]);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    const bendX = Math.sin(t * 0.8) * 0.4;
+    const bendZ = Math.sin(t * 0.6 + 1.1) * 0.2;
+    for (const shader of shadersRef.current) {
+      shader.uniforms.uBendX.value = bendX;
+      shader.uniforms.uBendZ.value = bendZ;
+    }
+  });
+
+  return <primitive object={normalized} />;
+}
+
+/** Stage 1-2: full-body wiggle with pendulum + bob */
+function WiggleGroup({ children }: { children: React.ReactNode }) {
   const groupRef = useRef<Group>(null!);
-  const isTree = stage >= 3;
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     if (!groupRef.current) return;
-    if (isTree) {
-      // Gentler sway — pivot is at the base so top moves more
-      groupRef.current.rotation.y = Math.sin(t * 0.8) * 0.12;
-      groupRef.current.rotation.z = Math.sin(t * 0.6 + 1.1) * 0.06;
-      groupRef.current.position.y = 0; // no bob for trees
-    } else {
-      groupRef.current.rotation.y = Math.sin(t * 1.2) * 0.5;
-      groupRef.current.rotation.z = Math.sin(t * 0.85 + 1.1) * 0.15;
-      groupRef.current.position.y = Math.sin(t * 1.6) * 0.08;
-    }
+    groupRef.current.rotation.y = Math.sin(t * 1.2) * 0.5;
+    groupRef.current.rotation.z = Math.sin(t * 0.85 + 1.1) * 0.15;
+    groupRef.current.position.y = Math.sin(t * 1.6) * 0.08;
   });
-
-  if (isTree) {
-    // Pivot at model base: shift model up so base sits at origin,
-    // rotate (base stays still, top sways), then shift back down.
-    return (
-      <group position={[0, -1, 0]}>
-        <group ref={groupRef}>
-          <group position={[0, 1, 0]}>
-            {children}
-          </group>
-        </group>
-      </group>
-    );
-  }
 
   return <group ref={groupRef}>{children}</group>;
 }
@@ -152,9 +191,13 @@ function TreeCardCanvas({ path, stage }: { path: string; stage: number }) {
         <ambientLight intensity={1.3} />
         <directionalLight position={[3, 5, 3]} intensity={0.9} />
         <Suspense fallback={null}>
-          <WiggleGroup stage={stage}>
-            <NormalizedModel path={path} />
-          </WiggleGroup>
+          {stage >= 3 ? (
+            <BendingModel path={path} />
+          ) : (
+            <WiggleGroup>
+              <NormalizedModel path={path} />
+            </WiggleGroup>
+          )}
         </Suspense>
       </Canvas>
     </CanvasErrorBoundary>
