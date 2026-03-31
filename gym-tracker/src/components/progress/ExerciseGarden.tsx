@@ -297,8 +297,8 @@ export function ExerciseGarden({ stardustTotal, trees }: { stardustTotal: number
           100% { transform: translate(var(--spark-dx), var(--spark-dy)) scale(0.1); opacity: 0; }
         }
         @keyframes blazeGlow {
-          0%, 100% { filter: drop-shadow(0 0 4px #3b82f6) drop-shadow(0 0 10px #60a5fa); }
-          50%       { filter: drop-shadow(0 0 10px #3b82f6) drop-shadow(0 0 22px #60a5fa) drop-shadow(0 0 32px #2563eb); }
+          0%, 100% { filter: drop-shadow(0 0 3px #3b82f6) drop-shadow(0 0 7px #60a5fa); }
+          50%       { filter: drop-shadow(0 0 7px #3b82f6) drop-shadow(0 0 15px #60a5fa) drop-shadow(0 0 22px #2563eb); }
         }
       `}</style>
 
