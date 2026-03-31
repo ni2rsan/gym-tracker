@@ -66,8 +66,8 @@ export function WorkoutSummaryModal({
   });
 
   const prCount = exerciseData.filter((e) => e.outcome === "pr").length;
-  const improvedCount = exerciseData.filter((e) => e.outcome === "positive").length;
-  const declinedCount = exerciseData.filter((e) => e.outcome === "negative").length;
+  const improvedCount = exerciseData.filter((e) => e.allPositive).length;
+  const declinedCount = exerciseData.filter((e) => e.allNegative).length;
 
   // Stardust = every exercise with allPositive (includes PRs that also improved vs previous)
   const computedStardust = exerciseData.filter((e) => e.allPositive).length;
