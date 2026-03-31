@@ -55,13 +55,36 @@ function getTree1Data(upToStage: number) {
 }
 
 // ─── Stage image from sprite sheet ───────────────────────────────────────────
+// bgPosX formula: stageIdx * (STAGE_W+GAP)*100 / (SPRITE_W-STAGE_W) ≈ stageIdx * 20%
+// background-size 611% scales sprite so one stage = container width exactly.
 
-function TreeStageImage({ stage, className }: { stage: number; className?: string }) {
+function TreeStageImage({
+  stage,
+  className,
+  naturalAspect = false,
+}: {
+  stage: number;
+  className?: string;
+  naturalAspect?: boolean;
+}) {
   const stageIdx = stage - 1;
-  // CSS background-position percentage: pct maps 0%→first stage, 100%→last stage
-  const bgPosX = stageIdx === 0 ? 0 : (stageIdx / (STAGE_COUNT - 1)) * 100;
-  // Scale sprite so one stage ≈ container width
+  const bgPosX = stageIdx * ((STAGE_W + GAP) * 100) / (SPRITE_W - STAGE_W);
   const bgSizeX = (SPRITE_W / STAGE_W) * 100; // ~611%
+
+  if (naturalAspect) {
+    // Pad the container to the stage's natural aspect ratio so the full tree shows.
+    return (
+      <div
+        className={cn("relative w-full bg-no-repeat", className)}
+        style={{
+          paddingTop: `${(SPRITE_H / STAGE_W) * 100}%`,
+          backgroundImage: "url(/tree1.png)",
+          backgroundSize: `${bgSizeX}% auto`,
+          backgroundPosition: `${bgPosX}% top`,
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -69,26 +92,42 @@ function TreeStageImage({ stage, className }: { stage: number; className?: strin
       style={{
         backgroundImage: "url(/tree1.png)",
         backgroundSize: `${bgSizeX}% auto`,
-        backgroundPosition: `${bgPosX}% center`,
+        backgroundPosition: `${bgPosX}% top`,
       }}
     />
   );
 }
 
 // ─── Fire sparks effect ──────────────────────────────────────────────────────
+// Stage 1: sparks origin at vertical center. All others: top third.
+// Movement: outward in random directions (biased upward) via CSS custom props.
 
-function FireSparks({ isBlue }: { isBlue: boolean }) {
+const SPARK_COUNT = 12;
+
+function FireSparks({ stage, isBlue }: { stage: number; isBlue: boolean }) {
   const sparks = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => ({
-      left: `${8 + ((i * 37 + 13) % 84)}%`,
-      delay: `${(i * 0.35) % 2.1}s`,
-      duration: `${1.0 + (i % 4) * 0.3}s`,
-      size: 2 + (i % 3),
-    }));
+    return Array.from({ length: SPARK_COUNT }, (_, i) => {
+      // Spread angles across upper arc: -150° to -30° (0° = right, -90° = up)
+      const angle = ((-150 + (i / (SPARK_COUNT - 1)) * 120) * Math.PI) / 180;
+      const distance = 18 + (i * 11 % 28);
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      return {
+        // Horizontal scatter within the origin zone
+        left: `${20 + ((i * 43 + 7) % 60)}%`,
+        dx: `${dx.toFixed(1)}px`,
+        dy: `${dy.toFixed(1)}px`,
+        delay: `${(i * 0.22) % 1.8}s`,
+        duration: `${0.8 + (i % 4) * 0.25}s`,
+        size: 2 + (i % 3),
+      };
+    });
   }, []);
 
   const color = isBlue ? "#3b82f6" : "#f97316";
   const glow = isBlue ? "0 0 4px 1px #60a5fa" : "0 0 4px 1px #fb923c";
+  // Stage 1: sparks from center; all others: from top third
+  const originTop = stage === 1 ? "50%" : "22%";
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -98,13 +137,16 @@ function FireSparks({ isBlue }: { isBlue: boolean }) {
           className="absolute rounded-full"
           style={{
             left: s.left,
-            bottom: "5%",
+            top: originTop,
             width: s.size,
             height: s.size,
             backgroundColor: color,
             boxShadow: glow,
             animation: `gardenSpark ${s.duration} ease-out ${s.delay} infinite`,
-          }}
+            // CSS custom properties used by the keyframe
+            ["--spark-dx" as string]: s.dx,
+            ["--spark-dy" as string]: s.dy,
+          } as React.CSSProperties}
         />
       ))}
     </div>
@@ -144,19 +186,19 @@ function TreeCard({ tree, stageName, isMaxStage, onClick }: TreeCardProps) {
       disabled={!isUnlocked}
       className={cn(
         "flex flex-col items-center rounded-2xl border transition-colors shrink-0",
-        "w-36 bg-white dark:bg-zinc-900",
+        "w-[100px] bg-white dark:bg-zinc-900",
         isUnlocked
           ? "border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 active:scale-[0.97]"
           : "border-zinc-100 dark:border-zinc-800 cursor-default opacity-50"
       )}
       style={isMaxStage && isUnlocked ? BLAZE_GLOW_STYLE : undefined}
     >
-      {/* Image or placeholder */}
-      <div className="relative w-full h-40 rounded-t-2xl overflow-hidden">
+      {/* Image or placeholder — 30% smaller than original (h-40→h-28, w-36→w-[100px]) */}
+      <div className="relative w-full h-28 rounded-t-2xl overflow-hidden">
         {isUnlocked ? (
           <>
             <TreeStageImage stage={tree.stage} className="w-full h-full" />
-            <FireSparks isBlue={tree.stage === 6} />
+            <FireSparks stage={tree.stage} isBlue={tree.stage === 6} />
           </>
         ) : (
           <LockedPlaceholder />
@@ -164,19 +206,19 @@ function TreeCard({ tree, stageName, isMaxStage, onClick }: TreeCardProps) {
       </div>
 
       {/* Info */}
-      <div className="px-2 py-2 w-full text-center space-y-0.5">
-        <p className="text-[11px] font-semibold text-zinc-800 dark:text-zinc-200 leading-tight truncate">
+      <div className="px-1.5 py-1.5 w-full text-center space-y-0.5">
+        <p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-200 leading-tight truncate">
           {isUnlocked ? stageName : "???"}
         </p>
         {isUnlocked && (
-          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 tabular-nums">
+          <p className="text-[10px] text-zinc-500 dark:text-zinc-400 tabular-nums">
             {tree.stardust}
             {tree.isComplete ? "" : `/${TREE_CAPACITY}`}
             {" "}
             <img
               src="/stardusticon.png"
               alt="stardust"
-              className="inline-block h-3.5 w-3.5 -mt-0.5 align-middle"
+              className="inline-block h-3 w-3 -mt-0.5 align-middle"
             />
           </p>
         )}
@@ -222,13 +264,15 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           <X className="h-5 w-5" />
         </button>
 
-        {/* Stage image */}
+        {/* Stage image — natural aspect ratio so full tree is always visible */}
         <div
-          className="relative w-full h-64"
+          className="relative w-full"
           style={viewStage === 6 ? BLAZE_GLOW_STYLE : undefined}
         >
-          <TreeStageImage stage={viewStage} className="w-full h-full" />
-          <FireSparks isBlue={viewStage === 6} />
+          <TreeStageImage stage={viewStage} naturalAspect />
+          <div className="absolute inset-0">
+            <FireSparks stage={viewStage} isBlue={viewStage === 6} />
+          </div>
         </div>
 
         {/* Stage navigation */}
@@ -306,9 +350,9 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
       {/* Keyframes */}
       <style>{`
         @keyframes gardenSpark {
-          0% { transform: translateY(0) scale(1); opacity: 0.9; }
-          60% { opacity: 0.6; }
-          100% { transform: translateY(-50px) translateX(${3}px) scale(0.2); opacity: 0; }
+          0%   { transform: translate(0, 0) scale(1); opacity: 0.9; }
+          60%  { opacity: 0.5; }
+          100% { transform: translate(var(--spark-dx), var(--spark-dy)) scale(0.1); opacity: 0; }
         }
         @keyframes blazePulse {
           0%, 100% {
