@@ -101,9 +101,9 @@ function NormalizedModel({ path }: { path: string }) {
   return <primitive object={normalized} />;
 }
 
-/** Stage 3+: vertex-level bend so the bottom half stays solid.
- *  Uses world-space Y to determine bend amount — vertices below
- *  center don't move at all, vertices above bend quadratically. */
+/** Stage 3+: vertex-level bend so the bottom third stays solid.
+ *  Uses world-space Y to determine bend amount — vertices in the
+ *  bottom third don't move, upper two-thirds bend quadratically. */
 function BendingModel({ path }: { path: string }) {
   const { scene } = useGLTF(path, false, true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -135,7 +135,7 @@ function BendingModel({ path }: { path: string }) {
             [
               "#include <begin_vertex>",
               "vec4 wPos = modelMatrix * vec4(transformed, 1.0);",
-              "float bendFactor = smoothstep(0.0, 1.0, wPos.y);",
+              "float bendFactor = smoothstep(-0.33, 1.0, wPos.y);",
               "transformed.x += uBendX * bendFactor * bendFactor;",
               "transformed.z += uBendZ * bendFactor * bendFactor;",
             ].join("\n")
