@@ -1,223 +1,124 @@
 "use client";
 
-import { Suspense, useRef, useMemo, useState, useEffect, Component } from "react";
-import type { ReactNode } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
-import { Box3, Vector3, Group, Mesh } from "three";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { TreeState } from "@/lib/gardenUtils";
+import type { TreeState, TreeStage } from "@/lib/gardenUtils";
 import { STAGE_THRESHOLDS, TREE_CAPACITY } from "@/lib/gardenUtils";
 
-// Models are loaded on demand via Suspense. No preload to avoid downloading
-// all stages (stage 5 alone is 380 MB) on every page visit.
+// ─── Sprite sheet constants ──────────────────────────────────────────────────
+// tree1.png: 1933 x 475px, 6 stages side by side, 7px gap between each.
 
-// ─── Error boundary ───────────────────────────────────────────────────────────
+const SPRITE_W = 1933;
+const SPRITE_H = 475;
+const GAP = 7;
+const STAGE_COUNT = 6;
+const STAGE_W = (SPRITE_W - (STAGE_COUNT - 1) * GAP) / STAGE_COUNT; // ~316.33px
 
-class CanvasErrorBoundary extends Component<
-  { children: ReactNode; fallback?: ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(error: Error) {
-    console.error("[Garden 3D error]", error.message);
-  }
-  render() {
-    if (this.state.hasError) {
-      return this.props.fallback ?? (
-        <div className="flex items-center justify-center h-full text-zinc-300 dark:text-zinc-600 text-xs">
-          3D unavailable
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
+// ─── Tree metadata ───────────────────────────────────────────────────────────
 
-// ─── Tree metadata ────────────────────────────────────────────────────────────
-
-const TREE1_STAGES = [
+const TREE1_STAGES: { stage: TreeStage; name: string; subtext: string }[] = [
   {
-    stage: 1 as const,
-    path: "/tree1stage1.glb",
-    name: "Tiny Seed",
-    subtext: "Every legend starts as a seed. Your first rep was the first step.",
+    stage: 1,
+    name: "Ember Seed",
+    subtext: "A tiny spark of ambition. Every fire starts with a single ember.",
   },
   {
-    stage: 2 as const,
-    path: "/tree1stage2.glb",
-    name: "First Sprout",
-    subtext: "Life is stirring. Consistency is your water and sunlight.",
+    stage: 2,
+    name: "First Flame",
+    subtext: "The fire catches. Consistency is the kindling that keeps it alive.",
   },
   {
-    stage: 3 as const,
-    path: "/tree1stage3.glb",
-    name: "Growing Sapling",
-    subtext: "Roots running deeper. Your dedication is beginning to take real shape.",
+    stage: 3,
+    name: "Burning Sapling",
+    subtext: "Roots of fire running deeper. Your dedication is impossible to ignore.",
   },
   {
-    stage: 4 as const,
-    path: "/tree1stage4.glb",
-    name: "Young Tree",
-    subtext: "Strong, steady, and impossible to ignore. The work shows.",
+    stage: 4,
+    name: "Fire Tree",
+    subtext: "Strong, blazing, and unstoppable. The work speaks for itself.",
   },
   {
-    stage: 5 as const,
-    path: "/tree1stage5.glb",
-    name: "Ancient Oak",
+    stage: 5,
+    name: "Inferno",
+    subtext: "A roaring testament to discipline. You burn brighter than ever.",
+  },
+  {
+    stage: 6,
+    name: "Eternal Blaze",
     subtext:
-      "You built this — rep by rep, session by session. A monument to what showing up every day can create.",
+      "You built this — rep by rep, session by session. A monument of fire that will never go out.",
   },
 ];
 
-/** Returns the stage metadata for tree 1 up to the given current stage */
 function getTree1Data(upToStage: number) {
   return TREE1_STAGES.filter((s) => s.stage <= upToStage);
 }
 
-// ─── 3D helpers ───────────────────────────────────────────────────────────────
+// ─── Stage image from sprite sheet ───────────────────────────────────────────
 
-function NormalizedModel({ path }: { path: string }) {
-  const { scene } = useGLTF(path, false, true);
-  const normalized = useMemo(() => {
-    const clone = scene.clone(true);
-    const box = new Box3().setFromObject(clone);
-    const center = box.getCenter(new Vector3());
-    const size = box.getSize(new Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    if (maxDim === 0) return clone;
-    const scale = 2 / maxDim;
-    clone.scale.setScalar(scale);
-    clone.position.copy(center.multiplyScalar(-scale));
-    return clone;
-  }, [scene]);
-  return <primitive object={normalized} />;
-}
+function TreeStageImage({ stage, className }: { stage: number; className?: string }) {
+  const stageIdx = stage - 1;
+  // CSS background-position percentage: pct maps 0%→first stage, 100%→last stage
+  const bgPosX = stageIdx === 0 ? 0 : (stageIdx / (STAGE_COUNT - 1)) * 100;
+  // Scale sprite so one stage ≈ container width
+  const bgSizeX = (SPRITE_W / STAGE_W) * 100; // ~611%
 
-/** Stage 3+: vertex-level bend so the bottom third stays solid.
- *  Uses world-space Y to determine bend amount — vertices in the
- *  bottom third don't move, upper two-thirds bend quadratically. */
-function BendingModel({ path }: { path: string }) {
-  const { scene } = useGLTF(path, false, true);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const shadersRef = useRef<any[]>([]);
-
-  const normalized = useMemo(() => {
-    const clone = scene.clone(true);
-    const box = new Box3().setFromObject(clone);
-    const center = box.getCenter(new Vector3());
-    const size = box.getSize(new Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    if (maxDim === 0) return clone;
-    const scale = 2 / maxDim;
-    clone.scale.setScalar(scale);
-    clone.position.copy(center.multiplyScalar(-scale));
-
-    const shaders: typeof shadersRef.current = [];
-    clone.traverse((child) => {
-      if (child instanceof Mesh && child.material) {
-        const mat = child.material.clone();
-        child.material = mat;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mat.onBeforeCompile = (shader: any) => {
-          shader.uniforms.uBendX = { value: 0 };
-          shader.uniforms.uBendZ = { value: 0 };
-          shader.vertexShader = `uniform float uBendX;\nuniform float uBendZ;\n` + shader.vertexShader;
-          shader.vertexShader = shader.vertexShader.replace(
-            "#include <begin_vertex>",
-            [
-              "#include <begin_vertex>",
-              "vec4 wPos = modelMatrix * vec4(transformed, 1.0);",
-              "float bendFactor = sqrt(smoothstep(-0.33, 1.0, wPos.y));",
-              "transformed.x += uBendX * bendFactor;",
-              "transformed.z += uBendZ * bendFactor;",
-            ].join("\n")
-          );
-          shaders.push(shader);
-        };
-        mat.needsUpdate = true;
-      }
-    });
-    shadersRef.current = shaders;
-
-    return clone;
-  }, [scene]);
-
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    const bendX = Math.sin(t * 0.8) * 0.12;
-    const bendZ = Math.sin(t * 0.6 + 1.1) * 0.06;
-    for (const shader of shadersRef.current) {
-      shader.uniforms.uBendX.value = bendX;
-      shader.uniforms.uBendZ.value = bendZ;
-    }
-  });
-
-  return <primitive object={normalized} />;
-}
-
-/** Stage 1-2: full-body wiggle with pendulum + bob */
-function WiggleGroup({ children }: { children: React.ReactNode }) {
-  const groupRef = useRef<Group>(null!);
-
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (!groupRef.current) return;
-    groupRef.current.rotation.y = Math.sin(t * 1.2) * 0.5;
-    groupRef.current.rotation.z = Math.sin(t * 0.85 + 1.1) * 0.15;
-    groupRef.current.position.y = Math.sin(t * 1.6) * 0.08;
-  });
-
-  return <group ref={groupRef}>{children}</group>;
-}
-
-// ─── Card 3D canvas (wiggle, no orbit) ───────────────────────────────────────
-
-function TreeCardCanvas({ path, stage }: { path: string; stage: number }) {
   return (
-    <CanvasErrorBoundary>
-      <Canvas
-        shadows={false}
-        camera={{ position: [0, 0, 3.2], fov: 50 }}
-        style={{ width: "100%", height: "100%" }}
-      >
-        <ambientLight intensity={1.3} />
-        <directionalLight position={[3, 5, 3]} intensity={0.9} />
-        <Suspense fallback={null}>
-          {stage >= 3 ? (
-            <BendingModel path={path} />
-          ) : (
-            <WiggleGroup>
-              <NormalizedModel path={path} />
-            </WiggleGroup>
-          )}
-        </Suspense>
-      </Canvas>
-    </CanvasErrorBoundary>
+    <div
+      className={cn("bg-no-repeat", className)}
+      style={{
+        backgroundImage: "url(/tree1.png)",
+        backgroundSize: `${bgSizeX}% auto`,
+        backgroundPosition: `${bgPosX}% center`,
+      }}
+    />
   );
 }
 
-// ─── Stage 5 mystical glow styles ─────────────────────────────────────────────
+// ─── Fire sparks effect ──────────────────────────────────────────────────────
 
-const MYSTICAL_GLOW_STYLE: React.CSSProperties = {
-  animation: "mysticalPulse 2.8s ease-in-out infinite",
-  borderRadius: "1rem",
-};
+function FireSparks({ isBlue }: { isBlue: boolean }) {
+  const sparks = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => ({
+      left: `${8 + ((i * 37 + 13) % 84)}%`,
+      delay: `${(i * 0.35) % 2.1}s`,
+      duration: `${1.0 + (i % 4) * 0.3}s`,
+      size: 2 + (i % 3),
+    }));
+  }, []);
 
-// ─── Locked placeholder card ──────────────────────────────────────────────────
+  const color = isBlue ? "#3b82f6" : "#f97316";
+  const glow = isBlue ? "0 0 4px 1px #60a5fa" : "0 0 4px 1px #fb923c";
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {sparks.map((s, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            left: s.left,
+            bottom: "5%",
+            width: s.size,
+            height: s.size,
+            backgroundColor: color,
+            boxShadow: glow,
+            animation: `gardenSpark ${s.duration} ease-out ${s.delay} infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Locked placeholder ──────────────────────────────────────────────────────
 
 function LockedPlaceholder() {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-2 opacity-30">
       <div className="w-12 h-12 rounded-full border-2 border-dashed border-zinc-400 dark:border-zinc-600 flex items-center justify-center">
-        <span className="text-xl">🌱</span>
+        <span className="text-xl">🔥</span>
       </div>
       <span className="text-[10px] text-zinc-400 dark:text-zinc-600 font-medium tracking-wide uppercase">
         Locked
@@ -226,17 +127,16 @@ function LockedPlaceholder() {
   );
 }
 
-// ─── Tree card ────────────────────────────────────────────────────────────────
+// ─── Tree card ───────────────────────────────────────────────────────────────
 
 interface TreeCardProps {
   tree: TreeState;
   stageName: string;
-  modelPath: string | null;
-  isStage5: boolean;
+  isMaxStage: boolean;
   onClick: () => void;
 }
 
-function TreeCard({ tree, stageName, modelPath, isStage5, onClick }: TreeCardProps) {
+function TreeCard({ tree, stageName, isMaxStage, onClick }: TreeCardProps) {
   const isUnlocked = tree.isUnlocked;
 
   return (
@@ -250,12 +150,15 @@ function TreeCard({ tree, stageName, modelPath, isStage5, onClick }: TreeCardPro
           ? "border-zinc-200 dark:border-zinc-700 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 active:scale-[0.97]"
           : "border-zinc-100 dark:border-zinc-800 cursor-default opacity-50"
       )}
-      style={isStage5 && isUnlocked ? MYSTICAL_GLOW_STYLE : undefined}
+      style={isMaxStage && isUnlocked ? BLAZE_GLOW_STYLE : undefined}
     >
-      {/* 3D canvas or placeholder */}
-      <div className="w-full h-32 rounded-t-2xl overflow-hidden">
-        {isUnlocked && modelPath ? (
-          <TreeCardCanvas path={modelPath} stage={tree.stage} />
+      {/* Image or placeholder */}
+      <div className="relative w-full h-40 rounded-t-2xl overflow-hidden">
+        {isUnlocked ? (
+          <>
+            <TreeStageImage stage={tree.stage} className="w-full h-full" />
+            <FireSparks isBlue={tree.stage === 6} />
+          </>
         ) : (
           <LockedPlaceholder />
         )}
@@ -283,7 +186,14 @@ function TreeCard({ tree, stageName, modelPath, isStage5, onClick }: TreeCardPro
   );
 }
 
-// ─── Detail overlay ───────────────────────────────────────────────────────────
+// ─── Stage 6 glow style ─────────────────────────────────────────────────────
+
+const BLAZE_GLOW_STYLE: React.CSSProperties = {
+  animation: "blazePulse 2.8s ease-in-out infinite",
+  borderRadius: "1rem",
+};
+
+// ─── Detail overlay ──────────────────────────────────────────────────────────
 
 interface DetailOverlayProps {
   tree: TreeState;
@@ -313,38 +223,19 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           <X className="h-5 w-5" />
         </button>
 
-        {/* 3D canvas — gentle z-axis tilt only */}
+        {/* Stage image */}
         <div
-          className="w-full h-64"
-          style={viewStage === 5 ? MYSTICAL_GLOW_STYLE : undefined}
+          className="relative w-full h-64"
+          style={viewStage === 6 ? BLAZE_GLOW_STYLE : undefined}
         >
-          <CanvasErrorBoundary>
-            <Canvas
-              shadows={false}
-              camera={{ position: [0, 0, 3.2], fov: 50 }}
-              style={{ width: "100%", height: "100%" }}
-            >
-              <ambientLight intensity={1.3} />
-              <directionalLight position={[3, 5, 3]} intensity={0.9} />
-              <Suspense fallback={null}>
-                <NormalizedModel path={stageData.path} />
-              </Suspense>
-              <OrbitControls
-                enableZoom={false}
-                enablePan={false}
-                minAzimuthAngle={-Math.PI / 6}
-                maxAzimuthAngle={Math.PI / 6}
-                minPolarAngle={Math.PI / 2}
-                maxPolarAngle={Math.PI / 2}
-              />
-            </Canvas>
-          </CanvasErrorBoundary>
+          <TreeStageImage stage={viewStage} className="w-full h-full" />
+          <FireSparks isBlue={viewStage === 6} />
         </div>
 
         {/* Stage navigation */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           <button
-            onClick={() => setViewStage((s) => Math.max(1, s - 1) as 1 | 2 | 3 | 4 | 5)}
+            onClick={() => setViewStage((s) => Math.max(1, s - 1) as TreeStage)}
             disabled={viewStage <= 1}
             className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 disabled:opacity-20 transition-colors"
           >
@@ -359,7 +250,7 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
                 className={cn(
                   "w-2 h-2 rounded-full transition-colors",
                   viewStage === s.stage
-                    ? "bg-emerald-500"
+                    ? "bg-orange-500"
                     : "bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-400"
                 )}
               />
@@ -368,7 +259,7 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
 
           <button
             onClick={() =>
-              setViewStage((s) => Math.min(maxViewableStage, s + 1) as 1 | 2 | 3 | 4 | 5)
+              setViewStage((s) => Math.min(maxViewableStage, s + 1) as TreeStage)
             }
             disabled={viewStage >= maxViewableStage}
             className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 disabled:opacity-20 transition-colors"
@@ -379,9 +270,9 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
 
         {/* Text */}
         <div className="px-5 pb-5 pt-1 text-center space-y-1">
-          {viewStage === 5 && (
-            <p className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">
-              ✨ Maximum Growth ✨
+          {viewStage === 6 && (
+            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest">
+              🔥 Eternal Blaze 🔥
             </p>
           )}
           <p className="text-base font-bold text-zinc-900 dark:text-white leading-snug">
@@ -390,7 +281,6 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
           <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
             {stageData.subtext}
           </p>
-          {/* Stage label */}
           <p className="text-[10px] text-zinc-400 dark:text-zinc-600 pt-1">
             Stage {viewStage} of {maxViewableStage}
           </p>
@@ -411,25 +301,22 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
   const [detailTree, setDetailTree] = useState<TreeState | null>(null);
 
   const tree1 = trees[0];
-  const currentStageData = TREE1_STAGES.find((s) => s.stage === tree1.stage)!;
-
-  // Preload only the model the user will actually see on the card
-  useEffect(() => {
-    if (tree1.isUnlocked && currentStageData) {
-      useGLTF.preload(currentStageData.path);
-    }
-  }, [tree1.isUnlocked, currentStageData]);
 
   return (
     <>
-      {/* Keyframes — injected once */}
+      {/* Keyframes */}
       <style>{`
-        @keyframes mysticalPulse {
+        @keyframes gardenSpark {
+          0% { transform: translateY(0) scale(1); opacity: 0.9; }
+          60% { opacity: 0.6; }
+          100% { transform: translateY(-50px) translateX(${3}px) scale(0.2); opacity: 0; }
+        }
+        @keyframes blazePulse {
           0%, 100% {
-            box-shadow: 0 0 8px 3px #a855f7, 0 0 18px 6px #ec4899;
+            box-shadow: 0 0 8px 3px #3b82f6, 0 0 18px 6px #60a5fa;
           }
           50% {
-            box-shadow: 0 0 18px 8px #a855f7, 0 0 36px 14px #ec4899, 0 0 55px 20px #8b5cf6;
+            box-shadow: 0 0 18px 8px #3b82f6, 0 0 36px 14px #60a5fa, 0 0 55px 20px #2563eb;
           }
         }
       `}</style>
@@ -455,21 +342,17 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
           <div className="flex gap-3 min-w-max">
             {trees.map((tree) => {
               const isTree1 = tree.treeIndex === 0;
-              const modelPath = isTree1
-                ? TREE1_STAGES.find((s) => s.stage === tree.stage)?.path ?? null
-                : null;
               const stageName = isTree1
                 ? (TREE1_STAGES.find((s) => s.stage === tree.stage)?.name ?? "")
                 : "";
-              const isStage5 = isTree1 && tree.stage === 5;
+              const isMaxStage = isTree1 && tree.stage === 6;
 
               return (
                 <TreeCard
                   key={tree.treeIndex}
                   tree={tree}
                   stageName={stageName}
-                  modelPath={modelPath}
-                  isStage5={isStage5}
+                  isMaxStage={isMaxStage}
                   onClick={() => setDetailTree(tree)}
                 />
               );
@@ -494,3 +377,10 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
     </>
   );
 }
+
+// ─── DEACTIVATED: 3D model code ─────────────────────────────────────────────
+// The 3D GLB-based tree rendering has been deactivated in favor of the sprite
+// sheet approach above. The GLB files (tree1stage1-5.glb) remain in /public
+// but are no longer loaded. To re-enable, restore the Canvas/useGLTF-based
+// TreeCardCanvas, NormalizedModel, BendingModel, and WiggleGroup components
+// that were previously in this file. See git history for the full 3D code.
