@@ -58,23 +58,39 @@ function getTree1Data(upToStage: number) {
 // bgPosX formula: stageIdx * (STAGE_W+GAP)*100 / (SPRITE_W-STAGE_W) ≈ stageIdx * 20%
 // background-size 611% scales sprite so one stage = container width exactly.
 
-// aspect-ratio CSS property ensures height = width × (H/W) based on the
-// element's OWN width — unlike paddingTop% which is relative to parent width.
-function TreeStageImage({ stage, className }: { stage: number; className?: string }) {
+// Uses <img> (not background-image) so filter: drop-shadow follows the PNG
+// alpha channel, making the glow hug the actual tree shape.
+// clip-path: inset(-glowPx) expands the clip region slightly so the glow
+// bleeds out without showing adjacent stages.
+function TreeStageImage({ stage, glow = false }: { stage: number; glow?: boolean }) {
   const stageIdx = stage - 1;
-  const bgPosX = stageIdx * ((STAGE_W + GAP) * 100) / (SPRITE_W - STAGE_W);
-  const bgSizeX = (SPRITE_W / STAGE_W) * 100; // ~611%
+  // img width as % of container: sprite_total / one_stage
+  const imgWidthPct = (SPRITE_W / STAGE_W) * 100; // ~611%
+  // left offset as % of container width to align the correct stage
+  const leftPct = -stageIdx * ((STAGE_W + GAP) / STAGE_W) * 100;
+  const glowPx = glow ? 14 : 0;
 
   return (
     <div
-      className={cn("w-full bg-no-repeat", className)}
+      className="relative w-full"
       style={{
         aspectRatio: `${STAGE_W} / ${SPRITE_H}`,
-        backgroundImage: "url(/tree1.png)",
-        backgroundSize: `${bgSizeX}% auto`,
-        backgroundPosition: `${bgPosX}% top`,
+        clipPath: `inset(${-glowPx}px)`,
       }}
-    />
+    >
+      <img
+        src="/tree1.png"
+        className="absolute top-0 h-full"
+        style={{
+          width: `${imgWidthPct}%`,
+          left: `${leftPct}%`,
+          filter: glow
+            ? "drop-shadow(0 0 6px #3b82f6) drop-shadow(0 0 14px #60a5fa)"
+            : undefined,
+          animation: glow ? "blazeGlow 2.8s ease-in-out infinite" : undefined,
+        }}
+      />
+    </div>
   );
 }
 
@@ -173,13 +189,10 @@ function TreeCard({ tree, stageName, isMaxStage, onClick }: TreeCardProps) {
       )}
     >
       {/* Image or placeholder — aspect-ratio drives height so nothing is clipped */}
-      <div
-        className="relative w-full rounded-t-2xl overflow-hidden"
-        style={isMaxStage && isUnlocked ? BLAZE_GLOW_STYLE : undefined}
-      >
+      <div className="relative w-full rounded-t-2xl overflow-hidden">
         {isUnlocked ? (
           <>
-            <TreeStageImage stage={tree.stage} />
+            <TreeStageImage stage={tree.stage} glow={isMaxStage} />
             <FireSparks stage={tree.stage} isBlue={tree.stage === 6} />
           </>
         ) : (
@@ -211,12 +224,7 @@ function TreeCard({ tree, stageName, isMaxStage, onClick }: TreeCardProps) {
   );
 }
 
-// ─── Stage 6 glow style ─────────────────────────────────────────────────────
-
-const BLAZE_GLOW_STYLE: React.CSSProperties = {
-  animation: "blazePulse 2.8s ease-in-out infinite",
-  borderRadius: "1rem",
-};
+// Stage 6 glow is handled via filter: drop-shadow on the <img> inside TreeStageImage.
 
 // ─── Detail overlay ──────────────────────────────────────────────────────────
 
@@ -250,11 +258,8 @@ function DetailOverlay({ tree, onClose }: DetailOverlayProps) {
 
         {/* Stage image — 55% width centered, aspect-ratio ensures no cropping */}
         <div className="w-full flex justify-center py-3">
-          <div
-            className="relative w-[55%]"
-            style={viewStage === 6 ? BLAZE_GLOW_STYLE : undefined}
-          >
-            <TreeStageImage stage={viewStage} />
+          <div className="relative w-[55%]">
+            <TreeStageImage stage={viewStage} glow={viewStage === 6} />
             <div className="absolute inset-0 overflow-hidden">
               <FireSparks stage={viewStage} isBlue={viewStage === 6} />
             </div>
@@ -340,12 +345,12 @@ export function ExerciseGarden({ stardustTotal, trees }: ExerciseGardenProps) {
           60%  { opacity: 0.5; }
           100% { transform: translate(var(--spark-dx), var(--spark-dy)) scale(0.1); opacity: 0; }
         }
-        @keyframes blazePulse {
+        @keyframes blazeGlow {
           0%, 100% {
-            box-shadow: 0 0 8px 3px #3b82f6, 0 0 18px 6px #60a5fa;
+            filter: drop-shadow(0 0 4px #3b82f6) drop-shadow(0 0 10px #60a5fa);
           }
           50% {
-            box-shadow: 0 0 18px 8px #3b82f6, 0 0 36px 14px #60a5fa, 0 0 55px 20px #2563eb;
+            filter: drop-shadow(0 0 10px #3b82f6) drop-shadow(0 0 22px #60a5fa) drop-shadow(0 0 32px #2563eb);
           }
         }
       `}</style>
