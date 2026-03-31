@@ -152,8 +152,8 @@ function BendingModel({ path }: { path: string }) {
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    const bendX = Math.sin(t * 0.8) * 0.4;
-    const bendZ = Math.sin(t * 0.6 + 1.1) * 0.2;
+    const bendX = Math.sin(t * 0.8) * 0.12;
+    const bendZ = Math.sin(t * 0.6 + 1.1) * 0.06;
     for (const shader of shadersRef.current) {
       shader.uniforms.uBendX.value = bendX;
       shader.uniforms.uBendZ.value = bendZ;
