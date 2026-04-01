@@ -20,6 +20,7 @@ export function BadgeLayoutEditor({
   const [bgInput, setBgInput] = useState(initialLayout?.backgroundImage ?? "");
   const [bgImage, setBgImage] = useState(initialLayout?.backgroundImage ?? "");
   const [aspectRatio, setAspectRatio] = useState(initialLayout?.imageAspectRatio ?? 1);
+  const [badgeSizePercent, setBadgeSizePercent] = useState(initialLayout?.badgeSizePercent ?? 14);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(
     initialLayout?.positions ?? {}
   );
@@ -78,6 +79,7 @@ export function BadgeLayoutEditor({
     const output: SectionLayout = {
       backgroundImage: bgImage,
       imageAspectRatio: +aspectRatio.toFixed(4),
+      badgeSizePercent,
       positions,
     };
     navigator.clipboard.writeText(JSON.stringify(output, null, 2));
@@ -86,7 +88,7 @@ export function BadgeLayoutEditor({
   }
 
   const jsonOutput = JSON.stringify(
-    { backgroundImage: bgImage, imageAspectRatio: +aspectRatio.toFixed(4), positions },
+    { backgroundImage: bgImage, imageAspectRatio: +aspectRatio.toFixed(4), badgeSizePercent, positions },
     null,
     2
   );
@@ -131,6 +133,25 @@ export function BadgeLayoutEditor({
                 Load
               </button>
             </div>
+          </div>
+
+          {/* Badge size slider */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">
+                Badge Size
+              </label>
+              <span className="text-[10px] font-mono text-zinc-500">{badgeSizePercent}%</span>
+            </div>
+            <input
+              type="range"
+              min={5}
+              max={35}
+              step={1}
+              value={badgeSizePercent}
+              onChange={(e) => setBadgeSizePercent(Number(e.target.value))}
+              className="w-full accent-orange-500"
+            />
           </div>
 
           {/* Canvas */}
@@ -180,7 +201,8 @@ export function BadgeLayoutEditor({
                     <img
                       src={badge.imgSrc}
                       alt={badge.label}
-                      className="w-16 h-16 object-contain drop-shadow-lg pointer-events-none"
+                      className="object-contain drop-shadow-lg pointer-events-none"
+                      style={{ width: `${badgeSizePercent * (canvasRef.current?.clientWidth ?? 400) / 100}px`, height: `${badgeSizePercent * (canvasRef.current?.clientWidth ?? 400) / 100}px` }}
                     />
                     <button
                       className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center leading-none hover:bg-red-600 z-20"

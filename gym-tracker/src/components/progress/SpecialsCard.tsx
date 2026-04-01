@@ -257,8 +257,7 @@ export function SpecialsCard({ userId, layout }: SpecialsCardProps) {
                   left: `${layout.positions["early-adopter"].x}%`,
                   top: `${layout.positions["early-adopter"].y}%`,
                   transform: "translate(-50%, -50%)",
-                  width: "30%",
-                  maxWidth: "160px",
+                  width: `${layout.badgeSizePercent}%`,
                 }}
                 onClick={() => setModalBadge(EARLY_ADOPTER)}
               >
@@ -278,8 +277,7 @@ export function SpecialsCard({ userId, layout }: SpecialsCardProps) {
                   left: `${layout.positions["architect"].x}%`,
                   top: `${layout.positions["architect"].y}%`,
                   transform: "translate(-50%, -50%)",
-                  width: "30%",
-                  maxWidth: "160px",
+                  width: `${layout.badgeSizePercent}%`,
                 }}
                 onClick={() => setModalBadge(THE_ARCHITECT)}
               >

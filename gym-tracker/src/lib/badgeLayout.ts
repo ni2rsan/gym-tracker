@@ -6,6 +6,7 @@ export type BadgePosition = { x: number; y: number }; // percentage 0–100
 export type SectionLayout = {
   backgroundImage: string;      // e.g. "/badge-backgrounds/milestones.jpg"
   imageAspectRatio: number;     // width / height of the background image
+  badgeSizePercent: number;     // badge size as % of card width (e.g. 14 = 14%)
   positions: Record<string, BadgePosition>; // badgeKey → position
 };
 

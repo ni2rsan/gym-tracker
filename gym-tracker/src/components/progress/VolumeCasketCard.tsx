@@ -120,15 +120,13 @@ export function VolumeCasketCard({ cumulativeVolume, layout }: VolumeCasketCardP
                     left: `${pos.x}%`,
                     top: `${pos.y}%`,
                     transform: "translate(-50%, -50%)",
+                    width: `${layout.badgeSizePercent}%`,
                   }}
                 >
                   <img
                     src={`/volume/${badge.key}.png`}
                     alt={badge.label}
-                    className={cn(
-                      "w-14 h-14 object-contain drop-shadow-md",
-                      !achieved && "grayscale opacity-30"
-                    )}
+                    className={cn("w-full h-auto object-contain drop-shadow-md", !achieved && "grayscale opacity-30")}
                   />
                 </button>
               );
