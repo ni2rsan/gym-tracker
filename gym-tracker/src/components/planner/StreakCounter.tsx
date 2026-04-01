@@ -104,6 +104,44 @@ export function MilestonesCard({
               className="absolute inset-0 w-full h-full object-cover"
               style={{ opacity: layout.backgroundOpacity }}
             />
+
+            {/* Golden connections between badges */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <filter id="golden-glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="2.5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              {MILESTONE_DATA.map((data, i) => {
+                if (i === 0) return null;
+                const prev = MILESTONE_DATA[i - 1];
+                const pos1 = layout.positions[String(prev.milestone)];
+                const pos2 = layout.positions[String(data.milestone)];
+                if (!pos1 || !pos2) return null;
+                const prevUnlocked = totalTracked >= prev.milestone;
+                const currUnlocked = totalTracked >= data.milestone;
+                if (!prevUnlocked) return null;
+                const isActive = currUnlocked;
+                return (
+                  <line
+                    key={data.milestone}
+                    x1={`${pos1.x}%`} y1={`${pos1.y}%`}
+                    x2={`${pos2.x}%`} y2={`${pos2.y}%`}
+                    stroke={isActive ? "#f59e0b" : "#f59e0b"}
+                    strokeOpacity={isActive ? 0.85 : 0.25}
+                    strokeWidth={isActive ? 2 : 1.5}
+                    strokeDasharray={isActive ? undefined : "4 4"}
+                    filter={isActive ? "url(#golden-glow)" : undefined}
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+            </svg>
+
             {MILESTONE_DATA.map((data) => {
               const pos = layout.positions[String(data.milestone)];
               if (!pos) return null;

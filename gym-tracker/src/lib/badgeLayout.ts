@@ -68,13 +68,13 @@ export const MILESTONES_LAYOUT: SectionLayout | null = {
   "backgroundImage": "/badge-backgrounds/milestones.png",
   "imageAspectRatio": 1.4984,
   "badgeSizePercent": 13,
-  "backgroundOpacity": 0.25,
+  "backgroundOpacity": 0.1,
   "positions": {
     "1":   { "x": 51.5, "y": 92 },
-    "10":  { "x": 68.6, "y": 69.3 },
-    "20":  { "x": 32.4, "y": 79.8 },
-    "30":  { "x": 59.8, "y": 44.1 },
-    "50":  { "x": 51.5, "y": 56.4 },
+    "10":  { "x": 65.6, "y": 70.2 },
+    "20":  { "x": 36.2, "y": 81.2 },
+    "30":  { "x": 49.3, "y": 59.4 },
+    "50":  { "x": 59.1, "y": 46.7 },
     "60":  { "x": 44.4, "y": 36.3 },
     "75":  { "x": 54.4, "y": 23.5 },
     "100": { "x": 50.1, "y": 7.5 }
