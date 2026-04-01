@@ -102,6 +102,7 @@ export function MilestonesCard({
             <img
               src={layout.backgroundImage}
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: layout.backgroundOpacity }}
             />
             {MILESTONE_DATA.map((data) => {
               const pos = layout.positions[String(data.milestone)];
@@ -118,12 +119,13 @@ export function MilestonesCard({
                     top: `${pos.y}%`,
                     transform: "translate(-50%, -50%)",
                     width: `${layout.badgeSizePercent}%`,
+                    opacity: unlocked ? 1 : 0.55,
                   }}
                 >
                   <img
                     src={`/milestones/${data.milestone}.png`}
                     alt={`${data.milestone} workouts`}
-                    className={cn("w-full h-auto object-contain drop-shadow-md", !unlocked && "grayscale opacity-30")}
+                    className={cn("w-full h-auto object-contain drop-shadow-md", !unlocked && "grayscale")}
                   />
                 </button>
               );

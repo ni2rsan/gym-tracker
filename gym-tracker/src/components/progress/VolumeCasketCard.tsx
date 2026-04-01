@@ -105,6 +105,7 @@ export function VolumeCasketCard({ cumulativeVolume, layout }: VolumeCasketCardP
             <img
               src={layout.backgroundImage}
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: layout.backgroundOpacity }}
             />
             {VOLUME_BADGES.map((badge) => {
               const pos = layout.positions[badge.key];
@@ -121,12 +122,13 @@ export function VolumeCasketCard({ cumulativeVolume, layout }: VolumeCasketCardP
                     top: `${pos.y}%`,
                     transform: "translate(-50%, -50%)",
                     width: `${layout.badgeSizePercent}%`,
+                    opacity: achieved ? 1 : 0.55,
                   }}
                 >
                   <img
                     src={`/volume/${badge.key}.png`}
                     alt={badge.label}
-                    className={cn("w-full h-auto object-contain drop-shadow-md", !achieved && "grayscale opacity-30")}
+                    className={cn("w-full h-auto object-contain drop-shadow-md", !achieved && "grayscale")}
                   />
                 </button>
               );

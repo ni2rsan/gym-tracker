@@ -172,6 +172,7 @@ export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardPro
             <img
               src={layout.backgroundImage}
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: layout.backgroundOpacity }}
             />
             {allBadges.map((badge) => {
               const pos = layout.positions[badge.key];
@@ -189,12 +190,13 @@ export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardPro
                     top: `${pos.y}%`,
                     transform: "translate(-50%, -50%)",
                     width: `${layout.badgeSizePercent}%`,
+                    opacity: achieved ? 1 : 0.55,
                   }}
                 >
                   <img
                     src={`/social/${badge.key}.png`}
                     alt={badge.label}
-                    className={cn("w-full h-auto object-contain drop-shadow-md", !achieved && "grayscale opacity-30")}
+                    className={cn("w-full h-auto object-contain drop-shadow-md", !achieved && "grayscale")}
                   />
                 </button>
               );

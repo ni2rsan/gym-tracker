@@ -249,6 +249,7 @@ export function SpecialsCard({ userId, layout }: SpecialsCardProps) {
             <img
               src={layout.backgroundImage}
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ opacity: layout.backgroundOpacity }}
             />
             {layout.positions["early-adopter"] && (
               <div

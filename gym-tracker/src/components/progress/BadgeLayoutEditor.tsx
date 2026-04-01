@@ -21,6 +21,7 @@ export function BadgeLayoutEditor({
   const [bgImage, setBgImage] = useState(initialLayout?.backgroundImage ?? "");
   const [aspectRatio, setAspectRatio] = useState(initialLayout?.imageAspectRatio ?? 1);
   const [badgeSizePercent, setBadgeSizePercent] = useState(initialLayout?.badgeSizePercent ?? 14);
+  const [backgroundOpacity, setBackgroundOpacity] = useState(initialLayout?.backgroundOpacity ?? 1);
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>(
     initialLayout?.positions ?? {}
   );
@@ -80,6 +81,7 @@ export function BadgeLayoutEditor({
       backgroundImage: bgImage,
       imageAspectRatio: +aspectRatio.toFixed(4),
       badgeSizePercent,
+      backgroundOpacity,
       positions,
     };
     navigator.clipboard.writeText(JSON.stringify(output, null, 2));
@@ -88,7 +90,7 @@ export function BadgeLayoutEditor({
   }
 
   const jsonOutput = JSON.stringify(
-    { backgroundImage: bgImage, imageAspectRatio: +aspectRatio.toFixed(4), badgeSizePercent, positions },
+    { backgroundImage: bgImage, imageAspectRatio: +aspectRatio.toFixed(4), badgeSizePercent, backgroundOpacity, positions },
     null,
     2
   );
@@ -135,6 +137,25 @@ export function BadgeLayoutEditor({
             </div>
           </div>
 
+          {/* Background opacity slider */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">
+                Background Opacity
+              </label>
+              <span className="text-[10px] font-mono text-zinc-500">{Math.round(backgroundOpacity * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={Math.round(backgroundOpacity * 100)}
+              onChange={(e) => setBackgroundOpacity(Number(e.target.value) / 100)}
+              className="w-full accent-orange-500"
+            />
+          </div>
+
           {/* Badge size slider */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
@@ -168,6 +189,7 @@ export function BadgeLayoutEditor({
                 <img
                   src={bgImage}
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+                  style={{ opacity: backgroundOpacity }}
                   onLoad={onImageLoad}
                   onError={() => setBgImage("")}
                 />

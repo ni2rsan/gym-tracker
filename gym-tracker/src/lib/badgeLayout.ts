@@ -7,6 +7,7 @@ export type SectionLayout = {
   backgroundImage: string;      // e.g. "/badge-backgrounds/milestones.jpg"
   imageAspectRatio: number;     // width / height of the background image
   badgeSizePercent: number;     // badge size as % of card width (e.g. 14 = 14%)
+  backgroundOpacity: number;    // 0–1, how visible the background image is
   positions: Record<string, BadgePosition>; // badgeKey → position
 };
 
@@ -67,6 +68,7 @@ export const MILESTONES_LAYOUT: SectionLayout | null = {
   "backgroundImage": "/badge-backgrounds/milestones.png",
   "imageAspectRatio": 1.4984,
   "badgeSizePercent": 13,
+  "backgroundOpacity": 0.25,
   "positions": {
     "1":   { "x": 51.5, "y": 92 },
     "10":  { "x": 68.6, "y": 69.3 },
