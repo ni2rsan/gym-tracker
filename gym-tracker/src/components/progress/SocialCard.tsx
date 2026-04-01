@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { SectionLayout } from "@/lib/badgeLayout";
 
 interface SocialBadge {
   key: string;
@@ -83,13 +84,14 @@ const FISTBUMP_BADGES: SocialBadge[] = [
 interface SocialCardProps {
   friendCount: number;
   fistbumpCount: number;
+  layout?: SectionLayout | null;
 }
 
 interface ActiveBadge extends SocialBadge {
   count: number;
 }
 
-export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
+export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [activeBadge, setActiveBadge] = useState<ActiveBadge | null>(null);
 
@@ -115,46 +117,99 @@ export function SocialCard({ friendCount, fistbumpCount }: SocialCardProps) {
       )
     : 100;
 
-  return (
-    <>
-      {/* Badge detail overlay */}
-      {activeBadge && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+  const detailOverlay = activeBadge && (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+      onClick={() => setActiveBadge(null)}
+    >
+      <div
+        className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-36 h-36 mx-auto mb-3">
+          <img
+            src={`/social/${activeBadge.key}.png`}
+            alt={activeBadge.label}
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
+          {activeBadge.label}
+        </p>
+        <p className="text-sm font-bold text-zinc-900 dark:text-white leading-snug mb-1">
+          {activeBadge.title}
+        </p>
+        <p className="text-base font-semibold text-zinc-800 dark:text-zinc-200 leading-snug mb-2">
+          {activeBadge.headline}
+        </p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+          {activeBadge.subtext}
+        </p>
+        <button
           onClick={() => setActiveBadge(null)}
+          className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
         >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Layout mode ──────────────────────────────────────────────────────────────
+  if (layout) {
+    const allBadges = [...FRIEND_BADGES, ...FISTBUMP_BADGES];
+    return (
+      <>
+        {detailOverlay}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+            Social
+          </div>
           <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: String(layout.imageAspectRatio) }}
           >
-            <div className="w-36 h-36 mx-auto mb-3">
-              <img
-                src={`/social/${activeBadge.key}.png`}
-                alt={activeBadge.label}
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
-              {activeBadge.label}
-            </p>
-            <p className="text-sm font-bold text-zinc-900 dark:text-white leading-snug mb-1">
-              {activeBadge.title}
-            </p>
-            <p className="text-base font-semibold text-zinc-800 dark:text-zinc-200 leading-snug mb-2">
-              {activeBadge.headline}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              {activeBadge.subtext}
-            </p>
-            <button
-              onClick={() => setActiveBadge(null)}
-              className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            >
-              Close
-            </button>
+            <img
+              src={layout.backgroundImage}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {allBadges.map((badge) => {
+              const pos = layout.positions[badge.key];
+              if (!pos) return null;
+              const count = badge.type === "friends" ? friendCount : fistbumpCount;
+              const achieved = count >= badge.threshold;
+              return (
+                <button
+                  key={badge.key}
+                  onClick={() => achieved && setActiveBadge({ ...badge, count })}
+                  disabled={!achieved}
+                  className="absolute hover:scale-110 transition-transform focus:outline-none"
+                  style={{
+                    left: `${pos.x}%`,
+                    top: `${pos.y}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <img
+                    src={`/social/${badge.key}.png`}
+                    alt={badge.label}
+                    className={cn(
+                      "w-14 h-14 object-contain drop-shadow-md",
+                      !achieved && "grayscale opacity-30"
+                    )}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {detailOverlay}
 
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
         {/* Card header */}

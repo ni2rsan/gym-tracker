@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { StreakData } from "@/lib/services/plannerService";
 import type { PRRecord } from "@/types";
 import type { MuscleGroup } from "@/types";
+import type { SectionLayout } from "@/lib/badgeLayout";
 import { ExerciseIcon } from "@/components/workout/ExerciseIcon";
 import { setSorryTokenMax } from "@/actions/planner";
 
@@ -42,45 +43,103 @@ function getFooterText(generalStreak: number): string {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
+export function MilestonesCard({
+  totalTracked,
+  layout,
+}: {
+  totalTracked: number;
+  layout?: SectionLayout | null;
+}) {
   const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
   const [active, setActive] = useState<MilestoneInfo | null>(null);
 
-  return (
-    <>
-      {/* Overlay */}
-      {active && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+  const detailOverlay = active && (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+      onClick={() => setActive(null)}
+    >
+      <div
+        className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <img
+          src={`/milestones/${active.milestone}.png`}
+          alt={active.title}
+          className="w-24 h-24 object-contain mx-auto mb-3"
+        />
+        <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
+          {active.milestone} workouts · {active.title}
+        </p>
+        <p className="text-base font-bold text-zinc-900 dark:text-white leading-snug mb-2">
+          {active.headline}
+        </p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+          {active.subtext}
+        </p>
+        <button
           onClick={() => setActive(null)}
+          className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
         >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+
+  // ── Layout mode ──────────────────────────────────────────────────────────────
+  if (layout) {
+    return (
+      <>
+        {detailOverlay}
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+            Milestones
+          </div>
           <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: String(layout.imageAspectRatio) }}
           >
             <img
-              src={`/milestones/${active.milestone}.png`}
-              alt={active.title}
-              className="w-24 h-24 object-contain mx-auto mb-3"
+              src={layout.backgroundImage}
+              className="absolute inset-0 w-full h-full object-cover"
             />
-            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
-              {active.milestone} workouts · {active.title}
-            </p>
-            <p className="text-base font-bold text-zinc-900 dark:text-white leading-snug mb-2">
-              {active.headline}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              {active.subtext}
-            </p>
-            <button
-              onClick={() => setActive(null)}
-              className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            >
-              Close
-            </button>
+            {MILESTONE_DATA.map((data) => {
+              const pos = layout.positions[String(data.milestone)];
+              if (!pos) return null;
+              const unlocked = totalTracked >= data.milestone;
+              return (
+                <button
+                  key={data.milestone}
+                  onClick={() => unlocked && setActive(data)}
+                  disabled={!unlocked}
+                  className="absolute hover:scale-110 transition-transform focus:outline-none"
+                  style={{
+                    left: `${pos.x}%`,
+                    top: `${pos.y}%`,
+                    transform: "translate(-50%, -50%)",
+                  }}
+                >
+                  <img
+                    src={`/milestones/${data.milestone}.png`}
+                    alt={`${data.milestone} workouts`}
+                    className={cn(
+                      "w-14 h-14 object-contain drop-shadow-md",
+                      !unlocked && "grayscale opacity-30"
+                    )}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+      </>
+    );
+  }
+
+  // ── Default grid mode ────────────────────────────────────────────────────────
+  return (
+    <>
+      {detailOverlay}
 
       <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
         <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-3">
@@ -96,7 +155,7 @@ export function MilestonesCard({ totalTracked }: { totalTracked: number }) {
                 src={`/milestones/${milestone}.png`}
                 alt={`${milestone} workout milestone`}
                 className="w-full h-full object-contain"
-                onError={() => setImgErrors(prev => ({ ...prev, [milestone]: true }))}
+                onError={() => setImgErrors((prev) => ({ ...prev, [milestone]: true }))}
               />
             ) : (
               <span className="text-3xl">🏅</span>

@@ -3,6 +3,8 @@
 import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { cn } from "@/lib/utils";
+import type { SectionLayout } from "@/lib/badgeLayout";
 import { Box3, Vector3 } from "three";
 
 const NI2RSAN_ID = "cmmp9a6ad000001nmo6ypuixp";
@@ -118,9 +120,10 @@ function BadgeRow({
 
 interface SpecialsCardProps {
   userId: string;
+  layout?: SectionLayout | null;
 }
 
-export function SpecialsCard({ userId }: SpecialsCardProps) {
+export function SpecialsCard({ userId, layout }: SpecialsCardProps) {
   const [modalBadge, setModalBadge] = useState<Badge | null>(null);
   const [introSeen, setIntroSeen] = useState<boolean | null>(null);
   const [introModelLoaded, setIntroModelLoaded] = useState(false);
@@ -232,28 +235,89 @@ export function SpecialsCard({ userId }: SpecialsCardProps) {
       )}
 
       {/* Card */}
-      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
-          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
-            Specials
-          </span>
+      {layout ? (
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+              Specials
+            </span>
+          </div>
+          <div
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: String(layout.imageAspectRatio) }}
+          >
+            <img
+              src={layout.backgroundImage}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {layout.positions["early-adopter"] && (
+              <div
+                className="absolute cursor-pointer"
+                style={{
+                  left: `${layout.positions["early-adopter"].x}%`,
+                  top: `${layout.positions["early-adopter"].y}%`,
+                  transform: "translate(-50%, -50%)",
+                  width: "30%",
+                  maxWidth: "160px",
+                }}
+                onClick={() => setModalBadge(EARLY_ADOPTER)}
+              >
+                <Canvas
+                  shadows={false}
+                  camera={{ position: [0, 0, 3], fov: 50 }}
+                  style={{ width: "100%", aspectRatio: "1" }}
+                >
+                  <ModelScene path={EARLY_ADOPTER.path} autoRotateSpeed={1.5} />
+                </Canvas>
+              </div>
+            )}
+            {isAdmin && layout.positions["architect"] && (
+              <div
+                className="absolute cursor-pointer"
+                style={{
+                  left: `${layout.positions["architect"].x}%`,
+                  top: `${layout.positions["architect"].y}%`,
+                  transform: "translate(-50%, -50%)",
+                  width: "30%",
+                  maxWidth: "160px",
+                }}
+                onClick={() => setModalBadge(THE_ARCHITECT)}
+              >
+                <Canvas
+                  shadows={false}
+                  camera={{ position: [0, 0, 3], fov: 50 }}
+                  style={{ width: "100%", aspectRatio: "1" }}
+                >
+                  <ModelScene path={THE_ARCHITECT.path} autoRotateSpeed={1.5} />
+                </Canvas>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+              Specials
+            </span>
+          </div>
 
-        <div className="px-4 py-4 space-y-4">
-          {/* Row 1 — admin only */}
-          {isAdmin && (
-            <BadgeRow badge={THE_ARCHITECT} onOpen={setModalBadge} />
-          )}
+          <div className="px-4 py-4 space-y-4">
+            {/* Row 1 — admin only */}
+            {isAdmin && (
+              <BadgeRow badge={THE_ARCHITECT} onOpen={setModalBadge} />
+            )}
 
-          {/* Divider between badges when both are visible */}
-          {isAdmin && (
-            <div className="border-t border-zinc-100 dark:border-zinc-800" />
-          )}
+            {/* Divider between badges when both are visible */}
+            {isAdmin && (
+              <div className="border-t border-zinc-100 dark:border-zinc-800" />
+            )}
 
-          {/* Row 2 — Early Adopter */}
-          <BadgeRow badge={EARLY_ADOPTER} onOpen={setModalBadge} />
+            {/* Row 2 — Early Adopter */}
+            <BadgeRow badge={EARLY_ADOPTER} onOpen={setModalBadge} />
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
