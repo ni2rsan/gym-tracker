@@ -63,7 +63,21 @@ export const SPECIALS_EDITOR_BADGES: EditorBadge[] = [
 // Run the editor (pencil icon on each card, admin only), position your badges,
 // click "Copy JSON", then paste the output below as the value for each section.
 
-export const MILESTONES_LAYOUT: SectionLayout | null = null;
+export const MILESTONES_LAYOUT: SectionLayout | null = {
+  "backgroundImage": "/badge-backgrounds/milestones.png",
+  "imageAspectRatio": 1.4984,
+  "badgeSizePercent": 13,
+  "positions": {
+    "1":   { "x": 51.5, "y": 92 },
+    "10":  { "x": 68.6, "y": 69.3 },
+    "20":  { "x": 32.4, "y": 79.8 },
+    "30":  { "x": 59.8, "y": 44.1 },
+    "50":  { "x": 51.5, "y": 56.4 },
+    "60":  { "x": 44.4, "y": 36.3 },
+    "75":  { "x": 54.4, "y": 23.5 },
+    "100": { "x": 50.1, "y": 7.5 }
+  }
+};
 export const VOLUME_LAYOUT: SectionLayout | null = null;
 export const SOCIAL_LAYOUT: SectionLayout | null = null;
 export const SPECIALS_LAYOUT: SectionLayout | null = null;
