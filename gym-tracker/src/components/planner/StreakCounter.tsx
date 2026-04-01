@@ -163,7 +163,8 @@ export function MilestonesCard({
                   <img
                     src={`/milestones/${data.milestone}.png`}
                     alt={`${data.milestone} workouts`}
-                    className={cn("w-full h-auto object-contain drop-shadow-md", !unlocked && "grayscale")}
+                    className={cn("w-full h-auto object-contain", !unlocked && "grayscale")}
+                    style={unlocked ? { filter: "drop-shadow(0 0 4px rgba(251,191,36,0.6)) drop-shadow(0 0 8px rgba(245,158,11,0.3))" } : undefined}
                   />
                 </button>
               );
