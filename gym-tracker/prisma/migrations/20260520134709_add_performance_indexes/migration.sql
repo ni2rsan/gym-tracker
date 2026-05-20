@@ -1,23 +1,23 @@
--- DropIndex
-DROP INDEX "Friendship_receiverId_idx";
+-- DropIndex (IF EXISTS for idempotency — partial prior run may have already dropped these)
+DROP INDEX IF EXISTS "Friendship_receiverId_idx";
 
 -- DropIndex
-DROP INDEX "Friendship_senderId_idx";
+DROP INDEX IF EXISTS "Friendship_senderId_idx";
+
+-- CreateIndex (IF NOT EXISTS for idempotency — partial prior run may have already created these)
+CREATE INDEX IF NOT EXISTS "Friendship_senderId_status_idx" ON "Friendship"("senderId", "status");
 
 -- CreateIndex
-CREATE INDEX "Friendship_senderId_status_idx" ON "Friendship"("senderId", "status");
+CREATE INDEX IF NOT EXISTS "Friendship_receiverId_status_idx" ON "Friendship"("receiverId", "status");
 
 -- CreateIndex
-CREATE INDEX "Friendship_receiverId_status_idx" ON "Friendship"("receiverId", "status");
+CREATE INDEX IF NOT EXISTS "PlannedWorkout_seriesId_idx" ON "PlannedWorkout"("seriesId");
 
 -- CreateIndex
-CREATE INDEX "PlannedWorkout_seriesId_idx" ON "PlannedWorkout"("seriesId");
+CREATE INDEX IF NOT EXISTS "WorkoutFistBump_createdAt_idx" ON "WorkoutFistBump"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "WorkoutFistBump_createdAt_idx" ON "WorkoutFistBump"("createdAt");
-
--- CreateIndex
-CREATE INDEX "WorkoutSession_userId_createdAt_idx" ON "WorkoutSession"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "WorkoutSession_userId_createdAt_idx" ON "WorkoutSession"("userId", "createdAt");
 
 -- Soft-delete duplicate active sessions before creating unique index.
 -- For each (userId, date) with multiple active rows, keep the one with the most
@@ -33,4 +33,4 @@ WHERE ws."deletedAt" IS NULL
   );
 
 -- Partial unique index: only one active (non-deleted) session per user per date
-CREATE UNIQUE INDEX "WorkoutSession_userId_date_active_uniq" ON "WorkoutSession"("userId", "date") WHERE "deletedAt" IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS "WorkoutSession_userId_date_active_uniq" ON "WorkoutSession"("userId", "date") WHERE "deletedAt" IS NULL;
