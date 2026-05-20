@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/utils/cn";
 import { useEffect } from "react";
 
 interface ModalProps {
@@ -36,7 +36,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
       <div
         className={cn(
           "relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-900 mx-4",
-          className
+          className,
         )}
         role="dialog"
         aria-modal="true"

@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle, XCircle, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/utils/cn";
 import { useEffect } from "react";
 
 interface ToastProps {
@@ -20,9 +20,7 @@ export function Toast({ message, type, onDismiss }: ToastProps) {
     <div
       className={cn(
         "fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl px-4 py-3 shadow-lg text-sm font-medium min-w-64 max-w-sm",
-        type === "success"
-          ? "bg-emerald-600 text-white"
-          : "bg-red-600 text-white"
+        type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white",
       )}
       role="status"
       aria-live="polite"

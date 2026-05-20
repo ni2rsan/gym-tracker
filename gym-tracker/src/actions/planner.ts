@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import * as plannerService from "@/lib/services/plannerService";
-import type { ActionResult } from "@/types";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import * as plannerService from "@/server/services/plannerService";
+import type { ActionResult } from "@/core/types/common";
 
 const BlockTypeSchema = z.enum(["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT", "FULL_BODY", "CARDIO"]);
 const SeriesRuleTypeSchema = z.enum(["WEEKDAYS", "INTERVAL"]);
@@ -32,8 +32,10 @@ export type PlannerBlockInfo = {
 
 export async function getBlocksForRange(
   startDate: string,
-  endDate: string
-): Promise<ActionResult<{ blocksByDate: Record<string, PlannerBlockInfo[]>; sorryRemaining: number }>> {
+  endDate: string,
+): Promise<
+  ActionResult<{ blocksByDate: Record<string, PlannerBlockInfo[]>; sorryRemaining: number }>
+> {
   try {
     const userId = await getCurrentUserId();
     if (!DateSchema.safeParse(startDate).success || !DateSchema.safeParse(endDate).success) {
@@ -48,9 +50,17 @@ export async function getBlocksForRange(
       const d = block.date;
       const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
       if (!blocksByDate[iso]) blocksByDate[iso] = [];
-      blocksByDate[iso].push({ id: block.id, blockType: block.blockType, sorryExcused: block.sorryExcused, isAutoPromoted: block.isAutoPromoted });
+      blocksByDate[iso].push({
+        id: block.id,
+        blockType: block.blockType,
+        sorryExcused: block.sorryExcused,
+        isAutoPromoted: block.isAutoPromoted,
+      });
     }
-    return { success: true, data: { blocksByDate, sorryRemaining: Math.max(0, 3 - sorryData.usedCount) } };
+    return {
+      success: true,
+      data: { blocksByDate, sorryRemaining: Math.max(0, sorryData.max - sorryData.usedCount) },
+    };
   } catch (e) {
     console.error("getBlocksForRange error:", e);
     return { success: false, error: "Failed to load planner blocks." };
@@ -97,10 +107,7 @@ export async function deleteBlock(blockId: string): Promise<ActionResult> {
   }
 }
 
-export async function deleteSeries(
-  seriesId: string,
-  fromDate?: string
-): Promise<ActionResult> {
+export async function deleteSeries(seriesId: string, fromDate?: string): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
     await plannerService.deleteSeries(userId, seriesId, fromDate);
@@ -112,10 +119,7 @@ export async function deleteSeries(
   }
 }
 
-export async function updateBlock(
-  blockId: string,
-  blockType: string
-): Promise<ActionResult> {
+export async function updateBlock(blockId: string, blockType: string): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
     const parsed = BlockTypeSchema.safeParse(blockType);
@@ -129,10 +133,7 @@ export async function updateBlock(
   }
 }
 
-export async function updateSeries(
-  seriesId: string,
-  formData: unknown
-): Promise<ActionResult> {
+export async function updateSeries(seriesId: string, formData: unknown): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
     const parsed = CreateSeriesSchema.safeParse(formData);
@@ -188,7 +189,7 @@ export async function deleteBlockResetStreak(blockId: string): Promise<ActionRes
 /** Update series config using a SORRY token (preserves streak) */
 export async function updateSeriesUseSorry(
   seriesId: string,
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
@@ -236,7 +237,7 @@ export async function revokeSorryExcuse(date: string): Promise<ActionResult> {
 /** Update series config and reset the streak */
 export async function updateSeriesResetStreak(
   seriesId: string,
-  formData: unknown
+  formData: unknown,
 ): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
@@ -251,11 +252,15 @@ export async function updateSeriesResetStreak(
   }
 }
 
+const SorryTokenMaxSchema = z.number().int().min(1).max(5);
+
 /** Set the user's preferred SORRY token max (1–5, once per month) */
-export async function setSorryTokenMax(newMax: number): Promise<ActionResult> {
+export async function setSorryTokenMax(newMax: unknown): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
-    const result = await plannerService.setSorryTokenMax(userId, newMax);
+    const parsed = SorryTokenMaxSchema.safeParse(newMax);
+    if (!parsed.success) return { success: false, error: "Max must be between 1 and 5." };
+    const result = await plannerService.setSorryTokenMax(userId, parsed.data);
     if (!result.ok) return { success: false, error: result.error };
     revalidatePath("/planner");
     return { success: true };
@@ -278,7 +283,7 @@ export type PlannedExerciseInfo = {
 /** Fetch all planned exercises for a date range (used by workout form) */
 export async function getPlannedExercisesForRange(
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<ActionResult<Record<string, PlannedExerciseInfo[]>>> {
   try {
     const userId = await getCurrentUserId();
@@ -300,7 +305,7 @@ export async function getPlannedExercisesForRange(
 /** Add an individual exercise to a date's plan */
 export async function addPlannedExercise(
   date: string,
-  exerciseId: string
+  exerciseId: string,
 ): Promise<ActionResult<PlannedExerciseInfo>> {
   try {
     const userId = await getCurrentUserId();
@@ -332,7 +337,7 @@ export async function removePlannedExercise(id: string): Promise<ActionResult> {
 /** Create an auto-promoted block when added exercises reach the promotion threshold */
 export async function createAutoPromotedBlock(
   date: string,
-  blockType: string
+  blockType: string,
 ): Promise<ActionResult<PlannerBlockInfo>> {
   try {
     const userId = await getCurrentUserId();
@@ -358,7 +363,7 @@ export async function createAutoPromotedBlock(
 /** Delete an auto-promoted block when added exercises drop below the promotion threshold */
 export async function deleteAutoPromotedBlock(
   date: string,
-  blockType: string
+  blockType: string,
 ): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();

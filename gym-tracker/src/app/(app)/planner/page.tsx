@@ -1,7 +1,12 @@
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getPlannedWorkoutsInRange, getTrackedGroupsByDate, getStreakData, getPlannedExercisesInRange } from "@/lib/services/plannerService";
-import { WorkoutCalendar } from "@/components/planner/WorkoutCalendar";
-import { PlannerGuide } from "@/components/guide/PlannerGuide";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import {
+  getPlannedWorkoutsInRange,
+  getTrackedGroupsByDate,
+  getStreakData,
+  getPlannedExercisesInRange,
+} from "@/server/services/plannerService";
+import { WorkoutCalendar } from "@/features/planner/components/WorkoutCalendar";
+import { PlannerGuide } from "@/features/guide/components/PlannerGuide";
 
 export const metadata = { title: "Planner — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -22,26 +27,36 @@ export default async function PlannerPage({
   const startDate = new Date(year, month - 3, 1).toISOString().split("T")[0];
   const endDate = new Date(year + 1, month + 1, 0).toISOString().split("T")[0];
 
-  const [plannedWorkouts, trackedGroupsByDate, streakData, plannedExerciseRows] = await Promise.all([
-    getPlannedWorkoutsInRange(userId, startDate, endDate),
-    getTrackedGroupsByDate(userId, startDate, endDate),
-    getStreakData(userId),
-    getPlannedExercisesInRange(userId, startDate, endDate),
-  ]);
+  const [plannedWorkouts, trackedGroupsByDate, streakData, plannedExerciseRows] = await Promise.all(
+    [
+      getPlannedWorkoutsInRange(userId, startDate, endDate),
+      getTrackedGroupsByDate(userId, startDate, endDate),
+      getStreakData(userId),
+      getPlannedExercisesInRange(userId, startDate, endDate),
+    ],
+  );
 
   const serialized = plannedWorkouts.map((pw) => ({
     id: pw.id,
-    date: (() => { const d = pw.date; const y = d.getUTCFullYear(); const m = String(d.getUTCMonth()+1).padStart(2,"0"); const day = String(d.getUTCDate()).padStart(2,"0"); return `${y}-${m}-${day}`; })(),
+    date: (() => {
+      const d = pw.date;
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const day = String(d.getUTCDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    })(),
     blockType: pw.blockType as string,
     seriesId: pw.seriesId,
     sorryExcused: pw.sorryExcused,
     isAutoPromoted: pw.isAutoPromoted,
   }));
 
-  const initialPlannedExercises = plannedExerciseRows.reduce<Record<string, typeof plannedExerciseRows[0]["exercises"]>>(
-    (acc, { date, exercises }) => { acc[date] = exercises; return acc; },
-    {}
-  );
+  const initialPlannedExercises = plannedExerciseRows.reduce<
+    Record<string, (typeof plannedExerciseRows)[0]["exercises"]>
+  >((acc, { date, exercises }) => {
+    acc[date] = exercises;
+    return acc;
+  }, {});
 
   return (
     <>

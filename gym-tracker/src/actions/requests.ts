@@ -2,15 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId, requireAdmin } from "@/lib/auth-helpers";
-import * as requestService from "@/lib/services/requestService";
+import { getCurrentUserId, requireAdmin } from "@/server/auth-helpers";
+import * as requestService from "@/server/services/requestService";
 import { RequestStatus } from "@/generated/prisma/client";
-import type { ActionResult, UserRequestItem } from "@/types";
+import type { ActionResult } from "@/core/types/common";
+import type { UserRequestItem } from "@/core/types/requests";
 
 const SubmitRequestSchema = z.object({
   type: z.enum(["BUG", "FEATURE"]),
   text: z.string().min(1).max(5000),
-  screenshotBase64: z.string().nullable().optional(),
+  screenshotBase64: z.string().max(5_000_000).nullable().optional(), // ~3.75 MB image limit
 });
 
 export async function submitRequest(data: unknown): Promise<ActionResult> {
@@ -87,7 +88,7 @@ export async function updateRequestStatus(data: unknown): Promise<ActionResult> 
     await requestService.updateRequestStatus(
       parsed.data.id,
       parsed.data.status as RequestStatus,
-      parsed.data.adminNote
+      parsed.data.adminNote,
     );
     revalidatePath("/requests");
     revalidatePath("/admin/requests");

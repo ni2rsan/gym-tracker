@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { exchangeCode } from "@/lib/withings";
-import { storeWithingsConnection } from "@/lib/services/withingsService";
+import { exchangeCode } from "@/server/withings";
+import { storeWithingsConnection } from "@/server/services/withingsService";
 
 const BASE_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 

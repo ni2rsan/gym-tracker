@@ -2,26 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, BarChart3, Dumbbell as DumbbellIcon, Moon, Sun, LogOut, ScrollText, CalendarDays, Shield, Inbox, Users, Trophy } from "lucide-react";
+import {
+  Dumbbell,
+  BarChart3,
+  Dumbbell as DumbbellIcon,
+  Moon,
+  Sun,
+  LogOut,
+  ScrollText,
+  CalendarDays,
+  Shield,
+  Inbox,
+  Users,
+  Trophy,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { signOut } from "next-auth/react";
-import { cn } from "@/lib/utils";
-import { GuideButton } from "@/components/guide/GuideButton";
+import { cn } from "@/core/utils/cn";
+import { GuideButton } from "@/features/guide/components/GuideButton";
 
 // Primary nav — shown in mobile bottom tab bar and desktop top nav
 const NAV_ITEMS = [
-  { href: "/planner",  label: "Planner",  icon: CalendarDays },
-  { href: "/workout",  label: "Tracker",  icon: Dumbbell },
+  { href: "/planner", label: "Planner", icon: CalendarDays },
+  { href: "/workout", label: "Tracker", icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: Trophy },
-  { href: "/reports",  label: "Stats",    icon: BarChart3 },
-  { href: "/logs",     label: "Logs",     icon: ScrollText },
-  { href: "/social",   label: "Social",   icon: Users },
+  { href: "/reports", label: "Stats", icon: BarChart3 },
+  { href: "/logs", label: "Logs", icon: ScrollText },
+  { href: "/social", label: "Social", icon: Users },
 ];
 
 // Secondary — desktop top nav only
-const DESKTOP_EXTRA = [
-  { href: "/requests", label: "Requests", icon: Inbox },
-];
+const DESKTOP_EXTRA = [{ href: "/requests", label: "Requests", icon: Inbox }];
 
 interface NavbarProps {
   userName?: string | null;
@@ -30,7 +41,13 @@ interface NavbarProps {
   socialBadges?: { requests: number; feed: number; fistBumps: number };
 }
 
-function NavBadges({ href, socialBadges }: { href: string; socialBadges?: NavbarProps["socialBadges"] }) {
+function NavBadges({
+  href,
+  socialBadges,
+}: {
+  href: string;
+  socialBadges?: NavbarProps["socialBadges"];
+}) {
   if (href !== "/social") return null;
   const requestBadge = socialBadges?.requests ?? 0;
   const fistBumpBadge = socialBadges?.fistBumps ?? 0;
@@ -45,7 +62,9 @@ function NavBadges({ href, socialBadges }: { href: string; socialBadges?: Navbar
       {fistBumpBadge > 0 && (
         <span className="absolute -top-2 -right-3.5 flex items-center gap-px text-[8px] font-bold leading-none">
           <img src="/fistbumpicon.png" alt="" className="h-4 w-4 object-contain fb-icon" />
-          <span className="text-amber-500 dark:text-amber-400">{fistBumpBadge > 9 ? "9+" : fistBumpBadge}</span>
+          <span className="text-amber-500 dark:text-amber-400">
+            {fistBumpBadge > 9 ? "9+" : fistBumpBadge}
+          </span>
         </span>
       )}
       {feedBadge > 0 && (
@@ -67,7 +86,10 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
       <header className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/90 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           {/* Logo */}
-          <Link href="/planner" className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
+          <Link
+            href="/planner"
+            className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white"
+          >
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-slate-700 via-slate-800 to-zinc-900 dark:from-slate-800 dark:via-slate-900 dark:to-zinc-950">
               <DumbbellIcon className="h-4 w-4 text-amber-400" strokeWidth={2.5} />
             </div>
@@ -84,7 +106,7 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
                   "relative flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                   pathname.startsWith(href)
                     ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
-                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white",
                 )}
               >
                 <span className="relative">
@@ -101,7 +123,7 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
                   "flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                   pathname.startsWith("/admin")
                     ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white"
+                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-white",
                 )}
               >
                 <Shield className="h-4 w-4" />
@@ -118,7 +140,7 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
                 "sm:hidden flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                 pathname.startsWith("/requests")
                   ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-white"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white",
               )}
               aria-label="Requests"
             >
@@ -131,7 +153,7 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
                   "sm:hidden flex h-8 w-8 items-center justify-center rounded-lg transition-colors",
                   pathname.startsWith("/admin")
                     ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white",
                 )}
                 aria-label="Admin"
               >
@@ -173,7 +195,10 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
       </header>
 
       {/* ── Mobile bottom tab bar ────────────────────────────────────────────── */}
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950" style={{ paddingBottom: "env(safe-area-inset-bottom)", transform: "translateZ(0)" }}>
+      <nav
+        className="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)", transform: "translateZ(0)" }}
+      >
         <div className="grid grid-cols-6 h-16">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href);
@@ -183,7 +208,9 @@ export function Navbar({ userName, userImage, isAdmin, socialBadges }: NavbarPro
                 href={href}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 transition-colors",
-                  active ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-400 dark:text-zinc-500"
+                  active
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-zinc-400 dark:text-zinc-500",
                 )}
               >
                 <span className="relative">

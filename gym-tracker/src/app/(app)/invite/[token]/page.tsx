@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { acceptInvite } from "@/lib/services/socialService";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { acceptInvite } from "@/server/services/socialService";
 
 export const dynamic = "force-dynamic";
 

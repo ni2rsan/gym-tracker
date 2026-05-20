@@ -14,7 +14,10 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -25,7 +28,6 @@
     "@prisma/client": "^7.4.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
-    "@tanstack/react-query": "^5.90.21",
     "@types/pg": "^8.18.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.576.0",
@@ -37,6 +39,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "recharts": "^3.7.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.5.0",
     "three": "^0.183.2",
     "zod": "^4.3.6"

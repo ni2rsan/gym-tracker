@@ -1,0 +1,46 @@
+export function formatDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+export function formatDateShort(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export function formatDateTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function toISODate(date: Date): string {
+  // Use local date parts to avoid UTC midnight shifting the day back in UTC+ timezones
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export function todayISODate(): string {
+  return toISODate(new Date());
+}
+
+export function getRangeStart(range: "week" | "month" | "year"): Date {
+  const now = new Date();
+  const start = new Date(now);
+  if (range === "week") start.setDate(now.getDate() - 7);
+  else if (range === "month") start.setMonth(now.getMonth() - 1);
+  else start.setFullYear(now.getFullYear() - 1);
+  // Snap to start of that day so measurements from any time on the boundary date are included
+  start.setHours(0, 0, 0, 0);
+  return start;
+}

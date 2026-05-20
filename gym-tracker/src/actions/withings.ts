@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { deactivateWithingsConnection } from "@/lib/services/withingsService";
-import type { ActionResult } from "@/types";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { deactivateWithingsConnection } from "@/server/services/withingsService";
+import type { ActionResult } from "@/core/types/common";
 
 export async function disconnectWithings(): Promise<ActionResult> {
   try {

@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import * as workoutService from "@/lib/services/workoutService";
-import { isAssistedExercise } from "@/lib/workoutDiff";
-import type { ActionResult } from "@/types";
-import type { PrevSet } from "@/lib/workoutDiff";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import * as workoutService from "@/server/services/workoutService";
+import { isAssistedExercise } from "@/core/domain/workoutDiff";
+import type { ActionResult } from "@/core/types/common";
+import type { PrevSet } from "@/core/domain/workoutDiff";
 
 const SetSchema = z.object({
   setNumber: z.number().int().min(1).max(10),
@@ -42,7 +42,11 @@ export async function saveWorkout(formData: unknown): Promise<ActionResult> {
   }
 }
 
-export async function getWorkoutForDate(date: string): Promise<ActionResult<Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>>>> {
+export async function getWorkoutForDate(
+  date: string,
+): Promise<
+  ActionResult<Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>>>
+> {
   try {
     const userId = await getCurrentUserId();
     const data = await workoutService.getLatestSetsForDate(userId, date);
@@ -53,7 +57,9 @@ export async function getWorkoutForDate(date: string): Promise<ActionResult<Reco
   }
 }
 
-export async function getLastKnownSets(): Promise<ActionResult<Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>>>> {
+export async function getLastKnownSets(): Promise<
+  ActionResult<Record<string, Array<{ setNumber: number; reps: number; weightKg: number | null }>>>
+> {
   try {
     const userId = await getCurrentUserId();
     const data = await workoutService.getLatestSetsPerExercise(userId);
@@ -77,7 +83,10 @@ export async function getRecentDates(): Promise<ActionResult<string[]>> {
 
 export async function deleteWorkoutSessionByDate(date: string): Promise<ActionResult> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const userId = await getCurrentUserId();
     await workoutService.deleteWorkoutSessionByDate(userId, parsed.data);
@@ -92,14 +101,22 @@ export async function deleteWorkoutSessionByDate(date: string): Promise<ActionRe
   }
 }
 
-export async function deleteTrackedBlockByDate(date: string, blockType: string): Promise<ActionResult<{ removedGroups: string[] }>> {
+export async function deleteTrackedBlockByDate(
+  date: string,
+  blockType: string,
+): Promise<ActionResult<{ removedGroups: string[] }>> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const muscleGroups =
-      blockType === "FULL_BODY" ? ["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT"] :
-      blockType === "CARDIO" ? ["CARDIO"] :
-      [blockType];
+      blockType === "FULL_BODY"
+        ? ["UPPER_BODY", "LOWER_BODY", "BODYWEIGHT"]
+        : blockType === "CARDIO"
+          ? ["CARDIO"]
+          : [blockType];
     const userId = await getCurrentUserId();
     await workoutService.deleteWorkoutSetsByMuscleGroups(userId, parsed.data, muscleGroups);
     revalidatePath("/workout");
@@ -112,9 +129,15 @@ export async function deleteTrackedBlockByDate(date: string, blockType: string):
   }
 }
 
-export async function deleteExerciseTracking(exerciseId: string, date: string): Promise<ActionResult> {
+export async function deleteExerciseTracking(
+  exerciseId: string,
+  date: string,
+): Promise<ActionResult> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const userId = await getCurrentUserId();
     await workoutService.deleteExerciseSetsForDate(userId, exerciseId, parsed.data);
@@ -128,9 +151,14 @@ export async function deleteExerciseTracking(exerciseId: string, date: string): 
   }
 }
 
-export async function getWorkoutSummaryForDate(date: string): Promise<ActionResult<workoutService.WorkoutExerciseSummary[]>> {
+export async function getWorkoutSummaryForDate(
+  date: string,
+): Promise<ActionResult<workoutService.WorkoutExerciseSummary[]>> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const userId = await getCurrentUserId();
     const data = await workoutService.getWorkoutSummaryForDate(userId, parsed.data);
@@ -143,7 +171,7 @@ export async function getWorkoutSummaryForDate(date: string): Promise<ActionResu
 
 export async function getWorkoutsForRange(
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<ActionResult<workoutService.WorkoutDayData[]>> {
   try {
     const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -163,14 +191,21 @@ export async function getExerciseComparisonData(
   exerciseId: string,
   date: string,
   isBodyweight: boolean,
-  isAssisted: boolean
+  isAssisted: boolean,
 ): Promise<ActionResult<workoutService.ExerciseTrackingComparison>> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const userId = await getCurrentUserId();
     const data = await workoutService.getExerciseTrackingComparison(
-      userId, exerciseId, parsed.data, isBodyweight, isAssisted
+      userId,
+      exerciseId,
+      parsed.data,
+      isBodyweight,
+      isAssisted,
     );
     return { success: true, data };
   } catch (error) {
@@ -181,19 +216,26 @@ export async function getExerciseComparisonData(
 
 export async function getExercisesComparisonBatch(
   exercises: Array<{ id: string; isBodyweight: boolean; isAssisted: boolean }>,
-  date: string
+  date: string,
 ): Promise<ActionResult<Record<string, workoutService.ExerciseTrackingComparison>>> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const userId = await getCurrentUserId();
     const results = await Promise.all(
       exercises.map(async (ex) => {
         const comparison = await workoutService.getExerciseTrackingComparison(
-          userId, ex.id, parsed.data, ex.isBodyweight, ex.isAssisted
+          userId,
+          ex.id,
+          parsed.data,
+          ex.isBodyweight,
+          ex.isAssisted,
         );
         return [ex.id, comparison] as const;
-      })
+      }),
     );
     return { success: true, data: Object.fromEntries(results) };
   } catch (error) {
@@ -214,10 +256,13 @@ export type FullSummaryExercise = {
 };
 
 export async function getFullWorkoutSummaryForDate(
-  date: string
+  date: string,
 ): Promise<ActionResult<FullSummaryExercise[]>> {
   try {
-    const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(date);
+    const parsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(date);
     if (!parsed.success) return { success: false, error: "Invalid date." };
     const userId = await getCurrentUserId();
 
@@ -230,7 +275,11 @@ export async function getFullWorkoutSummaryForDate(
       summary.map(async (ex) => {
         const assisted = isAssistedExercise(ex.name);
         const comparison = await workoutService.getExerciseTrackingComparison(
-          userId, ex.exerciseId, parsed.data, ex.isBodyweight, assisted
+          userId,
+          ex.exerciseId,
+          parsed.data,
+          ex.isBodyweight,
+          assisted,
         );
         return {
           exerciseId: ex.exerciseId,
@@ -242,7 +291,7 @@ export async function getFullWorkoutSummaryForDate(
           prevSets: comparison.prevSets,
           currentSets: latestSets[ex.exerciseId] ?? [],
         } satisfies FullSummaryExercise;
-      })
+      }),
     );
 
     return { success: true, data: results };
@@ -252,11 +301,18 @@ export async function getFullWorkoutSummaryForDate(
   }
 }
 
-export async function changeWorkoutSessionDate(sessionId: string, newDate: string): Promise<ActionResult> {
+export async function changeWorkoutSessionDate(
+  sessionId: string,
+  newDate: string,
+): Promise<ActionResult> {
   try {
     const sessionParsed = z.string().cuid().safeParse(sessionId);
-    const dateParsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).safeParse(newDate);
-    if (!sessionParsed.success || !dateParsed.success) return { success: false, error: "Invalid input." };
+    const dateParsed = z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .safeParse(newDate);
+    if (!sessionParsed.success || !dateParsed.success)
+      return { success: false, error: "Invalid input." };
     const userId = await getCurrentUserId();
     await workoutService.changeWorkoutSessionDate(userId, sessionParsed.data, dateParsed.data);
     revalidatePath("/workout");

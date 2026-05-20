@@ -1,6 +1,7 @@
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
-import { ProfileClient } from "@/components/profile/ProfileClient";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { prisma } from "@/server/prisma";
+import { ProfileClient } from "@/features/profile/components/ProfileClient";
+import { AccountActions } from "@/features/profile/components/AccountActions";
 import { UserCircle } from "lucide-react";
 
 export const metadata = { title: "Profile — Gym Tracker" };
@@ -43,6 +44,13 @@ export default async function ProfilePage() {
           displayName={user?.name ?? null}
           email={user?.email ?? null}
         />
+      </div>
+
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
+        <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide mb-4">
+          Account & Privacy
+        </h2>
+        <AccountActions />
       </div>
     </div>
   );

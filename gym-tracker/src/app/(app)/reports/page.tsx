@@ -1,17 +1,23 @@
-import { ReportsGuide } from "@/components/guide/ReportsGuide";
+import { ReportsGuide } from "@/features/guide/components/ReportsGuide";
 import { Suspense } from "react";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getWeightTrendData, getExerciseStatCards } from "@/lib/services/reportService";
-import { getLatestBodyMetric, getLastNBodyMetrics, getLatestWithingsMetric, getRangeAgoMetrics, getUserHeightCm } from "@/lib/services/metricsService";
-import { syncWithingsIfNeeded, getWithingsConnection } from "@/lib/services/withingsService";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { getWeightTrendData, getExerciseStatCards } from "@/server/services/reportService";
+import {
+  getLatestBodyMetric,
+  getLastNBodyMetrics,
+  getLatestWithingsMetric,
+  getRangeAgoMetrics,
+  getUserHeightCm,
+} from "@/server/services/metricsService";
+import { syncWithingsIfNeeded, getWithingsConnection } from "@/server/services/withingsService";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
-import { WeightTrendChart } from "@/components/reports/WeightTrendChart";
-import { ReportFilters } from "@/components/reports/ReportFilters";
-import { MetricsCards } from "@/components/metrics/MetricsCards";
-import { WithingsPanel } from "@/components/metrics/WithingsPanel";
-import { WithingsToast } from "@/components/reports/WithingsToast";
-import { ExerciseStatsPanel } from "@/components/reports/ExerciseStatsPanel";
-import type { TimeRange } from "@/types";
+import { WeightTrendChart } from "@/features/reports/components/WeightTrendChart";
+import { ReportFilters } from "@/features/reports/components/ReportFilters";
+import { MetricsCards } from "@/features/metrics/components/MetricsCards";
+import { WithingsPanel } from "@/features/metrics/components/WithingsPanel";
+import { WithingsToast } from "@/features/reports/components/WithingsToast";
+import { ExerciseStatsPanel } from "@/features/reports/components/ExerciseStatsPanel";
+import type { TimeRange } from "@/core/types/metrics";
 
 export const metadata = { title: "Stats — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -32,7 +38,16 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   await syncWithingsIfNeeded(userId);
 
-  const [weightTrend, latestMetric, recentEntries, withingsConnection, latestWithings, rangeAgoMetric, heightCm, exerciseCards] = await Promise.all([
+  const [
+    weightTrend,
+    latestMetric,
+    recentEntries,
+    withingsConnection,
+    latestWithings,
+    rangeAgoMetric,
+    heightCm,
+    exerciseCards,
+  ] = await Promise.all([
     getWeightTrendData(userId, range),
     getLatestBodyMetric(userId),
     getLastNBodyMetrics(userId, 7),
@@ -46,7 +61,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const RANGE_LABELS: Record<typeof range, string> = { week: "7d", month: "30d", year: "1yr" };
   const rangeLabel = RANGE_LABELS[range];
 
-  const isWithingsConnected = !!(withingsConnection?.isActive);
+  const isWithingsConnected = !!withingsConnection?.isActive;
 
   const serializedEntries = recentEntries.map((e) => ({
     date: e.date,
@@ -62,7 +77,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     <>
       <ReportsGuide />
       <div className="space-y-6">
-        <Suspense><WithingsToast /></Suspense>
+        <Suspense>
+          <WithingsToast />
+        </Suspense>
 
         {/* Page header + time range */}
         <div className="flex items-start justify-between gap-4">
@@ -79,7 +96,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
         {/* Body metrics */}
         <div className="space-y-3">
-          <Suspense fallback={<div className="grid grid-cols-2 gap-4"><div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" /><div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" /></div>}>
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                <div className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+              </div>
+            }
+          >
             <MetricsCards
               currentWeight={latestMetric?.weightKg ? Number(latestMetric.weightKg) : null}
               currentBodyFat={latestMetric?.bodyFatPct ? Number(latestMetric.bodyFatPct) : null}

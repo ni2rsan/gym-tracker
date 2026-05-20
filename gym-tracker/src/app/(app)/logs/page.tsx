@@ -1,8 +1,8 @@
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getActivityLog } from "@/lib/services/logService";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { getActivityLog } from "@/server/services/logService";
 import { Trophy } from "lucide-react";
-import { LogsList } from "@/components/logs/LogsList";
-import type { SerializedLogEntry } from "@/components/logs/LogsList";
+import { LogsList } from "@/features/logs/components/LogsList";
+import type { SerializedLogEntry } from "@/features/logs/components/LogsList";
 
 export const metadata = { title: "Logs — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export default async function LogsPage() {
   const serialized: SerializedLogEntry[] = entries.map((e) =>
     e.type === "workout"
       ? { ...e, timestamp: e.timestamp.toISOString(), workoutDate: e.workoutDate }
-      : { ...e, timestamp: e.timestamp.toISOString() }
+      : { ...e, timestamp: e.timestamp.toISOString() },
   );
 
   const workoutCount = entries.filter((e) => e.type === "workout").length;
@@ -45,8 +45,8 @@ export default async function LogsPage() {
         </span>
         <span className="w-px h-3 bg-zinc-200 dark:bg-zinc-700" />
         <span>
-          <span className="font-semibold text-zinc-900 dark:text-white">{metricCount}</span>{" "}
-          metric {metricCount === 1 ? "entry" : "entries"}
+          <span className="font-semibold text-zinc-900 dark:text-white">{metricCount}</span> metric{" "}
+          {metricCount === 1 ? "entry" : "entries"}
         </span>
       </div>
 

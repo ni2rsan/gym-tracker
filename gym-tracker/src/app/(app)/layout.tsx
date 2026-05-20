@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { getSessionContext } from "@/lib/auth-helpers";
-import { getSocialBadgeCounts } from "@/lib/services/socialService";
+import { getSessionContext } from "@/server/auth-helpers";
+import { getSocialBadgeCounts } from "@/server/services/socialService";
 import { Navbar } from "@/components/layout/Navbar";
 import { ImpersonationBanner } from "@/components/layout/ImpersonationBanner";
-import { MasterGuide } from "@/components/guide/MasterGuide";
-import { ProfileSetupModal } from "@/components/profile/ProfileSetupModal";
+import { MasterGuide } from "@/features/guide/components/MasterGuide";
+import { ProfileSetupModal } from "@/features/profile/components/ProfileSetupModal";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getSessionContext();
@@ -25,7 +25,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <MasterGuide />
       <ProfileSetupModal needsSetup={ctx.needsProfileSetup} />
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-20 sm:pb-6" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>{children}</main>
+      <main
+        className="mx-auto max-w-5xl px-4 py-6 pb-20 sm:pb-6"
+        style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+      >
+        {children}
+      </main>
     </div>
   );
 }

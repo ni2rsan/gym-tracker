@@ -1,5 +1,5 @@
-import { requireAdmin } from "@/lib/auth-helpers";
-import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/server/auth-helpers";
+import { prisma } from "@/server/prisma";
 import { Dumbbell } from "lucide-react";
 import { ExerciseEditor } from "./ExerciseEditor";
 
@@ -22,7 +22,9 @@ export default async function AdminExercisesPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Exercises</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{exercises.length} exercises · click the pencil to rename</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {exercises.length} exercises · click the pencil to rename
+          </p>
         </div>
       </div>
 

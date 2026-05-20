@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getFriendProfileData, getPrivacySettings } from "@/lib/services/socialService";
-import { prisma } from "@/lib/prisma";
-import { FriendProfileView } from "@/components/social/FriendProfileView";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { getFriendProfileData, getPrivacySettings } from "@/server/services/socialService";
+import { prisma } from "@/server/prisma";
+import { FriendProfileViewLazy } from "@/features/social/components/FriendProfileViewLazy";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +36,7 @@ export default async function FriendProfilePage({ params }: Props) {
 
   return (
     <div className="max-w-lg mx-auto">
-      <FriendProfileView
-        data={profileData}
-        friendId={friend.id}
-        globalPrivacy={myPrivacy}
-      />
+      <FriendProfileViewLazy data={profileData} friendId={friend.id} globalPrivacy={myPrivacy} />
     </div>
   );
 }

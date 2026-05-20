@@ -1,10 +1,11 @@
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getStreakData } from "@/lib/services/plannerService";
-import { getCumulativeVolume } from "@/lib/services/progressService";
-import { getSocialStats } from "@/lib/services/socialService";
-import { getOrSyncStardust } from "@/lib/services/gardenService";
-import { getGardenState } from "@/lib/gardenUtils";
-import { ProgressPage } from "@/components/progress/ProgressPage";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { getStreakData } from "@/server/services/plannerService";
+import { getCumulativeVolume } from "@/server/services/progressService";
+import { getSocialStats } from "@/server/services/socialService";
+import { getOrSyncStardust } from "@/server/services/gardenService";
+import { getGardenState } from "@/core/domain/gardenUtils";
+import { ProgressPage } from "@/features/progress/components/ProgressPage";
+import { prisma } from "@/server/prisma";
 
 export const metadata = { title: "Progress — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -12,11 +13,12 @@ export const dynamic = "force-dynamic";
 export default async function Progress() {
   const userId = await getCurrentUserId();
 
-  const [streakData, cumulativeVolume, socialStats, stardustTotal] = await Promise.all([
+  const [streakData, cumulativeVolume, socialStats, stardustTotal, user] = await Promise.all([
     getStreakData(userId),
     getCumulativeVolume(userId),
     getSocialStats(userId),
     getOrSyncStardust(userId),
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
   ]);
   const gardenTrees = getGardenState(stardustTotal);
 
@@ -34,6 +36,7 @@ export default async function Progress() {
         friendCount={socialStats.friendCount}
         fistbumpCount={socialStats.totalFistBumpsReceived}
         userId={userId}
+        isAdmin={user?.role === "ADMIN"}
         stardustTotal={stardustTotal}
         gardenTrees={gardenTrees}
       />

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Check, Pencil, X, Dumbbell, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/core/utils/cn";
 import { adminUpdateExercise, adminDeleteExercise } from "@/actions/exercise";
 
 interface Exercise {
@@ -53,13 +53,14 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
 
   function saveName(id: string) {
     const trimmed = editName.trim();
-    if (!trimmed) { setError("Name cannot be empty."); return; }
+    if (!trimmed) {
+      setError("Name cannot be empty.");
+      return;
+    }
     startTransition(async () => {
       const result = await adminUpdateExercise(id, { name: trimmed });
       if (result.success) {
-        setLocalExercises((prev) =>
-          prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e))
-        );
+        setLocalExercises((prev) => prev.map((e) => (e.id === id ? { ...e, name: trimmed } : e)));
         setEditingId(null);
         setEditName("");
       } else {
@@ -72,7 +73,7 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
     startTransition(async () => {
       await adminUpdateExercise(id, { isCompound: !current });
       setLocalExercises((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, isCompound: !current } : e))
+        prev.map((e) => (e.id === id ? { ...e, isCompound: !current } : e)),
       );
     });
   }
@@ -101,9 +102,14 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
   return (
     <div className="space-y-6">
       {grouped.map(({ group, items }) => (
-        <div key={group} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900">
+        <div
+          key={group}
+          className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900"
+        >
           <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">{GROUP_LABELS[group]}</h2>
+            <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+              {GROUP_LABELS[group]}
+            </h2>
           </div>
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {items.map((ex) => {
@@ -140,7 +146,9 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
                     </div>
                   ) : (
                     <div className="flex-1 flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-white truncate">{ex.name}</span>
+                      <span className="text-sm font-medium text-zinc-900 dark:text-white truncate">
+                        {ex.name}
+                      </span>
                       {ex.isCompound && (
                         <span className="shrink-0 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
                           Compound
@@ -153,7 +161,9 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
                     <div className="flex items-center gap-2 shrink-0">
                       {confirmDeleteId === ex.id ? (
                         <>
-                          <span className="text-xs text-red-600 dark:text-red-400 font-medium">Delete?</span>
+                          <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                            Delete?
+                          </span>
                           <button
                             onClick={() => doDelete(ex.id)}
                             disabled={isPending}
@@ -179,7 +189,7 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
                               "text-[10px] font-medium rounded-full px-2 py-0.5 border transition-colors disabled:opacity-50",
                               ex.isCompound
                                 ? "border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40"
-                                : "border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                : "border-zinc-200 dark:border-zinc-700 text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800",
                             )}
                           >
                             {ex.isCompound ? "Compound ✓" : "Isolation"}
@@ -211,9 +221,7 @@ export function ExerciseEditor({ exercises }: ExerciseEditorProps) {
         </div>
       ))}
 
-      {error && (
-        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
     </div>
   );
 }

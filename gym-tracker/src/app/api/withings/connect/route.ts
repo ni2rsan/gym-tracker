@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { buildAuthUrl } from "@/lib/withings";
+import { buildAuthUrl } from "@/server/withings";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/login", process.env.NEXTAUTH_URL ?? "http://localhost:3000"));
+    return NextResponse.redirect(
+      new URL("/login", process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
+    );
   }
 
   // Generate a random state value for CSRF protection

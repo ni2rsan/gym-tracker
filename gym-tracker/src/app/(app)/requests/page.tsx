@@ -1,7 +1,7 @@
-import { getCurrentUserId, getSessionContext } from "@/lib/auth-helpers";
-import { getRequestsForUser } from "@/lib/services/requestService";
-import { RequestsPageClient } from "@/components/requests/RequestsPageClient";
-import type { UserRequestItem } from "@/types";
+import { getCurrentUserId, getSessionContext } from "@/server/auth-helpers";
+import { getRequestsForUser } from "@/server/services/requestService";
+import { RequestsPageClient } from "@/features/requests/components/RequestsPageClient";
+import type { UserRequestItem } from "@/core/types/requests";
 
 export const metadata = { title: "Requests — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -25,7 +25,8 @@ export default async function RequestsPage() {
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Feedback</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-          Report a bug or suggest a new feature. {ctx?.isAdmin && "Your submissions also appear in Admin › Requests."}
+          Report a bug or suggest a new feature.{" "}
+          {ctx?.isAdmin && "Your submissions also appear in Admin › Requests."}
         </p>
       </div>
       <RequestsPageClient initialRequests={requests} />

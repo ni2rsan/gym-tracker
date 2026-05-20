@@ -2,19 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import * as metricsService from "@/lib/services/metricsService";
-import { prisma } from "@/lib/prisma";
-import type { ActionResult } from "@/types";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import * as metricsService from "@/server/services/metricsService";
+import { prisma } from "@/server/prisma";
+import type { ActionResult } from "@/core/types/common";
 
-const AddMetricSchema = z.object({
-  weightKg: z.coerce.number().positive().max(500).optional().or(z.literal("")),
-  bodyFatPct: z.coerce.number().min(1).max(70).optional().or(z.literal("")),
-  notes: z.string().max(500).optional(),
-}).refine(
-  (data) => (data.weightKg !== "" && data.weightKg != null) || (data.bodyFatPct !== "" && data.bodyFatPct != null),
-  { message: "At least one of weight or body fat % is required." }
-);
+const AddMetricSchema = z
+  .object({
+    weightKg: z.coerce.number().positive().max(500).optional().or(z.literal("")),
+    bodyFatPct: z.coerce.number().min(1).max(70).optional().or(z.literal("")),
+    notes: z.string().max(500).optional(),
+  })
+  .refine(
+    (data) =>
+      (data.weightKg !== "" && data.weightKg != null) ||
+      (data.bodyFatPct !== "" && data.bodyFatPct != null),
+    { message: "At least one of weight or body fat % is required." },
+  );
 
 export async function addBodyMetric(formData: unknown): Promise<ActionResult> {
   try {
@@ -79,13 +83,17 @@ export async function deleteBodyMetricEntry(entryId: string): Promise<ActionResu
   }
 }
 
-export async function getBodyMetricsHistory(): Promise<ActionResult<Array<{
-  id: string;
-  weightKg: string | null;
-  bodyFatPct: string | null;
-  recordedAt: string;
-  notes: string | null;
-}>>> {
+export async function getBodyMetricsHistory(): Promise<
+  ActionResult<
+    Array<{
+      id: string;
+      weightKg: string | null;
+      bodyFatPct: string | null;
+      recordedAt: string;
+      notes: string | null;
+    }>
+  >
+> {
   try {
     const userId = await getCurrentUserId();
     const entries = await metricsService.getBodyMetrics(userId, "all");

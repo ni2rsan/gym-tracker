@@ -58,9 +58,8 @@ export default function LoginPage() {
           </div>
 
           <p className="mt-6 text-xs text-zinc-500 text-center">
-            By signing in, you agree to our{" "}
-            <span className="text-zinc-400">Terms of Service</span> and{" "}
-            <span className="text-zinc-400">Privacy Policy</span>.
+            By signing in, you agree to our <span className="text-zinc-400">Terms of Service</span>{" "}
+            and <span className="text-zinc-400">Privacy Policy</span>.
           </p>
         </div>
 

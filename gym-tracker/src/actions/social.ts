@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId } from "@/lib/auth-helpers";
+import { getCurrentUserId } from "@/server/auth-helpers";
 import {
   sendFriendRequest as svcSend,
   acceptFriendRequest as svcAccept,
@@ -18,9 +18,10 @@ import {
   getFriendPrivacyOverride,
   toggleFistBump as svcToggleFistBump,
   markSocialSeen as svcMarkSocialSeen,
-} from "@/lib/services/socialService";
-import { prisma } from "@/lib/prisma";
-import type { ActionResult, FriendProfileData } from "@/types";
+} from "@/server/services/socialService";
+import { prisma } from "@/server/prisma";
+import type { ActionResult } from "@/core/types/common";
+import type { FriendProfileData } from "@/core/types/social";
 
 // ─── Send friend request ────────────────────────────────────────────────────
 
@@ -46,10 +47,14 @@ export async function sendFriendRequest(data: unknown): Promise<ActionResult> {
 
 // ─── Accept / decline ───────────────────────────────────────────────────────
 
-export async function acceptFriendRequest(friendshipId: string): Promise<ActionResult> {
+const IdSchema = z.string().min(1);
+
+export async function acceptFriendRequest(friendshipId: unknown): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
-    await svcAccept(userId, friendshipId);
+    const parsed = IdSchema.safeParse(friendshipId);
+    if (!parsed.success) return { success: false, error: "Invalid request ID." };
+    await svcAccept(userId, parsed.data);
     revalidatePath("/social");
     return { success: true };
   } catch {
@@ -57,10 +62,12 @@ export async function acceptFriendRequest(friendshipId: string): Promise<ActionR
   }
 }
 
-export async function declineFriendRequest(friendshipId: string): Promise<ActionResult> {
+export async function declineFriendRequest(friendshipId: unknown): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
-    await svcDecline(userId, friendshipId);
+    const parsed = IdSchema.safeParse(friendshipId);
+    if (!parsed.success) return { success: false, error: "Invalid request ID." };
+    await svcDecline(userId, parsed.data);
     revalidatePath("/social");
     return { success: true };
   } catch {
@@ -84,9 +91,9 @@ export async function removeFriend(friendId: string): Promise<ActionResult> {
 // ─── Privacy settings ───────────────────────────────────────────────────────
 
 const PrivacySchema = z.object({
-  shareWeight:  z.boolean().optional(),
+  shareWeight: z.boolean().optional(),
   shareBodyFat: z.boolean().optional(),
-  sharePRs:     z.boolean().optional(),
+  sharePRs: z.boolean().optional(),
 });
 
 export async function updatePrivacySettings(data: unknown): Promise<ActionResult> {
@@ -103,14 +110,14 @@ export async function updatePrivacySettings(data: unknown): Promise<ActionResult
 }
 
 const OverrideSchema = z.object({
-  shareWeight:  z.boolean().nullable().optional(),
+  shareWeight: z.boolean().nullable().optional(),
   shareBodyFat: z.boolean().nullable().optional(),
-  sharePRs:     z.boolean().nullable().optional(),
+  sharePRs: z.boolean().nullable().optional(),
 });
 
 export async function upsertFriendPrivacyOverride(
   friendId: string,
-  data: unknown
+  data: unknown,
 ): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
@@ -150,7 +157,9 @@ export async function getSocialPageData(): Promise<
 
 // ─── Friend profile ──────────────────────────────────────────────────────────
 
-export async function getFriendProfile(friendUsername: string): Promise<ActionResult<FriendProfileData>> {
+export async function getFriendProfile(
+  friendUsername: string,
+): Promise<ActionResult<FriendProfileData>> {
   try {
     const userId = await getCurrentUserId();
     const friend = await prisma.user.findUnique({
@@ -166,7 +175,15 @@ export async function getFriendProfile(friendUsername: string): Promise<ActionRe
   }
 }
 
-export async function getFriendOverride(friendId: string): Promise<ActionResult<{ shareWeight: boolean | null; shareBodyFat: boolean | null; sharePRs: boolean | null } | null>> {
+export async function getFriendOverride(
+  friendId: string,
+): Promise<
+  ActionResult<{
+    shareWeight: boolean | null;
+    shareBodyFat: boolean | null;
+    sharePRs: boolean | null;
+  } | null>
+> {
   try {
     const userId = await getCurrentUserId();
     const override = await getFriendPrivacyOverride(userId, friendId);
@@ -179,11 +196,13 @@ export async function getFriendOverride(friendId: string): Promise<ActionResult<
 // ─── Fist bump ───────────────────────────────────────────────────────────────
 
 export async function toggleFistBump(
-  sessionId: string
+  sessionId: unknown,
 ): Promise<ActionResult<{ fistBumped: boolean }>> {
   try {
     const userId = await getCurrentUserId();
-    const result = await svcToggleFistBump(userId, sessionId);
+    const parsed = IdSchema.safeParse(sessionId);
+    if (!parsed.success) return { success: false, error: "Invalid session ID." };
+    const result = await svcToggleFistBump(userId, parsed.data);
     return { success: true, data: result };
   } catch {
     return { success: false, error: "Failed to update fist bump." };

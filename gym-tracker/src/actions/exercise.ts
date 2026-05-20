@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getCurrentUserId, requireAdmin } from "@/lib/auth-helpers";
-import * as exerciseService from "@/lib/services/exerciseService";
+import { getCurrentUserId, requireAdmin } from "@/server/auth-helpers";
+import * as exerciseService from "@/server/services/exerciseService";
 import { MuscleGroup } from "@/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
-import type { ActionResult } from "@/types";
+import { prisma } from "@/server/prisma";
+import type { ActionResult } from "@/core/types/common";
 
 const CreateExerciseSchema = z.object({
   name: z.string().min(1).max(100),
@@ -14,7 +14,12 @@ const CreateExerciseSchema = z.object({
   isBodyweight: z.boolean(),
 });
 
-export async function getExercises(): Promise<ActionResult<Awaited<ReturnType<typeof exerciseService.getExercisesForUser>>>> {
+const ExerciseIdSchema = z.string().min(1);
+const PreferredSetsSchema = z.number().int().min(1).max(20);
+
+export async function getExercises(): Promise<
+  ActionResult<Awaited<ReturnType<typeof exerciseService.getExercisesForUser>>>
+> {
   try {
     const userId = await getCurrentUserId();
     const exercises = await exerciseService.getExercisesForUser(userId);
@@ -41,10 +46,12 @@ export async function createExercise(formData: unknown): Promise<ActionResult> {
   }
 }
 
-export async function togglePin(exerciseId: string): Promise<ActionResult> {
+export async function togglePin(exerciseId: unknown): Promise<ActionResult> {
   try {
+    const parsed = ExerciseIdSchema.safeParse(exerciseId);
+    if (!parsed.success) return { success: false, error: "Invalid exercise ID." };
     const userId = await getCurrentUserId();
-    await exerciseService.togglePinExercise(userId, exerciseId);
+    await exerciseService.togglePinExercise(userId, parsed.data);
     revalidatePath("/workout");
     return { success: true };
   } catch (error) {
@@ -53,10 +60,14 @@ export async function togglePin(exerciseId: string): Promise<ActionResult> {
   }
 }
 
-export async function reorderExercises(orderedIds: string[]): Promise<ActionResult> {
+const ReorderSchema = z.array(z.string().min(1)).max(500);
+
+export async function reorderExercises(orderedIds: unknown): Promise<ActionResult> {
   try {
     const userId = await getCurrentUserId();
-    await exerciseService.reorderExercises(userId, orderedIds);
+    const parsed = ReorderSchema.safeParse(orderedIds);
+    if (!parsed.success) return { success: false, error: "Invalid exercise order." };
+    await exerciseService.reorderExercises(userId, parsed.data);
     revalidatePath("/workout");
     return { success: true };
   } catch (error) {
@@ -65,7 +76,9 @@ export async function reorderExercises(orderedIds: string[]): Promise<ActionResu
   }
 }
 
-export async function getCommunityExercises(): Promise<ActionResult<Awaited<ReturnType<typeof exerciseService.getCommunityExercisesForUser>>>> {
+export async function getCommunityExercises(): Promise<
+  ActionResult<Awaited<ReturnType<typeof exerciseService.getCommunityExercisesForUser>>>
+> {
   try {
     const userId = await getCurrentUserId();
     const data = await exerciseService.getCommunityExercisesForUser(userId);
@@ -76,10 +89,12 @@ export async function getCommunityExercises(): Promise<ActionResult<Awaited<Retu
   }
 }
 
-export async function adoptExercise(exerciseId: string): Promise<ActionResult> {
+export async function adoptExercise(exerciseId: unknown): Promise<ActionResult> {
   try {
+    const parsed = ExerciseIdSchema.safeParse(exerciseId);
+    if (!parsed.success) return { success: false, error: "Invalid exercise ID." };
     const userId = await getCurrentUserId();
-    await exerciseService.adoptExercise(userId, exerciseId);
+    await exerciseService.adoptExercise(userId, parsed.data);
     revalidatePath("/workout");
     return { success: true };
   } catch (error) {
@@ -88,7 +103,9 @@ export async function adoptExercise(exerciseId: string): Promise<ActionResult> {
   }
 }
 
-export async function getHiddenExercises(): Promise<ActionResult<Awaited<ReturnType<typeof exerciseService.getHiddenExercisesForUser>>>> {
+export async function getHiddenExercises(): Promise<
+  ActionResult<Awaited<ReturnType<typeof exerciseService.getHiddenExercisesForUser>>>
+> {
   try {
     const userId = await getCurrentUserId();
     const data = await exerciseService.getHiddenExercisesForUser(userId);
@@ -99,10 +116,12 @@ export async function getHiddenExercises(): Promise<ActionResult<Awaited<ReturnT
   }
 }
 
-export async function unhideExercise(exerciseId: string): Promise<ActionResult> {
+export async function unhideExercise(exerciseId: unknown): Promise<ActionResult> {
   try {
+    const parsed = ExerciseIdSchema.safeParse(exerciseId);
+    if (!parsed.success) return { success: false, error: "Invalid exercise ID." };
     const userId = await getCurrentUserId();
-    await exerciseService.unhideExercise(userId, exerciseId);
+    await exerciseService.unhideExercise(userId, parsed.data);
     revalidatePath("/workout");
     return { success: true };
   } catch (error) {
@@ -111,10 +130,12 @@ export async function unhideExercise(exerciseId: string): Promise<ActionResult> 
   }
 }
 
-export async function hideExercise(exerciseId: string): Promise<ActionResult> {
+export async function hideExercise(exerciseId: unknown): Promise<ActionResult> {
   try {
+    const parsed = ExerciseIdSchema.safeParse(exerciseId);
+    if (!parsed.success) return { success: false, error: "Invalid exercise ID." };
     const userId = await getCurrentUserId();
-    await exerciseService.hideExercise(userId, exerciseId);
+    await exerciseService.hideExercise(userId, parsed.data);
     revalidatePath("/workout");
     return { success: true };
   } catch (error) {
@@ -123,10 +144,13 @@ export async function hideExercise(exerciseId: string): Promise<ActionResult> {
   }
 }
 
-export async function setPreferredSets(exerciseId: string, count: number): Promise<ActionResult> {
+export async function setPreferredSets(exerciseId: unknown, count: unknown): Promise<ActionResult> {
   try {
+    const parsedId = ExerciseIdSchema.safeParse(exerciseId);
+    const parsedCount = PreferredSetsSchema.safeParse(count);
+    if (!parsedId.success || !parsedCount.success) return { success: false, error: "Invalid input." };
     const userId = await getCurrentUserId();
-    await exerciseService.setPreferredSets(userId, exerciseId, count);
+    await exerciseService.setPreferredSets(userId, parsedId.data, parsedCount.data);
     return { success: true };
   } catch (error) {
     console.error("setPreferredSets error:", error);
@@ -149,7 +173,7 @@ export async function adminDeleteExercise(exerciseId: string): Promise<ActionRes
 
 export async function adminUpdateExercise(
   exerciseId: string,
-  data: { name?: string; isCompound?: boolean }
+  data: { name?: string; isCompound?: boolean },
 ): Promise<ActionResult> {
   try {
     await requireAdmin();
@@ -167,10 +191,12 @@ export async function adminUpdateExercise(
   }
 }
 
-export async function deleteExerciseData(exerciseId: string): Promise<ActionResult> {
+export async function deleteExerciseData(exerciseId: unknown): Promise<ActionResult> {
   try {
+    const parsed = ExerciseIdSchema.safeParse(exerciseId);
+    if (!parsed.success) return { success: false, error: "Invalid exercise ID." };
     const userId = await getCurrentUserId();
-    await exerciseService.deleteExerciseData(userId, exerciseId);
+    await exerciseService.deleteExerciseData(userId, parsed.data);
     revalidatePath("/workout");
     revalidatePath("/reports");
     revalidatePath("/logs");

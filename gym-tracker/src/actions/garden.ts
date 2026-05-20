@@ -1,8 +1,8 @@
 "use server";
 
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import * as gardenService from "@/lib/services/gardenService";
-import type { ActionResult } from "@/types";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import * as gardenService from "@/server/services/gardenService";
+import type { ActionResult } from "@/core/types/common";
 
 export type GardenData = {
   stardustTotal: number;
@@ -26,7 +26,7 @@ export async function getGardenData(): Promise<ActionResult<GardenData>> {
  * Returns the new total after increment.
  */
 export async function awardSessionStardust(
-  count: number
+  count: number,
 ): Promise<ActionResult<{ newTotal: number }>> {
   if (count <= 0) return { success: true, data: { newTotal: 0 } };
   try {

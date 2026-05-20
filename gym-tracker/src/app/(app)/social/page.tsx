@@ -1,4 +1,4 @@
-import { getCurrentUserId } from "@/lib/auth-helpers";
+import { getCurrentUserId } from "@/server/auth-helpers";
 import {
   getFriendsWithStats,
   getFriendsFeed,
@@ -9,8 +9,8 @@ import {
   getNewFistBumpsForUser,
   getNewFeedSessionIds,
   getSocialStats,
-} from "@/lib/services/socialService";
-import { SocialPageClient } from "@/components/social/SocialPageClient";
+} from "@/server/services/socialService";
+import { SocialPageClient } from "@/features/social/components/SocialPageClient";
 
 export const metadata = { title: "Social — Gym Tracker" };
 export const dynamic = "force-dynamic";
@@ -18,7 +18,17 @@ export const dynamic = "force-dynamic";
 export default async function SocialPage() {
   const userId = await getCurrentUserId();
 
-  const [friendsWithStats, feed, pendingReceived, pendingSent, privacy, inviteToken, newFistBumps, newFeedSessionIds, socialStats] = await Promise.all([
+  const [
+    friendsWithStats,
+    feed,
+    pendingReceived,
+    pendingSent,
+    privacy,
+    inviteToken,
+    newFistBumps,
+    newFeedSessionIds,
+    socialStats,
+  ] = await Promise.all([
     getFriendsWithStats(userId),
     getFriendsFeed(userId),
     getPendingReceived(userId),

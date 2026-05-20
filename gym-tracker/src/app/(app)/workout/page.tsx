@@ -1,7 +1,7 @@
-import { getCurrentUserId } from "@/lib/auth-helpers";
-import { getExercisesForUser } from "@/lib/services/exerciseService";
-import { WorkoutForm } from "@/components/workout/WorkoutForm";
-import { TrackerGuide } from "@/components/guide/TrackerGuide";
+import { getCurrentUserId } from "@/server/auth-helpers";
+import { getExercisesForUser } from "@/server/services/exerciseService";
+import { WorkoutForm } from "@/features/workout/components/WorkoutForm";
+import { TrackerGuide } from "@/features/guide/components/TrackerGuide";
 
 export const metadata = { title: "Workout Tracker — Gym Tracker" };
 export const dynamic = "force-dynamic";

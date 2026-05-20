@@ -132,28 +132,31 @@ model UserExerciseSetting {
 }
 
 model WorkoutSession {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  date      DateTime @db.Date
+  date      DateTime  @db.Date
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
 
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   sets      ExerciseSet[]
   fistBumps WorkoutFistBump[]
 
   @@index([userId, date])
+  @@index([userId, createdAt])
 }
 
-// APPEND-ONLY: Never UPDATE or DELETE rows. Always INSERT new records.
+// APPEND-ONLY: Never UPDATE or hard-DELETE rows. Soft-delete via deletedAt.
 model ExerciseSet {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   sessionId  String
   exerciseId String
   setNumber  Int
   reps       Int
-  weightKg   Decimal? @db.Decimal(6, 2)
-  recordedAt DateTime @default(now())
+  weightKg   Decimal?  @db.Decimal(6, 2)
+  recordedAt DateTime  @default(now())
+  deletedAt  DateTime?
 
   session  WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   exercise Exercise       @relation(fields: [exerciseId], references: [id])
@@ -163,18 +166,19 @@ model ExerciseSet {
   @@index([recordedAt])
 }
 
-// APPEND-ONLY: Never UPDATE or DELETE rows. Pencil icon creates a NEW row.
+// APPEND-ONLY: Never UPDATE or hard-DELETE rows. Soft-delete via deletedAt.
 model BodyMetricEntry {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   userId               String
-  weightKg             Decimal? @db.Decimal(5, 2)
-  bodyFatPct           Decimal? @db.Decimal(4, 2)
-  fatMassKg            Decimal? @db.Decimal(5, 2)  // Withings type 5
-  muscleMassKg         Decimal? @db.Decimal(5, 2)  // Withings type 76
-  recordedAt           DateTime @default(now())
+  weightKg             Decimal?  @db.Decimal(5, 2)
+  bodyFatPct           Decimal?  @db.Decimal(4, 2)
+  fatMassKg            Decimal?  @db.Decimal(5, 2)  // Withings type 5
+  muscleMassKg         Decimal?  @db.Decimal(5, 2)  // Withings type 76
+  recordedAt           DateTime  @default(now())
   notes                String?
-  source               String?  // "manual" | "withings" — null = legacy manual entry
-  withingsMeasureGrpId BigInt?  // Withings grpid for deduplication on re-sync
+  source               String?   // "manual" | "withings" — null = legacy manual entry
+  withingsMeasureGrpId BigInt?   // Withings grpid for deduplication on re-sync
+  deletedAt            DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -206,6 +210,7 @@ model PlannedWorkoutSeries {
   startDate       DateTime       @db.Date
   streakResetDate DateTime?      @db.Date
   createdAt       DateTime       @default(now())
+  deletedAt       DateTime?
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   workouts PlannedWorkout[]
@@ -222,11 +227,13 @@ model PlannedWorkout {
   sorryExcused    Boolean   @default(false)
   isAutoPromoted  Boolean   @default(false)
   createdAt       DateTime  @default(now())
+  deletedAt       DateTime?
 
   user   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   series PlannedWorkoutSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
+  @@index([seriesId])
 }
 
 model UserSorryToken {
@@ -292,6 +299,7 @@ model WorkoutFistBump {
   @@unique([userId, sessionId])
   @@index([sessionId])
   @@index([userId])
+  @@index([createdAt])
 }
 
 model SocialNotificationSeen {
@@ -311,13 +319,14 @@ model Friendship {
   status     FriendshipStatus @default(PENDING)
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
+  deletedAt  DateTime?
 
   sender   User @relation("FriendshipSender",   fields: [senderId],   references: [id], onDelete: Cascade)
   receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@unique([senderId, receiverId])
-  @@index([senderId])
-  @@index([receiverId])
+  @@index([senderId, status])
+  @@index([receiverId, status])
 }
 
 model UserPrivacySettings {
@@ -359,11 +368,12 @@ model FriendInvite {
 // ─── Planned individual exercises ─────────────────────────────────────────
 
 model PlannedExercise {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
-  date       DateTime @db.Date
+  date       DateTime  @db.Date
   exerciseId String
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
+  deletedAt  DateTime?
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/server/auth-helpers";
 import { listUsers, impersonateUser } from "@/actions/admin";
 import { auth } from "@/auth";
 import { Shield, Eye, Dumbbell, Inbox } from "lucide-react";
@@ -20,7 +20,9 @@ export default async function AdminPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Admin</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">{users.length} registered users</p>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            {users.length} registered users
+          </p>
         </div>
       </div>
 
@@ -46,10 +48,18 @@ export default async function AdminPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">User</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide hidden sm:table-cell">Email</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide hidden md:table-cell">Joined</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">Role</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                User
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide hidden sm:table-cell">
+                Email
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide hidden md:table-cell">
+                Joined
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                Role
+              </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -57,7 +67,10 @@ export default async function AdminPage() {
             {users.map((user) => {
               const isMe = user.id === session?.user?.id;
               return (
-                <tr key={user.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                <tr
+                  key={user.id}
+                  className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {(user.profileImageBase64 ?? user.image) ? (
@@ -77,7 +90,9 @@ export default async function AdminPage() {
                           {user.username ? `@${user.username}` : (user.name ?? "—")}
                         </p>
                         {user.username && user.name && (
-                          <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-tight">{user.name}</p>
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500 leading-tight">
+                            {user.name}
+                          </p>
                         )}
                       </div>
                     </div>

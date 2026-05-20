@@ -26,10 +26,21 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const protectedRoutes = ["/workout", "/planner", "/reports", "/dashboard", "/logs", "/social", "/invite"];
-      const isProtected = protectedRoutes.some((r) =>
-        nextUrl.pathname.startsWith(r)
-      );
+      const protectedRoutes = [
+        "/workout",
+        "/planner",
+        "/reports",
+        "/dashboard",
+        "/logs",
+        "/social",
+        "/invite",
+        "/admin",
+        "/progress",
+        "/profile",
+        "/requests",
+        "/privacy",
+      ];
+      const isProtected = protectedRoutes.some((r) => nextUrl.pathname.startsWith(r));
 
       if (isProtected && !isLoggedIn) {
         const loginUrl = new URL("/login", nextUrl.origin);

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import { getExercisesForUser } from "@/lib/services/exerciseService";
+import { getExercisesForUser } from "@/server/services/exerciseService";
 
 export async function GET() {
   const session = await auth();

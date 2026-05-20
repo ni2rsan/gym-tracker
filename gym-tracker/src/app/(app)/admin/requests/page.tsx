@@ -1,7 +1,7 @@
-import { requireAdmin } from "@/lib/auth-helpers";
-import { getAllRequests } from "@/lib/services/requestService";
-import { AdminRequestList } from "@/components/requests/AdminRequestList";
-import type { UserRequestItem } from "@/types";
+import { requireAdmin } from "@/server/auth-helpers";
+import { getAllRequests } from "@/server/services/requestService";
+import { AdminRequestList } from "@/features/requests/components/AdminRequestList";
+import type { UserRequestItem } from "@/core/types/requests";
 
 export const metadata = { title: "Manage Requests — Gym Tracker" };
 export const dynamic = "force-dynamic";
