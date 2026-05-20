@@ -8,9 +8,13 @@ import type { SectionLayout } from "@/core/domain/badgeLayout";
 import { Box3, Vector3 } from "three";
 
 
-// Preload both GLBs immediately — cached before any Canvas mounts
-useGLTF.preload("/Early Adopter.glb");
-useGLTF.preload("/The Architect.glb");
+// Preload both GLBs — wrapped in try/catch for devices without WebGL support
+try {
+  useGLTF.preload("/Early Adopter.glb");
+  useGLTF.preload("/The Architect.glb");
+} catch {
+  // Silently skip preload on devices where Three.js init fails at module level
+}
 
 function NormalizedModel({ path }: { path: string }) {
   const { scene } = useGLTF(path);

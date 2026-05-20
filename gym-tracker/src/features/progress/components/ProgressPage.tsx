@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Component, useState } from "react";
+import type { ReactNode } from "react";
 import { Pencil } from "lucide-react";
 import type { StreakData } from "@/server/services/plannerService";
 import type { TreeState } from "@/core/domain/gardenUtils";
@@ -27,6 +28,20 @@ const SpecialsCard = dynamic(() => import("./SpecialsCard").then((m) => m.Specia
 import { ExerciseGarden } from "./ExerciseGarden";
 import { MilestonesCard } from "@/features/planner/components/StreakCounter";
 import { BadgeLayoutEditor } from "./BadgeLayoutEditor";
+
+class WebGLErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
 
 type Section = "milestones" | "volume" | "social" | "specials";
 
@@ -110,10 +125,12 @@ export function ProgressPage({
 
         <ExerciseGarden stardustTotal={stardustTotal} trees={gardenTrees} />
 
-        <div className="relative">
-          {isAdmin && <AdminEditButton onClick={() => setEditorSection("specials")} />}
-          <SpecialsCard userId={userId} isAdmin={isAdmin} layout={SPECIALS_LAYOUT} />
-        </div>
+        <WebGLErrorBoundary>
+          <div className="relative">
+            {isAdmin && <AdminEditButton onClick={() => setEditorSection("specials")} />}
+            <SpecialsCard userId={userId} isAdmin={isAdmin} layout={SPECIALS_LAYOUT} />
+          </div>
+        </WebGLErrorBoundary>
       </div>
     </>
   );
