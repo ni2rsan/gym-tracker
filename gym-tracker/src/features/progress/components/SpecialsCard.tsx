@@ -1,24 +1,23 @@
 "use client";
 
-import { Component, Suspense, useState, useMemo, useEffect } from "react";
+import { Component, Suspense, useState, useMemo } from "react";
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
-import { cn } from "@/core/utils/cn";
 import type { SectionLayout } from "@/core/domain/badgeLayout";
 import { Box3, Vector3 } from "three";
 
-// Preload both GLBs — wrapped in try/catch for devices without WebGL support
+// Preload both GLBs — wrapped in try/catch for devices where Three.js init fails
 try {
   useGLTF.preload("/Early Adopter.glb");
   useGLTF.preload("/The Architect.glb");
 } catch {
-  // Silently skip preload on devices where Three.js init fails at module level
+  // Silently skip — Canvas will still attempt to load on render
 }
 
-// Error boundary that shows a fallback instead of crashing the page
-class ModelErrorBoundary extends Component<
-  { children: ReactNode; fallback: ReactNode },
+// Error boundary: shows a spinner fallback instead of crashing the page
+class CanvasErrorBoundary extends Component<
+  { children: ReactNode },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -26,7 +25,13 @@ class ModelErrorBoundary extends Component<
     return { hasError: true };
   }
   render() {
-    if (this.state.hasError) return this.props.fallback;
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center w-full h-full">
+          <p className="text-[10px] text-zinc-400">3D not supported</p>
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
@@ -68,12 +73,20 @@ function ModelScene({
   );
 }
 
+// Loading spinner shown while Canvas / GLB loads
+function CanvasSpinner() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 interface Badge {
   path: string;
   tag: string;
   title: string;
   subtext: string;
-  emoji: string;
 }
 
 const EARLY_ADOPTER: Badge = {
@@ -82,7 +95,6 @@ const EARLY_ADOPTER: Badge = {
   title: "OG",
   subtext:
     "You were here before the hype. Before the updates. Before anyone else knew what this was. You believed early. That makes you one of us forever.",
-  emoji: "⭐",
 };
 
 const THE_ARCHITECT: Badge = {
@@ -91,18 +103,23 @@ const THE_ARCHITECT: Badge = {
   title: "The Architect",
   subtext:
     "You didn't just build the gym. You built the whole world around it. Every badge, every milestone, every rep tracked — it started with you.",
-  emoji: "🏗️",
 };
 
-// Static badge row — no Canvas, just text. 3D loads only when user taps.
 function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => void }) {
   return (
-    <div
-      className="flex items-center gap-4 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-800/50 rounded-xl transition-colors -mx-1 px-1 py-1"
-      onClick={() => onOpen(badge)}
-    >
-      <div className="flex items-center justify-center w-20 h-20 shrink-0 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-3xl">
-        {badge.emoji}
+    <div className="flex items-center gap-4">
+      <div className="relative w-28 h-28 shrink-0">
+        <CanvasErrorBoundary>
+          <Canvas
+            shadows={false}
+            camera={{ position: [0, 0, 3], fov: 50 }}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <ModelScene path={badge.path} autoRotateSpeed={1.5} />
+          </Canvas>
+          <CanvasSpinner />
+        </CanvasErrorBoundary>
+        <div className="absolute inset-0 cursor-pointer" onClick={() => onOpen(badge)} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">
@@ -111,20 +128,8 @@ function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => v
         <p className="text-base font-bold text-zinc-900 dark:text-white leading-snug mb-1">
           {badge.title}
         </p>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
-          {badge.subtext}
-        </p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">{badge.subtext}</p>
       </div>
-    </div>
-  );
-}
-
-// 3D modal fallback when WebGL fails
-function ModelFallback({ badge }: { badge: Badge }) {
-  return (
-    <div className="w-full h-64 mb-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-800 rounded-xl">
-      <span className="text-5xl mb-2">{badge.emoji}</span>
-      <p className="text-xs text-zinc-400">3D model not available on this device</p>
     </div>
   );
 }
@@ -140,7 +145,7 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
 
   return (
     <>
-      {/* Badge detail modal — 3D model loads only here, on user click */}
+      {/* Badge detail modal — opens on click */}
       {modalBadge && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
@@ -150,8 +155,8 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
             className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <ModelErrorBoundary fallback={<ModelFallback badge={modalBadge} />}>
-              <div className="relative w-full h-64 mb-4">
+            <div className="relative w-full h-64 mb-4">
+              <CanvasErrorBoundary>
                 <Canvas
                   shadows={false}
                   camera={{ position: [0, 0, 3], fov: 50 }}
@@ -159,11 +164,9 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 >
                   <ModelScene path={modalBadge.path} autoRotateSpeed={2} />
                 </Canvas>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin opacity-0 [.canvas-loading_&]:opacity-100" />
-                </div>
-              </div>
-            </ModelErrorBoundary>
+                <CanvasSpinner />
+              </CanvasErrorBoundary>
+            </div>
             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
               {modalBadge.tag}
             </p>
@@ -211,12 +214,15 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 }}
                 onClick={() => setModalBadge(EARLY_ADOPTER)}
               >
-                <div
-                  className="flex items-center justify-center bg-amber-50/80 dark:bg-amber-950/50 rounded-full"
-                  style={{ width: "100%", aspectRatio: "1" }}
-                >
-                  <span className="text-3xl">{EARLY_ADOPTER.emoji}</span>
-                </div>
+                <CanvasErrorBoundary>
+                  <Canvas
+                    shadows={false}
+                    camera={{ position: [0, 0, 3], fov: 50 }}
+                    style={{ width: "100%", aspectRatio: "1" }}
+                  >
+                    <ModelScene path={EARLY_ADOPTER.path} autoRotateSpeed={1.5} />
+                  </Canvas>
+                </CanvasErrorBoundary>
               </div>
             )}
             {isAdmin && layout.positions["architect"] && (
@@ -230,12 +236,15 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 }}
                 onClick={() => setModalBadge(THE_ARCHITECT)}
               >
-                <div
-                  className="flex items-center justify-center bg-amber-50/80 dark:bg-amber-950/50 rounded-full"
-                  style={{ width: "100%", aspectRatio: "1" }}
-                >
-                  <span className="text-3xl">{THE_ARCHITECT.emoji}</span>
-                </div>
+                <CanvasErrorBoundary>
+                  <Canvas
+                    shadows={false}
+                    camera={{ position: [0, 0, 3], fov: 50 }}
+                    style={{ width: "100%", aspectRatio: "1" }}
+                  >
+                    <ModelScene path={THE_ARCHITECT.path} autoRotateSpeed={1.5} />
+                  </Canvas>
+                </CanvasErrorBoundary>
               </div>
             )}
           </div>
