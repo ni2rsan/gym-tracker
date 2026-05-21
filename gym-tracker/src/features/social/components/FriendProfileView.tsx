@@ -4,7 +4,7 @@ import { Component, useState, useTransition, useMemo, Suspense } from "react";
 import type { ReactNode } from "react";
 import { Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
 import { cn } from "@/core/utils/cn";
 import { upsertFriendPrivacyOverride } from "@/actions/social";
@@ -102,10 +102,11 @@ function CompactBadge3D({ path, title, tag }: { path: string; title: string; tag
             camera={{ position: [0, 0, 3], fov: 50 }}
             style={{ width: "100%", height: "100%" }}
           >
-            <ambientLight intensity={1.2} />
-            <directionalLight position={[3, 5, 3]} intensity={0.8} />
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[3, 5, 3]} intensity={1} />
             <Suspense fallback={null}>
               <NormalizedModel path={path} />
+              <Environment files="/potsdamer_platz_1k.hdr" />
             </Suspense>
             <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
           </Canvas>
