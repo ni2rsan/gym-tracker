@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Copy, Check } from "lucide-react";
 import type { SectionLayout, EditorBadge } from "@/core/domain/badgeLayout";
 
@@ -28,6 +28,16 @@ export function BadgeLayoutEditor({
   const [dragging, setDragging] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [canvasWidth, setCanvasWidth] = useState(400);
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    setCanvasWidth(el.clientWidth);
+    const ro = new ResizeObserver(([entry]) => setCanvasWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const placedKeys = new Set(Object.keys(positions));
   const trayBadges = badges.filter((b) => !placedKeys.has(b.key));
@@ -233,8 +243,8 @@ export function BadgeLayoutEditor({
                       alt={badge.label}
                       className="object-contain drop-shadow-lg pointer-events-none"
                       style={{
-                        width: `${(badgeSizePercent * (canvasRef.current?.clientWidth ?? 400)) / 100}px`,
-                        height: `${(badgeSizePercent * (canvasRef.current?.clientWidth ?? 400)) / 100}px`,
+                        width: `${(badgeSizePercent * (canvasWidth)) / 100}px`,
+                        height: `${(badgeSizePercent * (canvasWidth)) / 100}px`,
                       }}
                     />
                     <button

@@ -46,6 +46,7 @@ export function AddCustomExercise({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- form reset on modal open
       setMuscleGroup(defaultMuscleGroup ?? MuscleGroup.UPPER_BODY);
       setName("");
       setError("");

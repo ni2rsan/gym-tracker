@@ -21,6 +21,7 @@ export function ProfileSetupModal({ needsSetup }: ProfileSetupModalProps) {
     if (!needsSetup) return;
     if (typeof window === "undefined") return;
     if (localStorage.getItem(DISMISSED_KEY)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time localStorage read (SSR-unsafe)
     setOpen(true);
   }, [needsSetup]);
 

@@ -15,6 +15,7 @@ export function WithingsToast() {
   useEffect(() => {
     const withings = searchParams.get("withings");
     if (withings === "connected" || withings === "denied" || withings === "error") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param sync + router replace
       setStatus(withings as "connected" | "denied" | "error");
       setVisible(true);
       // Remove the query param from URL without reloading

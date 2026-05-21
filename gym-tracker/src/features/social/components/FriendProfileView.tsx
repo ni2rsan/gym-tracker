@@ -531,7 +531,7 @@ export function FriendProfileView({
           {showOverrides && (
             <div className="px-5 pb-4 border-t border-zinc-100 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800">
               <p className="text-xs text-zinc-400 dark:text-zinc-500 pt-3 pb-2">
-                Override your global settings just for this friend. "Reset" reverts to global.
+                Override your global settings just for this friend. &ldquo;Reset&rdquo; reverts to global.
               </p>
               <OverrideToggle
                 label="Share my Weight"

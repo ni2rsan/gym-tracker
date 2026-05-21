@@ -206,6 +206,7 @@ export function TrackerGuide() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("section")) return; // entered via Track Mode from planner, not the workout page directly
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time localStorage + URL read (SSR-unsafe)
     if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
   }, []);
 

@@ -232,6 +232,7 @@ export function ReportsGuide() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time localStorage read (SSR-unsafe)
     if (!localStorage.getItem(STORAGE_KEY)) setOpen(true);
   }, []);
 

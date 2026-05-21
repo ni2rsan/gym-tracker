@@ -127,6 +127,7 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
 
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage read (SSR-unsafe)
       setIntroSeen(!!localStorage.getItem(introKey));
     } catch {
       setIntroSeen(true);

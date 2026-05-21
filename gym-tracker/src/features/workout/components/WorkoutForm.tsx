@@ -228,6 +228,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   // Load saved sets for selected date (+ last-known prefill)
   useEffect(() => {
     let stale = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag before async fetch
     setIsLoading(true);
     setLastSavedAll(null);
     setLastSavedByGroup({});
@@ -273,6 +274,7 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
   // Load range data for calendar dots + planner blocks + planned exercises
   useEffect(() => {
     let stale = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag before async fetch
     setIsRangeLoading(true);
     Promise.all([
       getWorkoutsForRange(rangeStart, rangeEnd),
@@ -298,10 +300,13 @@ export function WorkoutForm({ initialExercises, initialDate }: WorkoutFormProps)
     if (!section) return;
     didScrollRef.current = true;
     if (section === "FULL_BODY") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param sync on mount
       setTrackingScope("FULL_BODY");
     } else if (section === "WORKOUT") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param sync on mount
       setTrackingScope("all");
     } else if ((MUSCLE_GROUP_ORDER as readonly string[]).includes(section)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param sync on mount
       setTrackingScope(section as MuscleGroup);
     }
   }, [isLoading, searchParams]);

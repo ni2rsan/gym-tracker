@@ -110,6 +110,7 @@ export function MetricsCards({
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-time localStorage read (SSR-unsafe)
     setShowFFMI(localStorage.getItem("gymtracker_show_ffmi") === "1");
   }, []);
 

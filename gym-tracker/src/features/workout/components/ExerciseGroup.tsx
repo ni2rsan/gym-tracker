@@ -81,12 +81,19 @@ export function ExerciseGroup({
 }: ExerciseGroupProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [removedOpen, setRemovedOpen] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   // When async planner data loads and defaultOpen changes true→false, collapse the group.
   // Don't auto-open if user has manually closed it.
   const prevDefault = useRef(defaultOpen);
   useEffect(() => {
     if (!defaultOpen && prevDefault.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- prop-driven collapse when planner data loads
       setOpen(false);
     }
     prevDefault.current = defaultOpen;
@@ -218,9 +225,9 @@ export function ExerciseGroup({
               {lastSaved && (
                 <span className="text-xs text-zinc-400 dark:text-zinc-500">
                   Saved{" "}
-                  {Math.max(0, Math.floor((Date.now() - lastSaved.getTime()) / 60000)) === 0
+                  {Math.max(0, Math.floor((nowMs - lastSaved.getTime()) / 60000)) === 0
                     ? "just now"
-                    : `${Math.floor((Date.now() - lastSaved.getTime()) / 60000)}m ago`}
+                    : `${Math.floor((nowMs - lastSaved.getTime()) / 60000)}m ago`}
                 </span>
               )}
               <button

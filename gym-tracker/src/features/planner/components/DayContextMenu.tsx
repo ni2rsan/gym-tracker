@@ -151,6 +151,7 @@ export function DayContextMenu({
     let left = x;
     if (left + rect.width > vw - 8) left = vw - rect.width - 8;
     if (top + rect.height > vh - 8) top = Math.max(8, y - rect.height);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- DOM measurement after mount
     setPos({ top, left });
   }, [x, y]);
 

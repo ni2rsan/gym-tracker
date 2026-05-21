@@ -433,7 +433,7 @@ export async function getSocialBadgeCounts(
     // Fist bumps received on the current user's own sessions
     prisma.workoutFistBump.count({
       where: {
-        session: { userId },
+        session: { userId, deletedAt: null },
         userId: { not: userId }, // exclude self-bumps
         active: true,
         createdAt: { gt: lastSeenFistBumps },
@@ -535,7 +535,7 @@ export async function getNewFeedSessionIds(userId: string): Promise<string[]> {
 export async function getSocialStats(userId: string): Promise<SocialStats> {
   const [totalFistBumpsReceived, totalWorkoutsTracked, friendCount] = await Promise.all([
     prisma.workoutFistBump.count({
-      where: { session: { userId }, userId: { not: userId }, active: true },
+      where: { session: { userId, deletedAt: null }, userId: { not: userId }, active: true },
     }),
     prisma.workoutSession.count({ where: { userId, deletedAt: null } }),
     prisma.friendship.count({
