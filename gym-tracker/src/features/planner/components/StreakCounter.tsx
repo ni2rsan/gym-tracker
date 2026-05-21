@@ -261,7 +261,7 @@ export function MilestonesCard({
             return (
               <div key={milestone} className="flex flex-col items-center gap-1">
                 {unlocked ? (
-                  <div className="relative w-44 h-44">
+                  <div className="relative w-32 h-32">
                     <span className="sparkle" style={{ top: 20, right: 23 }}>
                       ✦
                     </span>
@@ -282,7 +282,7 @@ export function MilestonesCard({
                     </button>
                   </div>
                 ) : (
-                  <div className="w-44 h-44 flex items-center justify-center overflow-hidden rounded-full opacity-30 grayscale">
+                  <div className="w-32 h-32 flex items-center justify-center overflow-hidden rounded-full opacity-30 grayscale">
                     {badgeImg}
                   </div>
                 )}

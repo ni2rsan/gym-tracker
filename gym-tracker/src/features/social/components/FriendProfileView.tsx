@@ -423,12 +423,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {unlocked.map((days) => (
-                      <div key={days} className="flex flex-col items-center gap-0.5 w-10">
+                      <div key={days} className="flex flex-col items-center gap-0.5 w-14">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/milestones/${days}.png`}
                           alt={`${days}d`}
-                          className="w-10 h-10 object-contain"
+                          className="w-14 h-14 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {days}d
@@ -453,12 +453,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {unlocked.map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-10">
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-14">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/volume/${b.key}.png`}
                           alt={b.key}
-                          className="w-10 h-10 object-contain"
+                          className="w-14 h-14 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {b.key}
@@ -486,12 +486,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {[...achievedFriends, ...achievedFistbumps].map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-12">
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-24">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/social/${b.key}.png`}
                           alt={b.label}
-                          className="w-12 h-12 object-contain"
+                          className="w-24 h-24 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">
                           {b.label}

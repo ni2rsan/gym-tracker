@@ -254,7 +254,7 @@ export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardPro
                       onClick={() => setActiveBadge({ ...badge, count: friendCount })}
                       className="flex flex-col items-center focus:outline-none"
                     >
-                      <div className="relative w-full aspect-square scale-[2.62] sm:scale-[1.75]">
+                      <div className="relative w-full aspect-square scale-[1.38] sm:scale-[0.92]">
                         <span className="sparkle" style={{ top: "30%", right: "30%" }}>
                           ✦
                         </span>
@@ -288,7 +288,7 @@ export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardPro
                       <img
                         src={`/social/${badge.key}.png`}
                         alt={badge.label}
-                        className="w-full aspect-square object-contain scale-[2.62] sm:scale-[1.75]"
+                        className="w-full aspect-square object-contain scale-[1.38] sm:scale-[0.92]"
                       />
                       <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
                         {badge.label}
@@ -365,7 +365,7 @@ export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardPro
                       onClick={() => setActiveBadge({ ...badge, count: fistbumpCount })}
                       className="flex flex-col items-center focus:outline-none"
                     >
-                      <div className="relative w-full aspect-square scale-[2.62] sm:scale-[1.75]">
+                      <div className="relative w-full aspect-square scale-[1.38] sm:scale-[0.92]">
                         <span className="sparkle" style={{ top: "30%", right: "30%" }}>
                           ✦
                         </span>
@@ -399,7 +399,7 @@ export function SocialCard({ friendCount, fistbumpCount, layout }: SocialCardPro
                       <img
                         src={`/social/${badge.key}.png`}
                         alt={badge.label}
-                        className="w-full aspect-square object-contain scale-[2.62] sm:scale-[1.75]"
+                        className="w-full aspect-square object-contain scale-[1.38] sm:scale-[0.92]"
                       />
                       <span className="text-[10px] font-bold text-zinc-400 uppercase leading-none mt-1">
                         {badge.label}
