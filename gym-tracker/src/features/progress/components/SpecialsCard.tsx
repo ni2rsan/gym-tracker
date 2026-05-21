@@ -85,8 +85,8 @@ function CanvasSpinner({ visible }: { visible: boolean }) {
   );
 }
 
-// Shared Canvas GL config — lightweight for mobile
-const CANVAS_GL = { antialias: false, powerPreference: "low-power" as const, alpha: true };
+// Shared Canvas GL config
+const CANVAS_GL = { antialias: true, powerPreference: "low-power" as const, alpha: true };
 
 interface Badge {
   path: string;
@@ -146,7 +146,7 @@ function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => v
           <CanvasErrorBoundary>
             <Canvas
               shadows={false}
-              dpr={[1, 1.5]}
+              dpr={[1.5, 2]}
               gl={CANVAS_GL}
               camera={{ position: [0, 0, 3], fov: 50 }}
               style={{ width: "100%", height: "100%" }}
@@ -284,7 +284,7 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                   <CanvasErrorBoundary>
                     <Canvas
                       shadows={false}
-                      dpr={[1, 1.5]}
+                      dpr={[1.5, 2]}
                       gl={CANVAS_GL}
                       camera={{ position: [0, 0, 3], fov: 50 }}
                       style={{ width: "100%", aspectRatio: "1" }}
@@ -318,7 +318,7 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                   <CanvasErrorBoundary>
                     <Canvas
                       shadows={false}
-                      dpr={[1, 1.5]}
+                      dpr={[1.5, 2]}
                       gl={CANVAS_GL}
                       camera={{ position: [0, 0, 3], fov: 50 }}
                       style={{ width: "100%", aspectRatio: "1" }}
