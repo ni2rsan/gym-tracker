@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useState, useMemo, useEffect, useCallback } from "react";
+import { Component, Suspense, useState, useMemo, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import { cn } from "@/core/utils/cn";
 import type { SectionLayout } from "@/core/domain/badgeLayout";
 import { Box3, Vector3 } from "three";
-
 
 // Preload both GLBs — wrapped in try/catch for devices without WebGL support
 try {
@@ -14,6 +14,21 @@ try {
   useGLTF.preload("/The Architect.glb");
 } catch {
   // Silently skip preload on devices where Three.js init fails at module level
+}
+
+// Error boundary that shows a fallback instead of crashing the page
+class ModelErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
 }
 
 function NormalizedModel({ path }: { path: string }) {
@@ -33,21 +48,12 @@ function NormalizedModel({ path }: { path: string }) {
   return <primitive object={normalized} />;
 }
 
-function LoadedSignal({ onLoaded }: { onLoaded: () => void }) {
-  useEffect(() => {
-    onLoaded();
-  }, [onLoaded]);
-  return null;
-}
-
 function ModelScene({
   path,
   autoRotateSpeed,
-  onLoaded,
 }: {
   path: string;
   autoRotateSpeed: number;
-  onLoaded?: () => void;
 }) {
   return (
     <>
@@ -56,7 +62,6 @@ function ModelScene({
       <Suspense fallback={null}>
         <NormalizedModel path={path} />
         <Environment preset="city" />
-        {onLoaded && <LoadedSignal onLoaded={onLoaded} />}
       </Suspense>
       <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
     </>
@@ -68,6 +73,7 @@ interface Badge {
   tag: string;
   title: string;
   subtext: string;
+  emoji: string;
 }
 
 const EARLY_ADOPTER: Badge = {
@@ -76,6 +82,7 @@ const EARLY_ADOPTER: Badge = {
   title: "OG",
   subtext:
     "You were here before the hype. Before the updates. Before anyone else knew what this was. You believed early. That makes you one of us forever.",
+  emoji: "⭐",
 };
 
 const THE_ARCHITECT: Badge = {
@@ -84,20 +91,18 @@ const THE_ARCHITECT: Badge = {
   title: "The Architect",
   subtext:
     "You didn't just build the gym. You built the whole world around it. Every badge, every milestone, every rep tracked — it started with you.",
+  emoji: "🏗️",
 };
 
+// Static badge row — no Canvas, just text. 3D loads only when user taps.
 function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => void }) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative w-28 h-28 shrink-0">
-        <Canvas
-          shadows={false}
-          camera={{ position: [0, 0, 3], fov: 50 }}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <ModelScene path={badge.path} autoRotateSpeed={1.5} />
-        </Canvas>
-        <div className="absolute inset-0 cursor-pointer" onClick={() => onOpen(badge)} />
+    <div
+      className="flex items-center gap-4 cursor-pointer active:bg-zinc-50 dark:active:bg-zinc-800/50 rounded-xl transition-colors -mx-1 px-1 py-1"
+      onClick={() => onOpen(badge)}
+    >
+      <div className="flex items-center justify-center w-20 h-20 shrink-0 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-3xl">
+        {badge.emoji}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">
@@ -106,8 +111,20 @@ function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => v
         <p className="text-base font-bold text-zinc-900 dark:text-white leading-snug mb-1">
           {badge.title}
         </p>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">{badge.subtext}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed line-clamp-2">
+          {badge.subtext}
+        </p>
       </div>
+    </div>
+  );
+}
+
+// 3D modal fallback when WebGL fails
+function ModelFallback({ badge }: { badge: Badge }) {
+  return (
+    <div className="w-full h-64 mb-4 flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-800 rounded-xl">
+      <span className="text-5xl mb-2">{badge.emoji}</span>
+      <p className="text-xs text-zinc-400">3D model not available on this device</p>
     </div>
   );
 }
@@ -120,84 +137,10 @@ interface SpecialsCardProps {
 
 export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardProps) {
   const [modalBadge, setModalBadge] = useState<Badge | null>(null);
-  const [introSeen, setIntroSeen] = useState<boolean | null>(null);
-  const [introModelLoaded, setIntroModelLoaded] = useState(false);
-
-  const introKey = `early-adopter-intro-seen-v4-${userId}`;
-
-  useEffect(() => {
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage read (SSR-unsafe)
-      setIntroSeen(!!localStorage.getItem(introKey));
-    } catch {
-      setIntroSeen(true);
-    }
-  }, [introKey]);
-
-  const dismissIntro = () => {
-    try {
-      localStorage.setItem(introKey, "1");
-    } catch {
-      /* ignore */
-    }
-    setIntroSeen(true);
-  };
-
-  const handleIntroLoaded = useCallback(() => setIntroModelLoaded(true), []);
 
   return (
     <>
-      {/* One-time intro popup — rendered at opacity:0 so Canvas pre-warms in background */}
-      {introSeen !== true && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
-          style={{
-            opacity: introSeen === false ? 1 : 0,
-            pointerEvents: introSeen === false ? "auto" : "none",
-          }}
-          onClick={dismissIntro}
-        >
-          <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative w-full h-64 mb-4">
-              <Canvas
-                shadows={false}
-                camera={{ position: [0, 0, 3], fov: 50 }}
-                style={{ width: "100%", height: "100%" }}
-              >
-                <ModelScene
-                  path="/Early Adopter.glb"
-                  autoRotateSpeed={2}
-                  onLoaded={handleIntroLoaded}
-                />
-              </Canvas>
-              {!introModelLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-            </div>
-            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
-              Special · Early Adopter
-            </p>
-            <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug mb-2">OG</p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              You were here before the hype. Before the updates. Before anyone else knew what this
-              was. You believed early. That makes you one of us forever.
-            </p>
-            <button
-              onClick={dismissIntro}
-              className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Badge detail modal */}
+      {/* Badge detail modal — 3D model loads only here, on user click */}
       {modalBadge && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
@@ -207,20 +150,28 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
             className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full h-64 mb-4">
-              <Canvas
-                shadows={false}
-                camera={{ position: [0, 0, 3], fov: 50 }}
-                style={{ width: "100%", height: "100%" }}
-              >
-                <ModelScene path={modalBadge.path} autoRotateSpeed={2} />
-              </Canvas>
-            </div>
+            <ModelErrorBoundary fallback={<ModelFallback badge={modalBadge} />}>
+              <div className="relative w-full h-64 mb-4">
+                <Canvas
+                  shadows={false}
+                  camera={{ position: [0, 0, 3], fov: 50 }}
+                  style={{ width: "100%", height: "100%" }}
+                >
+                  <ModelScene path={modalBadge.path} autoRotateSpeed={2} />
+                </Canvas>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin opacity-0 [.canvas-loading_&]:opacity-100" />
+                </div>
+              </div>
+            </ModelErrorBoundary>
             <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
               {modalBadge.tag}
             </p>
-            <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug">
+            <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug mb-2">
               {modalBadge.title}
+            </p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              {modalBadge.subtext}
             </p>
             <button
               onClick={() => setModalBadge(null)}
@@ -260,13 +211,12 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 }}
                 onClick={() => setModalBadge(EARLY_ADOPTER)}
               >
-                <Canvas
-                  shadows={false}
-                  camera={{ position: [0, 0, 3], fov: 50 }}
+                <div
+                  className="flex items-center justify-center bg-amber-50/80 dark:bg-amber-950/50 rounded-full"
                   style={{ width: "100%", aspectRatio: "1" }}
                 >
-                  <ModelScene path={EARLY_ADOPTER.path} autoRotateSpeed={1.5} />
-                </Canvas>
+                  <span className="text-3xl">{EARLY_ADOPTER.emoji}</span>
+                </div>
               </div>
             )}
             {isAdmin && layout.positions["architect"] && (
@@ -280,13 +230,12 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 }}
                 onClick={() => setModalBadge(THE_ARCHITECT)}
               >
-                <Canvas
-                  shadows={false}
-                  camera={{ position: [0, 0, 3], fov: 50 }}
+                <div
+                  className="flex items-center justify-center bg-amber-50/80 dark:bg-amber-950/50 rounded-full"
                   style={{ width: "100%", aspectRatio: "1" }}
                 >
-                  <ModelScene path={THE_ARCHITECT.path} autoRotateSpeed={1.5} />
-                </Canvas>
+                  <span className="text-3xl">{THE_ARCHITECT.emoji}</span>
+                </div>
               </div>
             )}
           </div>
