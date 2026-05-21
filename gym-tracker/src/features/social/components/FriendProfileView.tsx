@@ -93,7 +93,7 @@ class CanvasErrorBoundary extends Component<
 function CompactBadge3D({ path, title, tag }: { path: string; title: string; tag: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <div className="w-16 h-16 shrink-0">
+      <div className="w-20 h-20 shrink-0">
         <CanvasErrorBoundary>
           <Canvas
             shadows={false}
@@ -423,7 +423,7 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {unlocked.map((days) => (
-                      <div key={days} className="flex flex-col items-center gap-0.5 w-20">
+                      <div key={days} className="flex flex-col items-center w-20">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/milestones/${days}.png`}
@@ -453,12 +453,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {unlocked.map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-20">
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-10">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/volume/${b.key}.png`}
                           alt={b.key}
-                          className="w-20 h-20 object-contain"
+                          className="w-10 h-10 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {b.key}
@@ -486,7 +486,7 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {[...achievedFriends, ...achievedFistbumps].map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-32">
+                      <div key={b.key} className="flex flex-col items-center w-32">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/social/${b.key}.png`}
