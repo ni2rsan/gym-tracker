@@ -460,7 +460,7 @@ export function FriendProfileView({
                           alt={b.key}
                           className="w-10 h-10 object-contain"
                         />
-                        <span className="-mt-0.5 text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
+                        <span className="mt-0.5 text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {b.key}
                         </span>
                       </div>
@@ -486,14 +486,14 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {[...achievedFriends, ...achievedFistbumps].map((b) => (
-                      <div key={b.key} className="flex flex-col items-center w-16">
+                      <div key={b.key} className="flex flex-col items-center w-20">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/social/${b.key}.png`}
                           alt={b.label}
-                          className="w-16 h-16 object-contain"
+                          className="w-20 h-20 object-contain"
                         />
-                        <span className="-mt-1 text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">
+                        <span className="-mt-2 text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">
                           {b.label}
                         </span>
                       </div>
