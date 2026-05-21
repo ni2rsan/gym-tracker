@@ -4,7 +4,7 @@ import { Component, useState, useTransition, useMemo, Suspense } from "react";
 import type { ReactNode } from "react";
 import { Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+import { OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
 import { cn } from "@/core/utils/cn";
 import { upsertFriendPrivacyOverride } from "@/actions/social";
@@ -14,9 +14,8 @@ import type { FriendProfileData } from "@/core/types/social";
 import type { PRRecord } from "@/core/types/metrics";
 import type { MuscleGroup } from "@/core/constants/exercises";
 
-// Configure Draco decoder for compressed GLBs
+// Preload compressed GLBs (meshopt, no Draco decoder needed)
 try {
-  useGLTF.setDecoderPath("/draco/");
   useGLTF.preload("/Early Adopter.glb");
   useGLTF.preload("/The Architect.glb");
 } catch {

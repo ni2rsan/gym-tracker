@@ -1,24 +1,23 @@
 "use client";
 
-import { Component, Suspense, useState, useMemo } from "react";
+import { Component, Suspense, useState, useMemo, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import type { SectionLayout } from "@/core/domain/badgeLayout";
 import { Box3, Vector3 } from "three";
 
-// Configure Draco decoder for compressed GLBs
+// Preload compressed GLBs (meshopt, no Draco — no decoder needed)
 try {
-  useGLTF.setDecoderPath("/draco/");
   useGLTF.preload("/Early Adopter.glb");
   useGLTF.preload("/The Architect.glb");
 } catch {
   // Silently skip — Canvas will still attempt to load on render
 }
 
-// Error boundary: shows a spinner fallback instead of crashing the page
+// Error boundary: catches WebGL failures without crashing the page
 class CanvasErrorBoundary extends Component<
-  { children: ReactNode },
+  { children: ReactNode; fallback?: ReactNode },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -28,16 +27,18 @@ class CanvasErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center w-full h-full">
-          <p className="text-[10px] text-zinc-400">3D not supported</p>
-        </div>
+        this.props.fallback ?? (
+          <div className="flex items-center justify-center w-full h-full bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+            <p className="text-[10px] text-zinc-400">3D not available</p>
+          </div>
+        )
       );
     }
     return this.props.children;
   }
 }
 
-function NormalizedModel({ path }: { path: string }) {
+function NormalizedModel({ path, onLoaded }: { path: string; onLoaded?: () => void }) {
   const { scene } = useGLTF(path);
   const normalized = useMemo(() => {
     const clone = scene.clone(true);
@@ -51,42 +52,41 @@ function NormalizedModel({ path }: { path: string }) {
     clone.position.copy(center.multiplyScalar(-scale));
     return clone;
   }, [scene]);
+
+  // Signal parent that the model finished loading
+  const signalled = useRef(false);
+  useEffect(() => {
+    if (!signalled.current) {
+      signalled.current = true;
+      onLoaded?.();
+    }
+  }, [onLoaded]);
+
   return <primitive object={normalized} />;
 }
 
-function ModelScene({
-  path,
-  autoRotateSpeed,
-  withEnvironment = false,
-}: {
-  path: string;
-  autoRotateSpeed: number;
-  withEnvironment?: boolean;
-}) {
-  return (
-    <>
-      <ambientLight intensity={1.2} />
-      <directionalLight position={[3, 5, 3]} intensity={0.8} />
-      <Suspense fallback={null}>
-        <NormalizedModel path={path} />
-        {withEnvironment && <Environment preset="city" />}
-      </Suspense>
-      <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
-    </>
-  );
+// Detect WebGL support once
+function supportsWebGL(): boolean {
+  try {
+    const c = document.createElement("canvas");
+    return !!(c.getContext("webgl2") || c.getContext("webgl"));
+  } catch {
+    return false;
+  }
 }
 
-// Shared Canvas props for lightweight rendering
-const CANVAS_GL = { antialias: false, powerPreference: "low-power" as const, alpha: true };
-
-// Loading spinner shown while Canvas / GLB loads
-function CanvasSpinner() {
+// Loading spinner — hidden via loaded flag
+function CanvasSpinner({ visible }: { visible: boolean }) {
+  if (!visible) return null;
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
+
+// Shared Canvas GL config — lightweight for mobile
+const CANVAS_GL = { antialias: false, powerPreference: "low-power" as const, alpha: true };
 
 interface Badge {
   path: string;
@@ -111,23 +111,59 @@ const THE_ARCHITECT: Badge = {
     "You didn't just build the gym. You built the whole world around it. Every badge, every milestone, every rep tracked — it started with you.",
 };
 
+/** Inline badge row — shows a single rotating 3D model or loading spinner */
 function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => void }) {
+  const [canRender, setCanRender] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Only mount Canvas when badge scrolls into viewport (saves WebGL contexts)
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !supportsWebGL()) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- viewport trigger
+          setCanRender(true);
+          obs.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <div className="flex items-center gap-4">
-      <div className="relative w-28 h-28 shrink-0">
-        <CanvasErrorBoundary>
-          <Canvas
-            shadows={false}
-            dpr={[1, 1.5]}
-            gl={CANVAS_GL}
-            camera={{ position: [0, 0, 3], fov: 50 }}
-            style={{ width: "100%", height: "100%" }}
-          >
-            <ModelScene path={badge.path} autoRotateSpeed={1.5} />
-          </Canvas>
-          <CanvasSpinner />
-        </CanvasErrorBoundary>
-        <div className="absolute inset-0 cursor-pointer" onClick={() => onOpen(badge)} />
+      <div
+        ref={ref}
+        className="relative w-28 h-28 shrink-0 cursor-pointer"
+        onClick={() => onOpen(badge)}
+      >
+        {canRender ? (
+          <CanvasErrorBoundary>
+            <Canvas
+              shadows={false}
+              dpr={[1, 1.5]}
+              gl={CANVAS_GL}
+              camera={{ position: [0, 0, 3], fov: 50 }}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <ambientLight intensity={0.5} />
+              <directionalLight position={[3, 5, 3]} intensity={1} />
+              <Suspense fallback={null}>
+                <NormalizedModel path={badge.path} onLoaded={() => setLoaded(true)} />
+                <Environment files="/potsdamer_platz_1k.hdr" />
+              </Suspense>
+              <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1.5} />
+            </Canvas>
+            <CanvasSpinner visible={!loaded} />
+          </CanvasErrorBoundary>
+        ) : (
+          <CanvasSpinner visible />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">
@@ -148,53 +184,73 @@ interface SpecialsCardProps {
   layout?: SectionLayout | null;
 }
 
+function BadgeModal({ badge, onClose }: { badge: Badge; onClose: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const [webgl] = useState(supportsWebGL);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative w-full h-64 mb-4">
+          {webgl ? (
+            <CanvasErrorBoundary>
+              <Canvas
+                shadows={false}
+                dpr={[1, 2]}
+                gl={CANVAS_GL}
+                camera={{ position: [0, 0, 3], fov: 50 }}
+                style={{ width: "100%", height: "100%" }}
+              >
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[3, 5, 3]} intensity={1} />
+                <Suspense fallback={null}>
+                  <NormalizedModel path={badge.path} onLoaded={() => setLoaded(true)} />
+                  <Environment files="/potsdamer_platz_1k.hdr" />
+                </Suspense>
+                <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
+              </Canvas>
+              <CanvasSpinner visible={!loaded} />
+            </CanvasErrorBoundary>
+          ) : (
+            <div className="flex items-center justify-center w-full h-full bg-zinc-100 dark:bg-zinc-800 rounded-lg">
+              <p className="text-sm text-zinc-400">3D not available on this device</p>
+            </div>
+          )}
+        </div>
+        <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
+          {badge.tag}
+        </p>
+        <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug mb-2">
+          {badge.title}
+        </p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
+          {badge.subtext}
+        </p>
+        <button
+          onClick={onClose}
+          className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardProps) {
   const [modalBadge, setModalBadge] = useState<Badge | null>(null);
+  const [webgl] = useState(supportsWebGL);
 
   return (
     <>
-      {/* Badge detail modal — opens on click */}
-      {modalBadge && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60"
-          onClick={() => setModalBadge(null)}
-        >
-          <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-xs w-full text-center shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative w-full h-64 mb-4">
-              <CanvasErrorBoundary>
-                <Canvas
-                  shadows={false}
-                  dpr={[1, 2]}
-                  gl={CANVAS_GL}
-                  camera={{ position: [0, 0, 3], fov: 50 }}
-                  style={{ width: "100%", height: "100%" }}
-                >
-                  <ModelScene path={modalBadge.path} autoRotateSpeed={2} withEnvironment />
-                </Canvas>
-                <CanvasSpinner />
-              </CanvasErrorBoundary>
-            </div>
-            <p className="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">
-              {modalBadge.tag}
-            </p>
-            <p className="text-lg font-bold text-zinc-900 dark:text-white leading-snug mb-2">
-              {modalBadge.title}
-            </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              {modalBadge.subtext}
-            </p>
-            <button
-              onClick={() => setModalBadge(null)}
-              className="mt-4 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Badge detail modal — single Canvas, only mounts when open */}
+      {modalBadge && <BadgeModal badge={modalBadge} onClose={() => setModalBadge(null)} />}
 
       {/* Card */}
       {layout ? (
@@ -224,17 +280,27 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 }}
                 onClick={() => setModalBadge(EARLY_ADOPTER)}
               >
-                <CanvasErrorBoundary>
-                  <Canvas
-                    shadows={false}
-                    dpr={[1, 1.5]}
-                    gl={CANVAS_GL}
-                    camera={{ position: [0, 0, 3], fov: 50 }}
-                    style={{ width: "100%", aspectRatio: "1" }}
-                  >
-                    <ModelScene path={EARLY_ADOPTER.path} autoRotateSpeed={1.5} />
-                  </Canvas>
-                </CanvasErrorBoundary>
+                {webgl ? (
+                  <CanvasErrorBoundary>
+                    <Canvas
+                      shadows={false}
+                      dpr={[1, 1.5]}
+                      gl={CANVAS_GL}
+                      camera={{ position: [0, 0, 3], fov: 50 }}
+                      style={{ width: "100%", aspectRatio: "1" }}
+                    >
+                      <ambientLight intensity={0.5} />
+                      <directionalLight position={[3, 5, 3]} intensity={1} />
+                      <Suspense fallback={null}>
+                        <NormalizedModel path={EARLY_ADOPTER.path} />
+                        <Environment files="/potsdamer_platz_1k.hdr" />
+                      </Suspense>
+                      <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1.5} />
+                    </Canvas>
+                  </CanvasErrorBoundary>
+                ) : (
+                  <div className="w-full aspect-square bg-zinc-800/50 rounded-full" />
+                )}
               </div>
             )}
             {isAdmin && layout.positions["architect"] && (
@@ -248,17 +314,27 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 }}
                 onClick={() => setModalBadge(THE_ARCHITECT)}
               >
-                <CanvasErrorBoundary>
-                  <Canvas
-                    shadows={false}
-                    dpr={[1, 1.5]}
-                    gl={CANVAS_GL}
-                    camera={{ position: [0, 0, 3], fov: 50 }}
-                    style={{ width: "100%", aspectRatio: "1" }}
-                  >
-                    <ModelScene path={THE_ARCHITECT.path} autoRotateSpeed={1.5} />
-                  </Canvas>
-                </CanvasErrorBoundary>
+                {webgl ? (
+                  <CanvasErrorBoundary>
+                    <Canvas
+                      shadows={false}
+                      dpr={[1, 1.5]}
+                      gl={CANVAS_GL}
+                      camera={{ position: [0, 0, 3], fov: 50 }}
+                      style={{ width: "100%", aspectRatio: "1" }}
+                    >
+                      <ambientLight intensity={0.5} />
+                      <directionalLight position={[3, 5, 3]} intensity={1} />
+                      <Suspense fallback={null}>
+                        <NormalizedModel path={THE_ARCHITECT.path} />
+                        <Environment files="/potsdamer_platz_1k.hdr" />
+                      </Suspense>
+                      <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1.5} />
+                    </Canvas>
+                  </CanvasErrorBoundary>
+                ) : (
+                  <div className="w-full aspect-square bg-zinc-800/50 rounded-full" />
+                )}
               </div>
             )}
           </div>
