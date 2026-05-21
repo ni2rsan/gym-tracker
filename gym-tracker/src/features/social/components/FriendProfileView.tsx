@@ -180,7 +180,7 @@ function PRSection({ prs }: { prs: PRRecord[] }) {
                   {meta.label}
                 </span>
               </div>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-3 gap-1.5">
                 {grouped[group].map((pr) => (
                   <div
                     key={pr.exerciseId}
@@ -189,7 +189,7 @@ function PRSection({ prs }: { prs: PRRecord[] }) {
                     <ExerciseIcon
                       name={pr.exerciseName}
                       muscleGroup={pr.muscleGroup as MuscleGroup}
-                      className="w-8 h-8"
+                      className="w-11 h-11"
                     />
                     <span className="text-[9px] text-zinc-500 dark:text-zinc-400 leading-tight line-clamp-1 text-center w-full">
                       {pr.exerciseName.charAt(0) + pr.exerciseName.slice(1).toLowerCase()}
@@ -423,12 +423,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {unlocked.map((days) => (
-                      <div key={days} className="flex flex-col items-center gap-0.5 w-14">
+                      <div key={days} className="flex flex-col items-center gap-0.5 w-20">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/milestones/${days}.png`}
                           alt={`${days}d`}
-                          className="w-14 h-14 object-contain"
+                          className="w-20 h-20 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {days}d
@@ -453,12 +453,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {unlocked.map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-14">
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-20">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/volume/${b.key}.png`}
                           alt={b.key}
-                          className="w-14 h-14 object-contain"
+                          className="w-20 h-20 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {b.key}
@@ -486,12 +486,12 @@ export function FriendProfileView({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {[...achievedFriends, ...achievedFistbumps].map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-24">
+                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-32">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/social/${b.key}.png`}
                           alt={b.label}
-                          className="w-24 h-24 object-contain"
+                          className="w-32 h-32 object-contain"
                         />
                         <span className="text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">
                           {b.label}
