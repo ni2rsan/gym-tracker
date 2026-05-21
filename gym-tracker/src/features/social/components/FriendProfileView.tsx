@@ -421,16 +421,16 @@ export function FriendProfileView({
                   <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">
                     Workout
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1">
                     {unlocked.map((days) => (
-                      <div key={days} className="flex flex-col items-center w-20">
+                      <div key={days} className="flex flex-col items-center w-14">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/milestones/${days}.png`}
                           alt={`${days}d`}
-                          className="w-20 h-20 object-contain"
+                          className="w-14 h-14 object-contain"
                         />
-                        <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
+                        <span className="-mt-1 text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {days}d
                         </span>
                       </div>
@@ -451,16 +451,16 @@ export function FriendProfileView({
                   <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">
                     Volume
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1">
                     {unlocked.map((b) => (
-                      <div key={b.key} className="flex flex-col items-center gap-0.5 w-10">
+                      <div key={b.key} className="flex flex-col items-center w-10">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/volume/${b.key}.png`}
                           alt={b.key}
                           className="w-10 h-10 object-contain"
                         />
-                        <span className="text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
+                        <span className="-mt-0.5 text-[8px] font-semibold text-zinc-500 dark:text-zinc-400 leading-tight">
                           {b.key}
                         </span>
                       </div>
@@ -484,16 +484,16 @@ export function FriendProfileView({
                   <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">
                     Social
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1">
                     {[...achievedFriends, ...achievedFistbumps].map((b) => (
-                      <div key={b.key} className="flex flex-col items-center w-32">
+                      <div key={b.key} className="flex flex-col items-center w-16">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={`/social/${b.key}.png`}
                           alt={b.label}
-                          className="w-32 h-32 object-contain"
+                          className="w-16 h-16 object-contain"
                         />
-                        <span className="text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">
+                        <span className="-mt-1 text-[8px] font-semibold text-amber-600 dark:text-amber-400 leading-tight text-center">
                           {b.label}
                         </span>
                       </div>
