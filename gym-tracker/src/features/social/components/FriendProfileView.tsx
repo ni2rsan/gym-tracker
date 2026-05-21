@@ -93,12 +93,12 @@ class CanvasErrorBoundary extends Component<
 function CompactBadge3D({ path, title, tag }: { path: string; title: string; tag: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <div className="w-12 h-12 shrink-0">
+      <div className="w-16 h-16 shrink-0">
         <CanvasErrorBoundary>
           <Canvas
             shadows={false}
-            dpr={[1, 1.5]}
-            gl={CANVAS_GL}
+            dpr={[1.5, 2]}
+            gl={{ antialias: true, powerPreference: "low-power" as const, alpha: true }}
             camera={{ position: [0, 0, 3], fov: 50 }}
             style={{ width: "100%", height: "100%" }}
           >
