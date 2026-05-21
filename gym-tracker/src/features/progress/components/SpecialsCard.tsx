@@ -7,8 +7,9 @@ import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
 import type { SectionLayout } from "@/core/domain/badgeLayout";
 import { Box3, Vector3 } from "three";
 
-// Preload both GLBs — wrapped in try/catch for devices where Three.js init fails
+// Configure Draco decoder for compressed GLBs
 try {
+  useGLTF.setDecoderPath("/draco/");
   useGLTF.preload("/Early Adopter.glb");
   useGLTF.preload("/The Architect.glb");
 } catch {
@@ -56,9 +57,11 @@ function NormalizedModel({ path }: { path: string }) {
 function ModelScene({
   path,
   autoRotateSpeed,
+  withEnvironment = false,
 }: {
   path: string;
   autoRotateSpeed: number;
+  withEnvironment?: boolean;
 }) {
   return (
     <>
@@ -66,12 +69,15 @@ function ModelScene({
       <directionalLight position={[3, 5, 3]} intensity={0.8} />
       <Suspense fallback={null}>
         <NormalizedModel path={path} />
-        <Environment preset="city" />
+        {withEnvironment && <Environment preset="city" />}
       </Suspense>
       <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={autoRotateSpeed} />
     </>
   );
 }
+
+// Shared Canvas props for lightweight rendering
+const CANVAS_GL = { antialias: false, powerPreference: "low-power" as const, alpha: true };
 
 // Loading spinner shown while Canvas / GLB loads
 function CanvasSpinner() {
@@ -112,6 +118,8 @@ function BadgeRow({ badge, onOpen }: { badge: Badge; onOpen: (badge: Badge) => v
         <CanvasErrorBoundary>
           <Canvas
             shadows={false}
+            dpr={[1, 1.5]}
+            gl={CANVAS_GL}
             camera={{ position: [0, 0, 3], fov: 50 }}
             style={{ width: "100%", height: "100%" }}
           >
@@ -159,10 +167,12 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
               <CanvasErrorBoundary>
                 <Canvas
                   shadows={false}
+                  dpr={[1, 2]}
+                  gl={CANVAS_GL}
                   camera={{ position: [0, 0, 3], fov: 50 }}
                   style={{ width: "100%", height: "100%" }}
                 >
-                  <ModelScene path={modalBadge.path} autoRotateSpeed={2} />
+                  <ModelScene path={modalBadge.path} autoRotateSpeed={2} withEnvironment />
                 </Canvas>
                 <CanvasSpinner />
               </CanvasErrorBoundary>
@@ -217,6 +227,8 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 <CanvasErrorBoundary>
                   <Canvas
                     shadows={false}
+                    dpr={[1, 1.5]}
+                    gl={CANVAS_GL}
                     camera={{ position: [0, 0, 3], fov: 50 }}
                     style={{ width: "100%", aspectRatio: "1" }}
                   >
@@ -239,6 +251,8 @@ export function SpecialsCard({ userId, isAdmin = false, layout }: SpecialsCardPr
                 <CanvasErrorBoundary>
                   <Canvas
                     shadows={false}
+                    dpr={[1, 1.5]}
+                    gl={CANVAS_GL}
                     camera={{ position: [0, 0, 3], fov: 50 }}
                     style={{ width: "100%", aspectRatio: "1" }}
                   >

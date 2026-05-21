@@ -41,6 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Original uncompressed GLB backups
+/public/originals
 # Keep .env.example committed (it's a template with no secrets)
 \!.env.example
 

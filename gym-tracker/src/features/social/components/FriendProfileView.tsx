@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useMemo, Suspense } from "react";
+import { Component, useState, useTransition, useMemo, Suspense } from "react";
+import type { ReactNode } from "react";
 import { Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
@@ -13,12 +14,16 @@ import type { FriendProfileData } from "@/core/types/social";
 import type { PRRecord } from "@/core/types/metrics";
 import type { MuscleGroup } from "@/core/constants/exercises";
 
+// Configure Draco decoder for compressed GLBs
 try {
+  useGLTF.setDecoderPath("/draco/");
   useGLTF.preload("/Early Adopter.glb");
   useGLTF.preload("/The Architect.glb");
 } catch {
   // Silently skip on devices without WebGL
 }
+
+const CANVAS_GL = { antialias: false, powerPreference: "low-power" as const, alpha: true };
 
 const WORKOUT_MILESTONES = [10, 30, 50, 75, 100];
 
@@ -66,23 +71,46 @@ function NormalizedModel({ path }: { path: string }) {
   return <primitive object={normalized} />;
 }
 
+class CanvasErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center w-full h-full">
+          <p className="text-[8px] text-zinc-400">3D</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function CompactBadge3D({ path, title, tag }: { path: string; title: string; tag: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
       <div className="w-12 h-12 shrink-0">
-        <Canvas
-          shadows={false}
-          camera={{ position: [0, 0, 3], fov: 50 }}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <ambientLight intensity={1.2} />
-          <directionalLight position={[3, 5, 3]} intensity={0.8} />
-          <Suspense fallback={null}>
-            <NormalizedModel path={path} />
-            <Environment preset="city" />
-          </Suspense>
-          <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
-        </Canvas>
+        <CanvasErrorBoundary>
+          <Canvas
+            shadows={false}
+            dpr={[1, 1.5]}
+            gl={CANVAS_GL}
+            camera={{ position: [0, 0, 3], fov: 50 }}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <ambientLight intensity={1.2} />
+            <directionalLight position={[3, 5, 3]} intensity={0.8} />
+            <Suspense fallback={null}>
+              <NormalizedModel path={path} />
+            </Suspense>
+            <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
+          </Canvas>
+        </CanvasErrorBoundary>
       </div>
       <span className="text-[8px] font-bold text-amber-500 uppercase tracking-wide leading-none">
         {tag}
