@@ -1,7 +1,6 @@
 "use client";
 
-import { Component, useState, useTransition, useMemo, Suspense } from "react";
-import type { ReactNode } from "react";
+import { useState, useTransition, useMemo, Suspense } from "react";
 import { Crown, ChevronDown, ChevronUp, Lock } from "lucide-react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
@@ -19,20 +18,6 @@ try {
   useGLTF.preload("/The Architect.glb");
 } catch {
   // Silently skip on devices without WebGL
-}
-
-class WebGLErrorBoundary extends Component<
-  { children: ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  render() {
-    if (this.state.hasError) return null;
-    return this.props.children;
-  }
 }
 
 const WORKOUT_MILESTONES = [10, 30, 50, 75, 100];
@@ -490,20 +475,18 @@ export function FriendProfileView({
               );
             })()}
 
-            {/* Specials — 3D models (wrapped in error boundary for devices without WebGL) */}
-            <WebGLErrorBoundary>
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">
-                  Specials
-                </p>
-                <div className="flex gap-4">
-                  <CompactBadge3D path="/Early Adopter.glb" title="Early Adopter" tag="OG" />
-                  {data.isAdmin && (
-                    <CompactBadge3D path="/The Architect.glb" title="The Architect" tag="Admin" />
-                  )}
-                </div>
+            {/* Specials — 3D models */}
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-1.5">
+                Specials
+              </p>
+              <div className="flex gap-4">
+                <CompactBadge3D path="/Early Adopter.glb" title="Early Adopter" tag="OG" />
+                {data.isAdmin && (
+                  <CompactBadge3D path="/The Architect.glb" title="The Architect" tag="Admin" />
+                )}
               </div>
-            </WebGLErrorBoundary>
+            </div>
           </div>
         </div>
 
